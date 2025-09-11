@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from "../services/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { Menu, X, Home, User, LogIn, LogOut, Gauge } from "lucide-react";
+import { Menu, X, Home, User, LogIn, LogOut, Gauge, Car, Users } from "lucide-react";
 import logo from "../assets/logo.png";
 
 export default function Navbar() {
@@ -41,11 +41,16 @@ export default function Navbar() {
 
   const menu = [
     { name: "Home", path: "/", icon: <Home size={18} /> },
+    { name: "Profil Perusahaan", path: "/company-profile", icon: <User size={18} /> },
     ...(user && role === "client"
       ? [{ name: "Profil", path: "/profil", icon: <User size={18} /> }]
       : []),
     ...(user && role === "admin"
-      ? [{ name: "Admin Dashboard", path: "/admin-dashboard", icon: <Gauge size={18} /> }]
+      ? [
+          { name: "Admin Dashboard", path: "/admin-dashboard", icon: <Gauge size={18} /> },
+          { name: "Manajemen Mobil", path: "/car-management", icon: <Car size={18} /> },
+          { name: "Manajemen Client", path: "/client-management", icon: <Users size={18} /> }
+        ]
       : []),
     ...(!user
       ? [{ name: "Login", path: "/login", icon: <LogIn size={18} /> }]
@@ -108,7 +113,7 @@ export default function Navbar() {
             <Menu className="text-white w-6 h-6" />
           </button>
           <img src={logo} alt="Logo" className="h-8 w-8 rounded-full" />
-          <Link to="/" className="font-bold text-lg">
+          <Link to={user ? "/" : "/login"} className="font-bold text-lg">
             Cakra Lima Tujuh
           </Link>
         </div>

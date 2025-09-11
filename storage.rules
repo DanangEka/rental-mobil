@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /mobil/{allPaths=**} {
+      allow read: if true; // Allow public read access for car images
+      allow write: if request.auth != null && request.auth.token.admin == true; // Only admins can upload/edit car images
+    }
+    match /paymentProofs/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.token.admin == true; // only admin can read payment proofs
+      allow write: if request.auth != null; // allow authenticated users to upload payment proofs
+    }
+    match /{allPaths=**} {
+      allow read, write: if false; // Deny all other access
+    }
+  }
+}

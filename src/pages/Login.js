@@ -6,9 +6,8 @@ import {
   onAuthStateChanged,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, LogIn } from "lucide-react";
-import logo from "../assets/logo.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -17,18 +16,34 @@ export default function Login() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleAdminLogin = async () => {
+  const handleLogin = async () => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       const user = result.user;
+      const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
 
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists() && userDoc.data().role === "admin") {
-        navigate("/admin-dashboard");
+      if (!userDoc.exists()) {
+        // Jika belum ada, buat otomatis dengan role client
+        await setDoc(userRef, {
+          uid: user.uid,
+          email: user.email,
+          role: "client",
+          createdAt: new Date(),
+        });
+        navigate("/profil");
       } else {
-        setError("Akun ini bukan admin.");
+        const role = userDoc.data().role;
+        if (role === "admin") {
+          navigate("/admin-dashboard");
+        } else if (role === "client") {
+          navigate("/profil");
+        } else {
+          setError("Role tidak dikenali.");
+        }
       }
-    } catch {
+    } catch (err) {
+      console.error("Login error:", err);
       setError("Email atau password salah.");
     }
   };
@@ -38,19 +53,22 @@ export default function Login() {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       const userRef = doc(db, "users", user.uid);
-
       const userSnap = await getDoc(userRef);
+
       if (!userSnap.exists()) {
         // Buat dokumen user baru dengan role client
         await setDoc(userRef, {
-          name: user.displayName,
+          uid: user.uid,
+          name: user.displayName || "User",
           email: user.email,
           role: "client",
+          createdAt: new Date(),
         });
       }
 
       navigate("/profil");
-    } catch {
+    } catch (err) {
+      console.error("Google login error:", err);
       setError("Gagal login dengan Google.");
     }
   };
@@ -58,10 +76,17 @@ export default function Login() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        const role = userDoc.exists() ? userDoc.data().role : null;
-        if (role === "admin") navigate("/admin-dashboard");
-        if (role === "client") navigate("/profil");
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+          const role = userDoc.data().role;
+          if (role === "admin") {
+            navigate("/admin-dashboard");
+          } else if (role === "client") {
+            navigate("/profil");
+          }
+        }
       }
     });
     return () => unsubscribe();
@@ -77,19 +102,19 @@ export default function Login() {
         </div>
         <h2 className="text-center text-xl font-bold text-[#990000]">Sign in</h2>
         <p className="text-center text-sm text-gray-500">
-          Login sebagai <b>Admin</b> atau <b>Client (Google)</b>
+          Masukkan email dan password Anda
         </p>
 
         {error && (
           <div className="text-sm text-red-600 text-center">{error}</div>
         )}
 
-        {/* Admin Login Form */}
+        {/* Login Form */}
         <div className="space-y-4">
           <div>
             <input
               type="email"
-              placeholder="Email Admin"
+              placeholder="Email"
               className="w-full px-4 py-2 border rounded-lg"
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -111,9 +136,9 @@ export default function Login() {
           </div>
           <button
             className="bg-[#990000] text-white w-full py-2 rounded-lg hover:bg-red-800 transition"
-            onClick={handleAdminLogin}
+            onClick={handleLogin}
           >
-            Login Admin
+            Login
           </button>
         </div>
 
@@ -125,7 +150,7 @@ export default function Login() {
         </div>
 
         {/* Google Login */}
-        <div className="flex justify-center">
+        <div className="flex justify-center space-x-4">
           <button
             className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
             onClick={handleGoogleLogin}
@@ -136,6 +161,12 @@ export default function Login() {
               className="w-5 h-5"
             />
           </button>
+          <Link
+            to="/signup"
+            className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center"
+          >
+            Sign Up
+          </Link>
         </div>
       </div>
     </div>
