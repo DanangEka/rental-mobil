@@ -40,20 +40,20 @@ export default function Navbar() {
   }, []);
 
   const menu = [
-    { name: "Home", path: "/", icon: <Home size={18} /> },
-    { name: "Profil Perusahaan", path: "/company-profile", icon: <User size={18} /> },
+    { name: "Home", path: "/", icon: <Home size={20} /> },
+    { name: "Profil Perusahaan", path: "/company-profile", icon: <User size={20} /> },
     ...(user && role === "client"
-      ? [{ name: "Profil", path: "/profil", icon: <User size={18} /> }]
+      ? [{ name: "Profil", path: "/profil", icon: <User size={20} /> }]
       : []),
     ...(user && role === "admin"
       ? [
-          { name: "Admin Dashboard", path: "/admin-dashboard", icon: <Gauge size={18} /> },
-          { name: "Manajemen Mobil", path: "/car-management", icon: <Car size={18} /> },
-          { name: "Manajemen Client", path: "/client-management", icon: <Users size={18} /> }
+          { name: "Admin Dashboard", path: "/admin-dashboard", icon: <Gauge size={20} /> },
+          { name: "Manajemen Mobil", path: "/car-management", icon: <Car size={20} /> },
+          { name: "Manajemen Client", path: "/client-management", icon: <Users size={20} /> }
         ]
       : []),
     ...(!user
-      ? [{ name: "Login", path: "/login", icon: <LogIn size={18} /> }]
+      ? [{ name: "Login", path: "/login", icon: <LogIn size={20} /> }]
       : []),
   ];
 
@@ -61,27 +61,30 @@ export default function Navbar() {
     <>
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-[#990000] text-white z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 h-full w-72 bg-[#990000] text-white z-50 transform transition-all duration-300 ease-in-out shadow-2xl ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } `}
+        }`}
       >
-        <div className="p-4 border-b border-red-800 flex items-center space-x-3">
-          <button onClick={toggleSidebar} className="p-1 md:hidden">
+        <div className="p-6 border-b border-red-700 flex items-center space-x-4">
+          <button
+            onClick={toggleSidebar}
+            className="p-2 hover:bg-red-700 rounded-lg transition-colors duration-200 md:hidden"
+          >
             <X className="text-white w-6 h-6" />
           </button>
-          <img src={logo} alt="Logo" className="h-8 w-8 rounded-full" />
-          <span className="font-bold text-lg">Cakra Lima Tujuh</span>
+          <img src={logo} alt="Logo" className="h-10 w-10 rounded-full shadow-md" />
+          <span className="font-bold text-xl tracking-wide">Cakra Lima Tujuh</span>
         </div>
-        <nav className="flex flex-col space-y-1 p-4">
+        <nav className="flex flex-col space-y-2 p-6">
           {menu.map((item) => (
             <Link
               key={item.name}
               to={item.path}
               onClick={() => setSidebarOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition text-sm ${
+              className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 text-base font-medium ${
                 location.pathname === item.path
-                  ? "bg-red-800 text-white"
-                  : "text-red-100 hover:bg-red-800 hover:text-white"
+                  ? "bg-red-700 text-white shadow-lg"
+                  : "text-red-100 hover:bg-red-700 hover:text-white hover:shadow-md"
               }`}
             >
               {item.icon}
@@ -91,31 +94,47 @@ export default function Navbar() {
           {user && (
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 px-3 py-2.5 mt-4 text-left bg-red-800 hover:bg-red-900 rounded-lg transition text-sm"
+              className="flex items-center gap-4 px-4 py-3 mt-6 text-left bg-red-700 hover:bg-red-800 rounded-xl transition-all duration-200 text-base font-medium shadow-md hover:shadow-lg"
             >
-              <LogOut size={18} />
+              <LogOut size={20} />
               Logout
             </button>
           )}
         </nav>
       </div>
 
-      {/* Top Navbar */}
+      {/* Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black opacity-40 z-40"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 backdrop-blur-sm"
           onClick={toggleSidebar}
         />
       )}
-      <nav className="bg-[#990000] text-white px-4 py-3 flex justify-between items-center shadow-md z-40 relative">
-        <div className="flex items-center space-x-3">
-          <button onClick={toggleSidebar} className="p-1 block">
+
+      {/* Top Navbar */}
+      <nav className="bg-[#990000] text-white px-4 py-4 md:px-6 md:py-4 flex justify-between items-center shadow-lg z-40 relative">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={toggleSidebar}
+            className="p-2 hover:bg-red-700 rounded-lg transition-colors duration-200"
+          >
             <Menu className="text-white w-6 h-6" />
           </button>
-          <img src={logo} alt="Logo" className="h-8 w-8 rounded-full" />
-          <Link to={user ? "/" : "/login"} className="font-bold text-lg">
+          <img src={logo} alt="Logo" className="h-10 w-10 rounded-full shadow-md" />
+          <Link
+            to={user ? "/" : "/login"}
+            className="font-bold text-xl md:text-2xl tracking-wide hover:text-red-200 transition-colors duration-200"
+          >
             Cakra Lima Tujuh
           </Link>
+        </div>
+        {/* Optional: Add user info or additional elements here for larger screens */}
+        <div className="hidden md:flex items-center space-x-4">
+          {user && (
+            <span className="text-sm text-red-200">
+              Welcome, {user.email?.split('@')[0]}
+            </span>
+          )}
         </div>
       </nav>
     </>

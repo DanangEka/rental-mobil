@@ -3,6 +3,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "../services/firebase";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -165,6 +166,14 @@ export default function Home() {
         paymentStatus: "submitted",
       });
 
+      // Call the payment-success API
+          const apiUrl =
+      process.env.NODE_ENV === "production"
+        ? "/api/payment-success" // saat sudah di-deploy di Vercel
+        : process.env.REACT_APP_SHEET_WEBHOOK_URL; // saat masih lokal
+
+    await axios.post(apiUrl, order);
+
       alert("Bukti Pembayaran Telah Terkirim");
       // Refresh the orders to update the UI
       setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, paymentStatus: "submitted", paymentProof: paymentProofURL } : o));
@@ -175,23 +184,30 @@ export default function Home() {
   };
 
   return (
-    <div className={`min-h-screen bg-black ${mobil.length > 0 ? "pb-20" : ""}`}>
-      <div className="bg-gradient-to-r from-[#990000] to-red-800 text-white px-4 py-6 md:py-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Sewa Mobil Terbaik</h1>
-          <p className="text-sm md:text-base opacity-90">
-            Pilih mobil impian Anda dengan harga terjangkau
+    <div
+      className={`min-h-screen bg-black ${mobil.length > 0 ? "pb-20" : ""}`}
+    >
+      <div className="bg-red-900 text-white px-4 py-8 md:py-12 lg:py-16">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 tracking-tight">
+            Sewa Mobil Terbaik
+          </h1>
+          <p className="text-base md:text-lg lg:text-xl opacity-90 max-w-2xl mx-auto leading-relaxed">
+            Pilih mobil impian Anda dengan harga terjangkau dan layanan profesional
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 py-4 md:px-4 md:py-6">
+      <div className="max-w-7xl mx-auto px-4 py-8 md:px-6 md:py-12 lg:px-8">
         {mobil.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-lg">Tidak ada mobil tersedia saat ini</div>
+          <div className="text-center py-16 md:py-20">
+            <div className="text-gray-300 text-xl md:text-2xl font-medium">
+              Tidak ada mobil tersedia saat ini
+            </div>
+            <p className="text-gray-400 mt-2">Silakan kembali lagi nanti</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-8 md:gap-10 lg:gap-12">
             {mobil.map((m) => {
               const statusLower = m.status?.toLowerCase();
               const order = getUserOrderForCar(m.id);
@@ -200,22 +216,22 @@ export default function Home() {
               return (
                 <div
                   key={m.id}
-                  className="bg-gray-900 rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300"
+                  className="bg-gray-900 rounded-2xl shadow-2xl overflow-hidden hover:shadow-3xl transition-all duration-300 border border-gray-800 hover:border-red-600"
                 >
                   <div className="relative aspect-video bg-gray-800">
                     <img
                       src={m.gambar}
                       alt={m.nama}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />
                     <div
-                      className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-semibold ${
+                      className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg ${
                         ["servis", "service", "maintenance"].includes(statusLower)
                           ? "bg-yellow-500 text-yellow-900"
                           : ["disewa", "rented", "booked"].includes(statusLower)
-                          ? "bg-red-500 text-white"
-                          : "bg-green-500 text-white"
+                          ? "bg-red-600 text-white"
+                          : "bg-green-600 text-white"
                       }`}
                     >
                       {["servis", "service", "maintenance"].includes(statusLower)
@@ -226,11 +242,11 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="p-4">
-                    <h3 className="text-lg font-bold text-white mb-1">{m.nama}</h3>
-                    <p className="text-red-400 font-semibold text-sm mb-3">
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-white mb-2 leading-tight">{m.nama}</h3>
+                    <p className="text-red-400 font-bold text-lg mb-4">
                       Rp {m.harga.toLocaleString()}{" "}
-                      <span className="text-gray-400 text-xs">/ hari</span>
+                      <span className="text-gray-400 text-sm font-normal">/ hari</span>
                     </p>
 
                     {/* Kondisi tampilan */}
@@ -241,11 +257,14 @@ export default function Home() {
                       if (order && !isAdmin) {
                         if (orderStatus === "diproses") {
                           return (
-                            <div className="text-center py-4">
-                              <div className="text-yellow-400 text-sm font-semibold">
+                            <div className="text-center py-6">
+                              <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-900 rounded-full mb-3">
+                                <div className="w-6 h-6 bg-yellow-500 rounded-full animate-pulse"></div>
+                              </div>
+                              <div className="text-yellow-400 text-base font-semibold">
                                 Mobil sedang diproses
                               </div>
-                              <div className="text-gray-500 text-xs mt-1">
+                              <div className="text-gray-400 text-sm mt-1">
                                 Mohon tunggu sebentar
                               </div>
                             </div>
@@ -255,28 +274,33 @@ export default function Home() {
 ) {
   if (order.paymentStatus === "submitted") {
     return (
-      <div className="text-center py-4">
-        <div className="text-green-400 text-sm font-semibold">
+      <div className="text-center py-6">
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-green-900 rounded-full mb-3">
+          <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div className="text-green-400 text-base font-semibold">
           Bukti Pembayaran Berhasil Diupload
         </div>
-        <div className="text-gray-500 text-xs mt-1">
+        <div className="text-gray-400 text-sm mt-1">
           Menunggu konfirmasi admin
         </div>
       </div>
     );
   }
   return (
-    <div className="space-y-3">
-      <div className="text-center">
-        <div className="text-green-400 text-sm font-semibold">
+    <div className="space-y-4">
+      <div className="text-center bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <div className="text-green-400 text-base font-semibold">
           Pesanan Disetujui
         </div>
-        <div className="text-gray-500 text-xs mt-1">
+        <div className="text-gray-300 text-sm mt-1">
           Silakan lakukan pembayaran DP untuk melanjutkan
         </div>
       </div>
       <div>
-        <label className="text-xs text-gray-400 block mb-1">
+        <label className="text-sm text-gray-300 font-medium block mb-2">
           Metode Pembayaran
         </label>
         <select
@@ -287,7 +311,7 @@ export default function Home() {
               [order.id]: e.target.value,
             }))
           }
-          className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-lg p-2"
+          className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
         >
           <option value="">Pilih Metode</option>
           <option value="Transfer Bank">Transfer Bank</option>
@@ -296,7 +320,7 @@ export default function Home() {
         </select>
       </div>
       <div>
-        <label className="text-xs text-gray-400 block mb-1">
+        <label className="text-sm text-gray-300 font-medium block mb-2">
           Bukti Pembayaran
         </label>
         <input
@@ -308,11 +332,11 @@ export default function Home() {
               [order.id]: e.target.files[0],
             }))
           }
-          className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-lg p-2"
+          className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-3 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors"
         />
       </div>
       <button
-        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 text-sm"
+        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-sm shadow-md hover:shadow-lg"
         onClick={() => handlePaymentSubmit(order)}
       >
         Kirim Bukti Pembayaran
@@ -321,11 +345,16 @@ export default function Home() {
   );
 } else if (orderStatus === "pembayaran berhasil") {
                           return (
-                            <div className="text-center py-4">
-                              <div className="text-green-400 text-sm font-semibold">
+                            <div className="text-center py-6">
+                              <div className="inline-flex items-center justify-center w-12 h-12 bg-green-900 rounded-full mb-3">
+                                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                              <div className="text-green-400 text-base font-semibold">
                                 Pembayaran Telah Dikonfirmasi
                               </div>
-                              <div className="text-gray-500 text-xs mt-1">Mobil siap diambil</div>
+                              <div className="text-gray-400 text-sm mt-1">Mobil siap diambil</div>
                             </div>
                           );
                         }
@@ -341,79 +370,79 @@ export default function Home() {
                         m.tersedia === true
                       ) {
                         return (
-                          <div className="space-y-3">
-                            <div className="grid grid-cols-1 gap-2">
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 gap-3">
                               <div>
-                                <label className="text-xs text-gray-400 block mb-1">
-                                  Tanggal Mulai
-                                </label>
-                                <input
-                                  type="datetime-local"
-                                  value={tanggalMulai[m.id] || ""}
-                                  onChange={(e) =>
-                                    handleTanggalChange(m.id, "mulai", e.target.value)
-                                  }
-                                  className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-lg p-2"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-xs text-gray-400 block mb-1">
-                                  Tanggal Selesai
-                                </label>
-                                <input
-                                  type="datetime-local"
-                                  value={tanggalSelesai[m.id] || ""}
-                                  onChange={(e) =>
-                                    handleTanggalChange(m.id, "selesai", e.target.value)
-                                  }
-                                  className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-lg p-2"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-xs text-gray-400 block mb-2">
-                                  Tipe Sewa
-                                </label>
-                                <div className="flex bg-gray-800 rounded-lg p-1">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setRentalType((prev) => ({
-                                        ...prev,
-                                        [m.id]: "Lepas Kunci",
-                                      }))
+                                  <label className="text-sm text-red-400 font-medium block mb-2">
+                                    Tanggal Mulai
+                                  </label>
+                                  <input
+                                    type="datetime-local"
+                                    value={tanggalMulai[m.id] || ""}
+                                    onChange={(e) =>
+                                      handleTanggalChange(m.id, "mulai", e.target.value)
                                     }
-                                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
-                                      rentalType[m.id] === "Lepas Kunci" || !rentalType[m.id]
-                                        ? "bg-red-600 text-white"
-                                        : "text-gray-300 hover:text-white hover:bg-gray-700"
-                                    }`}
-                                  >
-                                    Lepas Kunci
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setRentalType((prev) => ({
-                                        ...prev,
-                                        [m.id]: "Driver",
-                                      }))
-                                    }
-                                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
-                                      rentalType[m.id] === "Driver"
-                                        ? "bg-red-600 text-white"
-                                        : "text-gray-300 hover:text-white hover:bg-gray-700"
-                                    }`}
-                                  >
-                                    Driver
-                                  </button>
+                                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                  />
                                 </div>
-                              </div>
+                                <div>
+                                  <label className="text-sm text-red-400 font-medium block mb-2">
+                                    Tanggal Selesai
+                                  </label>
+                                  <input
+                                    type="datetime-local"
+                                    value={tanggalSelesai[m.id] || ""}
+                                    onChange={(e) =>
+                                      handleTanggalChange(m.id, "selesai", e.target.value)
+                                    }
+                                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-sm text-red-400 font-medium block mb-2">
+                                    Tipe Sewa
+                                  </label>
+                                  <div className="flex bg-gray-100 rounded-lg p-1">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setRentalType((prev) => ({
+                                          ...prev,
+                                          [m.id]: "Lepas Kunci",
+                                        }))
+                                      }
+                                      className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                                        rentalType[m.id] === "Lepas Kunci" || !rentalType[m.id]
+                                          ? "bg-red-600 text-white shadow-md"
+                                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"
+                                      }`}
+                                    >
+                                      Lepas Kunci
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setRentalType((prev) => ({
+                                          ...prev,
+                                          [m.id]: "Driver",
+                                        }))
+                                      }
+                                      className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                                        rentalType[m.id] === "Driver"
+                                          ? "bg-red-600 text-white shadow-md"
+                                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"
+                                      }`}
+                                    >
+                                      Driver
+                                    </button>
+                                  </div>
+                                </div>
                             </div>
 
                             {tanggalMulai[m.id] && tanggalSelesai[m.id] && (
-                              <div className="bg-gray-800 rounded-lg p-2">
-                                <p className="text-xs text-gray-400 mb-1">Estimasi Biaya</p>
-                                <p className="text-green-400 font-bold text-sm">
+                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <p className="text-sm text-gray-600 mb-2 font-medium">Estimasi Biaya</p>
+                                <p className="text-green-600 font-bold text-lg">
                                   Rp{" "}
                                   {(() => {
                                     const durasi = Math.ceil(
@@ -430,7 +459,7 @@ export default function Home() {
                                   })()}
                                 </p>
                                 {(rentalType[m.id] || "Lepas Kunci") === "Driver" && (
-                                  <p className="text-xs text-gray-400 mt-1">
+                                  <p className="text-sm text-gray-500 mt-1">
                                     Termasuk biaya driver: Rp 250.000
                                   </p>
                                 )}
@@ -438,7 +467,7 @@ export default function Home() {
                             )}
 
                             <button
-                              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 text-sm"
+                              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-sm shadow-md hover:shadow-lg"
                               onClick={() => handleSewa(m)}
                             >
                               Sewa Sekarang
@@ -449,22 +478,33 @@ export default function Home() {
 
                       if (statusLower === "disewa") {
                         return (
-                          <div className="text-center py-4">
-                            <div className="text-red-400 text-sm font-semibold">
+                          <div className="text-center py-6">
+                            <div className="inline-flex items-center justify-center w-12 h-12 bg-red-900 rounded-full mb-3">
+                              <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                            </div>
+                            <div className="text-red-400 text-base font-semibold">
                               Mobil sedang disewa
                             </div>
-                            <div className="text-gray-500 text-xs mt-1">Cek kembali nanti</div>
+                            <div className="text-gray-400 text-sm mt-1">Cek kembali nanti</div>
                           </div>
                         );
                       }
 
                       if (statusLower === "servis") {
                         return (
-                          <div className="text-center py-4">
-                            <div className="text-yellow-400 text-sm font-semibold">
+                          <div className="text-center py-6">
+                            <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-900 rounded-full mb-3">
+                              <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </div>
+                            <div className="text-yellow-400 text-base font-semibold">
                               Sedang dalam perawatan
                             </div>
-                            <div className="text-gray-500 text-xs mt-1">
+                            <div className="text-gray-400 text-sm mt-1">
                               Akan tersedia segera
                             </div>
                           </div>

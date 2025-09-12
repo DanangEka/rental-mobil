@@ -109,140 +109,148 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-red-900 via-red-700 to-red-900 text-white flex justify-center items-center p-6">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-gray-900 bg-opacity-90 p-10 rounded-xl shadow-2xl w-full max-w-lg space-y-8 border border-red-800"
-      >
-        <h2 className="text-3xl font-extrabold mb-8 text-center tracking-wide border-b border-red-600 pb-3">
-          Daftar Akun Baru
-        </h2>
-
-        <div className="space-y-6">
-          {/* Nama */}
-          <div>
-            <label htmlFor="nama" className="block mb-3 font-semibold text-lg text-red-300">
-              Nama Lengkap
-            </label>
-            <input
-              type="text"
-              id="nama"
-              name="nama"
-              value={form.nama}
-              onChange={handleChange}
-              className="w-full p-4 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-4 focus:ring-red-600 focus:border-red-600 transition-all duration-300 hover:bg-gray-750"
-              placeholder="Masukkan nama lengkap Anda"
-              required
-            />
-          </div>
-
-          {/* Alamat */}
-          <div>
-            <label htmlFor="alamat" className="block mb-3 font-semibold text-lg text-red-300">
-              Alamat
-            </label>
-            <textarea
-              id="alamat"
-              name="alamat"
-              value={form.alamat}
-              onChange={handleChange}
-              className="w-full p-4 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-4 focus:ring-red-600 focus:border-red-600 transition-all duration-300 hover:bg-gray-750 resize-none"
-              rows={4}
-              placeholder="Masukkan alamat lengkap Anda"
-              required
-            />
-          </div>
-
-          {/* Nomor Telepon */}
-          <div>
-            <label
-              htmlFor="nomorTelepon"
-              className="block mb-3 font-semibold text-lg text-red-300"
-            >
-              Nomor Telepon
-            </label>
-            <input
-              type="tel"
-              id="nomorTelepon"
-              name="nomorTelepon"
-              value={form.nomorTelepon}
-              onChange={handleChange}
-              className="w-full p-4 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-4 focus:ring-red-600 focus:border-red-600 transition-all duration-300 hover:bg-gray-750"
-              placeholder="Masukkan nomor telepon Anda"
-              required
-            />
-          </div>
-
-          {/* Email */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block mb-3 font-semibold text-lg text-red-300"
-            >
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              className="w-full p-4 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-4 focus:ring-red-600 focus:border-red-600 transition-all duration-300 hover:bg-gray-750"
-              placeholder="Masukkan email Anda"
-              required
-            />
-          </div>
-
-          {/* Password */}
-          <div>
-            <label
-              htmlFor="password"
-              className="block mb-3 font-semibold text-lg text-red-300"
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              className="w-full p-4 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-4 focus:ring-red-600 focus:border-red-600 transition-all duration-300 hover:bg-gray-750"
-              placeholder="Masukkan password Anda"
-              required
-            />
-          </div>
-
-          {/* KTP */}
-          <div>
-            <label
-              htmlFor="ktpFile"
-              className="block mb-3 font-semibold text-lg text-red-300"
-            >
-              Upload Foto KTP
-            </label>
-            <input
-              type="file"
-              id="ktpFile"
-              name="ktpFile"
-              accept="image/*"
-              onChange={handleChange}
-              className="w-full text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-700 transition-all duration-300"
-              required
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full bg-red-700 hover:bg-red-800 text-white font-extrabold py-4 px-6 rounded-lg transition-all duration-300 shadow-lg transform hover:scale-105 ${
-            loading ? "opacity-70 cursor-not-allowed" : ""
-          }`}
+    <div className="min-h-screen bg-gradient-to-r from-red-900 via-red-700 to-red-900 py-8 px-4">
+      <div className="max-w-2xl mx-auto">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-gray-900 bg-opacity-90 rounded-2xl shadow-2xl p-8 md:p-12 space-y-8 border border-red-800"
         >
-          {loading ? "Mendaftarkan..." : "Daftar Sekarang"}
-        </button>
-      </form>
+          <div className="text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Daftar Akun Baru
+            </h2>
+            <p className="text-red-300 text-base md:text-lg">
+              Lengkapi data Anda untuk membuat akun
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Nama */}
+            <div className="md:col-span-2">
+              <label htmlFor="nama" className="block text-sm font-semibold text-red-300 mb-2">
+                Nama Lengkap
+              </label>
+              <input
+                type="text"
+                id="nama"
+                name="nama"
+                value={form.nama}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors placeholder-gray-400"
+                placeholder="Masukkan nama lengkap Anda"
+                required
+              />
+            </div>
+
+            {/* Alamat */}
+            <div className="md:col-span-2">
+              <label htmlFor="alamat" className="block text-sm font-semibold text-gray-700 mb-2">
+                Alamat
+              </label>
+              <textarea
+                id="alamat"
+                name="alamat"
+                value={form.alamat}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500 resize-none"
+                rows={4}
+                placeholder="Masukkan alamat lengkap Anda"
+                required
+              />
+            </div>
+
+            {/* Nomor Telepon */}
+            <div>
+              <label htmlFor="nomorTelepon" className="block text-sm font-semibold text-gray-700 mb-2">
+                Nomor Telepon
+              </label>
+              <input
+                type="tel"
+                id="nomorTelepon"
+                name="nomorTelepon"
+                value={form.nomorTelepon}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                placeholder="Masukkan nomor telepon"
+                required
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                placeholder="Masukkan email Anda"
+                required
+              />
+            </div>
+
+            {/* Password */}
+            <div className="md:col-span-2">
+              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                placeholder="Masukkan password Anda"
+                required
+              />
+            </div>
+
+            {/* KTP */}
+            <div className="md:col-span-2">
+              <label htmlFor="ktpFile" className="block text-sm font-semibold text-gray-700 mb-2">
+                Upload Foto KTP
+              </label>
+              <input
+                type="file"
+                id="ktpFile"
+                name="ktpFile"
+                accept="image/*"
+                onChange={handleChange}
+                className="w-full text-gray-700 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors file:cursor-pointer"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Upload foto KTP yang jelas untuk verifikasi
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full bg-[#990000] hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 text-base shadow-md hover:shadow-lg ${
+              loading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          >
+            {loading ? "Mendaftarkan..." : "Daftar Sekarang"}
+          </button>
+
+          <div className="text-center">
+            <span className="text-gray-600 text-sm">Sudah punya akun? </span>
+            <a
+              href="/login"
+              className="text-red-600 hover:text-red-700 font-semibold text-sm transition-colors"
+            >
+              Masuk di sini
+            </a>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

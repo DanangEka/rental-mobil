@@ -93,66 +93,78 @@ export default function Login() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-[#f8dada] px-4">
-      <div className="bg-white shadow-2xl rounded-xl max-w-sm w-full p-6 space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-red-50 px-4 py-8">
+      <div className="bg-white shadow-2xl rounded-2xl max-w-md w-full p-8 space-y-8 border border-gray-100">
         <div className="flex justify-center">
-          <div className="bg-[#990000] rounded-full p-3">
-            <LogIn className="text-white w-6 h-6" />
+          <div className="bg-[#990000] rounded-full p-4 shadow-lg">
+            <LogIn className="text-white w-8 h-8" />
           </div>
         </div>
-        <h2 className="text-center text-xl font-bold text-[#990000]">Sign in</h2>
-        <p className="text-center text-sm text-gray-500">
-          Masukkan email dan password Anda
-        </p>
+        <div className="text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Selamat Datang</h2>
+          <p className="text-gray-600 text-sm md:text-base">
+            Masukkan email dan password Anda untuk melanjutkan
+          </p>
+        </div>
 
         {error && (
-          <div className="text-sm text-red-600 text-center">{error}</div>
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm text-center">
+            {error}
+          </div>
         )}
 
         {/* Login Form */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email
+            </label>
             <input
               type="email"
-              placeholder="Email"
-              className="w-full px-4 py-2 border rounded-lg"
+              placeholder="Masukkan email Anda"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <div className="relative">
-            <input
-              type={showPass ? "text" : "password"}
-              placeholder="Password"
-              className="w-full px-4 py-2 border rounded-lg"
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <button
-              type="button"
-              className="absolute right-3 top-2 text-gray-500"
-              onClick={() => setShowPass(!showPass)}
-            >
-              {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPass ? "text" : "password"}
+                placeholder="Masukkan password Anda"
+                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                onClick={() => setShowPass(!showPass)}
+              >
+                {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
           <button
-            className="bg-[#990000] text-white w-full py-2 rounded-lg hover:bg-red-800 transition"
+            className="bg-[#990000] hover:bg-red-700 text-white w-full py-3 rounded-lg transition-all duration-200 text-base font-semibold shadow-md hover:shadow-lg"
             onClick={handleLogin}
           >
-            Login
+            Masuk
           </button>
         </div>
 
         {/* OR Divider */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <hr className="flex-grow border-gray-300" />
-          <span className="text-gray-400 text-xs">or sign in with</span>
+          <span className="text-gray-500 text-sm font-medium">atau</span>
           <hr className="flex-grow border-gray-300" />
         </div>
 
         {/* Google Login */}
-        <div className="flex justify-center space-x-4">
+        <div className="space-y-4">
           <button
-            className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
+            className="border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 w-full py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-sm hover:shadow-md"
             onClick={handleGoogleLogin}
           >
             <img
@@ -160,13 +172,17 @@ export default function Login() {
               alt="Google"
               className="w-5 h-5"
             />
+            <span className="text-gray-700 font-medium">Lanjutkan dengan Google</span>
           </button>
-          <Link
-            to="/signup"
-            className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center"
-          >
-            Sign Up
-          </Link>
+          <div className="text-center">
+            <span className="text-gray-600 text-sm">Belum punya akun? </span>
+            <Link
+              to="/signup"
+              className="text-red-600 hover:text-red-700 font-semibold text-sm transition-colors"
+            >
+              Daftar sekarang
+            </Link>
+          </div>
         </div>
       </div>
     </div>
