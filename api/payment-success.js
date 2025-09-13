@@ -7,24 +7,28 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const order = req.body; // data pesanan
+  const order = req.body;
 
   try {
-    // === Validasi ===
-    if (!order.email) {
-      return res.status(400).json({ error: "Email client wajib diisi" });
+    // === Validasi sederhana ===
+    if (!order.email || !order.namaClient) {
+      return res.status(400).json({ error: "Nama client dan email wajib diisi" });
     }
 
-    // === 1. Kirim data ke Google Sheet ===
+    // === 1. Kirim data ke Google Sheet (App Script Webhook) ===
     await axios.post(process.env.SHEET_WEBHOOK_URL, order, {
       headers: { "Content-Type": "application/json" },
     });
 
-    // === 2. Format Rupiah helper ===
+    // === 2. Helper format Rupiah ===
     const formatRupiah = (num) =>
-      new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(num);
+      new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+      }).format(num || 0);
 
-    // === 3. Generate Invoice PDF ===
+    // === 3. Buat PDF Invoice ===
     const generateInvoice = (order) => {
       return new Promise((resolve) => {
         const doc = new PDFDocument();
@@ -34,25 +38,29 @@ export default async function handler(req, res) {
 
         doc.fontSize(18).text("INVOICE RENTAL MOBIL", { align: "center" });
         doc.moveDown();
-        doc.fontSize(12).text(`Nama Client   : ${order.namaClient}`);
-        doc.text(`Nomor Telepon : ${order.telepon}`);
-        doc.text(`Mobil         : ${order.namaMobil}`);
-        doc.text(`Tipe Sewa     : ${order.rentalType}`);
-        doc.text(`Tanggal Mulai : ${order.tanggalMulai}`);
-        doc.text(`Tanggal Selesai: ${order.tanggalSelesai}`);
+
+        doc.fontSize(12);
+        doc.text(`Nama Client      : ${order.namaClient || "-"}`);
+        doc.text(`Nomor Telepon    : ${order.telepon || "-"}`);
+        doc.text(`Email             : ${order.email || "-"}`);
+        doc.text(`Mobil             : ${order.namaMobil || "-"}`);
+        doc.text(`Tipe Sewa         : ${order.rentalType || "-"}`);
+        doc.text(`Tanggal Mulai     : ${order.tanggalMulai || "-"}`);
+        doc.text(`Tanggal Selesai   : ${order.tanggalSelesai || "-"}`);
         doc.moveDown();
-        doc.text(`Harga per Hari : ${formatRupiah(order.hargaPerHari)}`);
-        doc.text(`Durasi         : ${order.durasiHari || 1} hari`);
-        doc.text(`Total Biaya    : ${formatRupiah(order.perkiraanHarga)}`);
-        doc.text(`DP 50%         : ${formatRupiah(order.dpAmount)}`);
-        doc.text(`Status         : ${order.status}`);
+        doc.text(`Durasi            : ${(order.durasiHari || 1) + " hari"}`);
+        doc.text(`Harga per Hari    : ${formatRupiah(order.hargaPerhari)}`);
+        doc.text(`Total Biaya       : ${formatRupiah(order.perkiraanHarga)}`);
+        doc.text(`DP 50%             : ${formatRupiah(order.dpAmount)}`);
+        doc.text(`Status             : ${order.status || "-"}`);
+
         doc.end();
       });
     };
 
     const pdfBuffer = await generateInvoice(order);
 
-    // === 4. Kirim Invoice via Email ===
+    // === 4. Kirim Email Invoice ===
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -65,15 +73,19 @@ export default async function handler(req, res) {
       from: `"Rental Mobil" <${process.env.EMAIL_USER}>`,
       to: order.email,
       subject: "Invoice Rental Mobil",
-      text: "Berikut invoice pemesanan rental mobil Anda.",
+      text: `Halo ${order.namaClient},\n\nBerikut kami lampirkan invoice untuk pemesanan rental mobil Anda.\n\nTerima kasih.`,
       attachments: [
-        { filename: `invoice-${order.namaClient}-${Date.now()}.pdf`, content: pdfBuffer },
+        {
+          filename: `invoice-${order.namaClient}-${Date.now()}.pdf`,
+          content: pdfBuffer,
+        },
       ],
     });
 
+    // === 5. Balas ke client ===
     return res.status(200).json({ success: true });
   } catch (err) {
-    console.error("Error:", err);
+    console.error("❌ Error:", err);
     return res.status(500).json({ error: err.message });
   }
 }
