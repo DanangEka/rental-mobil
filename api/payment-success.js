@@ -16,7 +16,9 @@ export default async function handler(req, res) {
     }
 
     // === 1. Kirim data ke Google Sheet ===
-    await axios.post(process.env.SHEET_WEBHOOK_URL, order);
+    await axios.post(process.env.SHEET_WEBHOOK_URL, order, {
+      headers: { "Content-Type": "application/json" },
+    });
 
     // === 2. Format Rupiah helper ===
     const formatRupiah = (num) =>
@@ -35,7 +37,7 @@ export default async function handler(req, res) {
         doc.fontSize(12).text(`Nama Client   : ${order.namaClient}`);
         doc.text(`Nomor Telepon : ${order.telepon}`);
         doc.text(`Mobil         : ${order.namaMobil}`);
-        doc.text(`Tipe Sewa     : ${order.tipeSewa}`);
+        doc.text(`Tipe Sewa     : ${order.rentalType}`);
         doc.text(`Tanggal Mulai : ${order.tanggalMulai}`);
         doc.text(`Tanggal Selesai: ${order.tanggalSelesai}`);
         doc.moveDown();
