@@ -142,46 +142,57 @@ export default function Home() {
     }
   };
 
-  const handlePaymentSubmit = async (order) => {
-    if (!paymentMethod[order.id] && !order.paymentMethod) {
-      alert("Silakan pilih metode pembayaran.");
-      return;
-    }
-    if (!paymentProof[order.id]) {
-      alert("Silakan unggah bukti pembayaran.");
-      return;
-    }
+const handlePaymentSubmit = async (order) => {
+  if (!paymentMethod[order.id] && !order.paymentMethod) {
+    alert("Silakan pilih metode pembayaran.");
+    return;
+  }
+  if (!paymentProof[order.id]) {
+    alert("Silakan unggah bukti pembayaran.");
+    return;
+  }
 
-    try {
-      const storageRef = ref(
-        storage,
-        `paymentProofs/${auth.currentUser.uid}_${order.mobilId}_${Date.now()}`
-      );
-      await uploadBytes(storageRef, paymentProof[order.id]);
-      const paymentProofURL = await getDownloadURL(storageRef);
+  try {
+    // 1. Upload gambar ke Cloudinary
+    const formData = new FormData();
+    formData.append("file", paymentProof[order.id]);
+    formData.append("upload_preset", process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET);
 
-      await updateDoc(doc(db, "pemesanan", order.id), {
-        paymentMethod: paymentMethod[order.id] || order.paymentMethod,
-        paymentProof: paymentProofURL,
-        paymentStatus: "submitted",
-      });
+    const cloudinaryRes = await axios.post(
+      `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      formData
+    );
 
-      // Call the payment-success API
-          const apiUrl =
+    const paymentProofURL = cloudinaryRes.data.secure_url;
+
+    // 2. Kirim data ke Google Sheets webhook / backend kamu
+    const apiUrl =
       process.env.NODE_ENV === "production"
-        ? "/api/payment-success" // saat sudah di-deploy di Vercel
-        : process.env.REACT_APP_SHEET_WEBHOOK_URL; // saat masih lokal
+        ? "/api/payment-success"
+        : process.env.REACT_APP_SHEET_WEBHOOK_URL;
 
-    await axios.post(apiUrl, order);
+    await axios.post(apiUrl, {
+      ...order,
+      paymentMethod: paymentMethod[order.id] || order.paymentMethod,
+      paymentProof: paymentProofURL,
+      paymentStatus: "submitted",
+      waktuUpload: new Date().toISOString(),
+    });
 
-      alert("Bukti Pembayaran Telah Terkirim");
-      // Refresh the orders to update the UI
-      setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, paymentStatus: "submitted", paymentProof: paymentProofURL } : o));
-    } catch (err) {
-      console.error("Gagal mengirim bukti pembayaran:", err);
-      alert("Terjadi kesalahan saat mengirim bukti pembayaran. Error: " + err.message);
-    }
-  };
+    // 3. Update state lokal agar UI berubah
+    alert("Bukti Pembayaran Telah Terkirim");
+    setUserOrders((prev) =>
+      prev.map((o) =>
+        o.id === order.id
+          ? { ...o, paymentStatus: "submitted", paymentProof: paymentProofURL }
+          : o
+      )
+    );
+  } catch (err) {
+    console.error("Gagal mengirim bukti pembayaran:", err);
+    alert("Terjadi kesalahan saat mengirim bukti pembayaran. Error: " + err.message);
+  }
+};
 
   return (
     <div
