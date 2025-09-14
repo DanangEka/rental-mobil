@@ -3,6 +3,14 @@ import nodemailer from "nodemailer";
 import PDFDocument from "pdfkit";
 
 export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end(); // untuk preflight
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -16,6 +24,26 @@ export default async function handler(req, res) {
     }
 
     // === 1. Kirim data ke Google Sheet (App Script Webhook) ===
+    const sheetData = {
+      namaMobil: order.namaMobil || "",
+      tanggalMulai: order.tanggalMulai || "",
+      tanggalSelesai: order.tanggalSelesai || "",
+      namaClient: order.namaClient || "",
+      telepon: order.telepon || "",
+      rentalType: order.rentalType || "",
+      perkiraanHarga: order.perkiraanHarga || "",
+      eventId: "", // kosong dulu
+      status: order.status || "",
+      dpAmount: order.dpAmount || "",
+      durasiHari: order.durasiHari || "",
+      email: order.email || "",
+      hargaPerhari: order.hargaPerhari || "",
+      mobilId: order.mobilId || "",
+      paymentStatus: order.paymentStatus || "",
+      tanggal: order.tanggal || "",
+      uid: order.uid || "",
+    };
+    
     await axios.post(process.env.SHEET_WEBHOOK_URL, order, {
       headers: { "Content-Type": "application/json" },
     });

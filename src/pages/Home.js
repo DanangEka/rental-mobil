@@ -1,4 +1,4 @@
-import { collection, doc, updateDoc, addDoc, query, where, onSnapshot } from "firebase/firestore";
+import { collection, doc, updateDoc, addDoc, query, where, onSnapshot, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "../services/firebase";
 import { useEffect, useState } from "react";
@@ -16,6 +16,22 @@ export default function Home() {
   const [userOrders, setUserOrders] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
+
+  const fetchUserData = async () => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        console.log("User data fetched:", data);
+        setUserData(data);
+      } else {
+        console.log("User document does not exist");
+      }
+    } catch (error) {
+      console.error("Gagal fetch user data:", error);
+    }
+  };
 
   // Ambil data mobil dan pemesanan user
   useEffect(() => {
@@ -48,6 +64,9 @@ export default function Home() {
     auth.currentUser.getIdTokenResult().then((idTokenResult) => {
       setIsAdmin(idTokenResult.claims.admin === true);
     });
+
+    // Fetch user data
+    fetchUserData();
 
     setLoading(false);
 
@@ -112,7 +131,7 @@ export default function Home() {
     if (selectedRentalType === "Driver") {
       perkiraanHarga += 250000;
     }
-
+    
     try {
       await addDoc(collection(db, "pemesanan"), {
         uid: auth.currentUser.uid,
@@ -123,11 +142,14 @@ export default function Home() {
         tanggalMulai: mulai,
         tanggalSelesai: selesai,
         durasiHari,
-        hargaPerHari: m.harga,
+        hargaPerhari: m.harga,
         perkiraanHarga,
         rentalType: selectedRentalType,
         status: "diproses",
         paymentStatus: "pending",
+        namaClient: userData?.nama || userData?.NamaLengkap || auth.currentUser.displayName || "",
+        telepon: userData?.nomorTelepon || userData?.NomorTelepon || auth.currentUser.phoneNumber || "",
+        dpAmount: perkiraanHarga * 0.5,
       });
 
       await updateDoc(doc(db, "mobil", m.id), {
@@ -169,7 +191,7 @@ const handlePaymentSubmit = async (order) => {
     const apiUrl =
       process.env.NODE_ENV === "production"
         ? "/api/payment-success"
-        : process.env.REACT_APP_SHEET_WEBHOOK_URL;
+        : process.env.SHEET_WEBHOOK_URL;
 
     await axios.post(apiUrl, {
       ...order,
