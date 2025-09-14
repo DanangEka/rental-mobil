@@ -9,6 +9,7 @@ import {
   onSnapshot
 } from "firebase/firestore";
 import axios from "axios";
+import jsPDF from "jspdf";
 
 export default function AdminDashboard() {
   const [pemesanan, setPemesanan] = useState([]);
@@ -99,6 +100,82 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Error calling payment success API:', err);
     }
+  };
+
+  const generateInvoicePDF = (order, user) => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("INVOICE SEWA MOBIL HARIAN", 105, 15, { align: "center" });
+    doc.setFontSize(12);
+    doc.text("Cakra Lima Tujuh", 105, 25, { align: "center" });
+    doc.text("Lembah Harapan, Blok AA-57, Lidah Wetan, Kec. Lakarsantri, Surabaya.", 105, 32, { align: "center" });
+    doc.text("Email: limatujuhcakra@gmail.com", 105, 39, { align: "center" });
+
+    doc.setLineWidth(0.5);
+    doc.line(15, 45, 195, 45);
+
+    let y = 55;
+    doc.text("Kepada Yth.,", 15, y);
+    y += 7;
+    doc.text(`Nama       : ${user?.nama || order.namaClient || "-"}`, 15, y);
+    y += 7;
+    doc.text(`Alamat     : ${user?.alamat || "-"}`, 15, y);
+    y += 7;
+    doc.text(`No. Telepon: ${user?.nomorTelepon || order.telepon || "-"}`, 15, y);
+
+    y += 15;
+    doc.setFontSize(14);
+    doc.text("Detail Rental Mobil", 15, y);
+    y += 7;
+
+    // Table headers
+    doc.setFontSize(12);
+    doc.setFillColor(220, 220, 220);
+    doc.rect(15, y, 90, 10, "F");
+    doc.rect(105, y, 90, 10, "F");
+    doc.setTextColor(0, 0, 0);
+    doc.text("Deskripsi", 20, y + 7);
+    doc.text("Detail", 110, y + 7);
+    y += 10;
+
+    // Table rows
+    const addRow = (desc, detail) => {
+      doc.rect(15, y, 90, 10);
+      doc.rect(105, y, 90, 10);
+      doc.text(desc, 20, y + 7);
+      doc.text(detail, 110, y + 7);
+      y += 10;
+    };
+
+    addRow("Merek Mobil", order.namaMobil || "-");
+    addRow("Plat Nomor", order.platNomor || "-");
+    addRow("Tanggal Sewa", order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString() : "-");
+    addRow("Tanggal Kembali", order.tanggalSelesai ? new Date(order.tanggalSelesai).toLocaleDateString() : "-");
+    addRow("Lama Sewa", (order.durasiHari || 1) + " Hari");
+    addRow("Harga Sewa per Hari", `Rp ${order.hargaPerhari?.toLocaleString() || "0"}`);
+
+    y += 10;
+    doc.setFontSize(14);
+    doc.text("Rincian Biaya", 15, y);
+    y += 7;
+
+    // Table headers for cost
+    doc.setFontSize(12);
+    doc.setFillColor(220, 220, 220);
+    doc.rect(15, y, 135, 10, "F");
+    doc.rect(150, y, 45, 10, "F");
+    doc.setTextColor(0, 0, 0);
+    doc.text("Deskripsi", 20, y + 7);
+    doc.text("Jumlah", 155, y + 7);
+    y += 10;
+
+    // Cost rows
+    addRow(`Biaya Sewa (${order.durasiHari || 1} Hari)`, `Rp ${order.perkiraanHarga?.toLocaleString() || "0"}`);
+    addRow("Biaya Driver", "Rp 0");
+    addRow("Total Pembayaran", `Rp ${order.perkiraanHarga.toLocaleString()}`);
+
+    // Open in new tab
+    const pdfData = doc.output('dataurlnewwindow');
   };
 
   const filteredPemesanan = pemesanan.filter(p => {
@@ -304,12 +381,20 @@ export default function AdminDashboard() {
                       </>
                     )}
                     {p.status === "pembayaran berhasil" && (
-                      <button
-                        onClick={() => handleStatus(p.id, "selesai", p.mobilId)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-                      >
-                        Selesai
-                      </button>
+                      <>
+                        <button
+                          onClick={() => generateInvoicePDF(p, user)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Lihat Invoice PDF
+                        </button>
+                        <button
+                          onClick={() => handleStatus(p.id, "selesai", p.mobilId)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Selesai
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

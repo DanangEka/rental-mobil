@@ -1,10 +1,9 @@
-# TODO: Update Home.js to use nama and nomorTelepon for namaClient and telepon
+# TODO: Add button to view invoice PDF in new tab on Admin Dashboard when payment is successful
 
 ## Steps to Complete:
-- [x] Add import for `doc` and `getDoc` from firebase/firestore
-- [x] Add state for `userData` using useState
-- [x] Add function to fetch user data from 'users' collection using auth.currentUser.uid
-- [x] Call the fetch function in useEffect after auth.currentUser check
-- [x] Update handleSewa to use userData.nama for namaClient and userData.nomorTelepon for telepon
-- [x] Add fallback values for namaClient and telepon if userData is not loaded
-- [ ] Test the changes by creating an order and verifying the values in the pemesanan collection
+- [x] Install jspdf package
+- [x] Import jspdf in AdminDashboard.js
+- [x] Create generateInvoicePDF function in AdminDashboard.js to generate PDF with order and user details
+- [x] Add "Lihat Invoice PDF" button in the "pembayaran berhasil" section in AdminDashboard.js
+- [x] Remove invoice button from Home.js
+- [x] Test the button opens the PDF invoice in a new tab with correct details

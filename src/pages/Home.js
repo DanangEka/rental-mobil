@@ -216,6 +216,8 @@ const handlePaymentSubmit = async (order) => {
   }
 };
 
+
+
   return (
     <div
       className={`min-h-screen bg-black ${mobil.length > 0 ? "pb-20" : ""}`}
@@ -376,7 +378,7 @@ const handlePaymentSubmit = async (order) => {
       </button>
     </div>
   );
-} else if (orderStatus === "pembayaran berhasil") {
+                        } else if (orderStatus === "pembayaran berhasil") {
                           return (
                             <div className="text-center py-6">
                               <div className="inline-flex items-center justify-center w-12 h-12 bg-green-900 rounded-full mb-3">
