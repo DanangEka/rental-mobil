@@ -18,7 +18,12 @@ export default function ProtectedRoute({ children, role }) {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setAllowed(data.role === role);
+        const userRole = data.role;
+        if (Array.isArray(role)) {
+          setAllowed(role.includes(userRole));
+        } else {
+          setAllowed(userRole === role);
+        }
       } else {
         setAllowed(false);
       }

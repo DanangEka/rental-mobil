@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from "../services/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, updateDoc } from "firebase/firestore";
-import { Menu, X, Home, User, LogIn, LogOut, Gauge, Car, Users, Bell } from "lucide-react";
+import { Menu, X, User, LogIn, LogOut, Gauge, Car, Users, Bell } from "lucide-react";
 import logo from "../assets/logo.png";
 
 export default function Navbar() {
@@ -72,24 +72,26 @@ export default function Navbar() {
     return () => unsubscribe();
   }, []);
 
-  const menu = [
-    { name: "Tentang Kami", path: "/company-profile", icon: <User size={20} /> },
-    ...(user && role === "client"
-      ? [
-          { name: "Profil", path: "/profil", icon: <User size={20} /> }
-        ]
-      : []),
-    ...(user && role === "admin"
-      ? [
-          { name: "Admin Dashboard", path: "/admin-dashboard", icon: <Gauge size={20} /> },
-          { name: "Manajemen Mobil", path: "/car-management", icon: <Car size={20} /> },
-          { name: "Manajemen Client", path: "/client-management", icon: <Users size={20} /> }
-        ]
-      : []),
-    ...(!user
-      ? [{ name: "Login", path: "/login", icon: <LogIn size={20} /> }]
-      : []),
-  ];
+    const menu = [
+      { name: "Tentang Kami", path: "/company-profile", icon: <User size={20} /> },
+      ...(user && role === "client"
+        ? [
+            { name: "Profil", path: "/profil", icon: <User size={20} /> },
+            { name: "List Mobil", path: "/home", icon: <Car size={20} /> }
+          ]
+        : []),
+      ...(user && role === "admin"
+        ? [
+            { name: "Admin Dashboard", path: "/admin-dashboard", icon: <Gauge size={20} /> },
+            { name: "List Mobil", path: "/home", icon: <Car size={20} /> },
+            { name: "Manajemen Mobil", path: "/car-management", icon: <Car size={20} /> },
+            { name: "Manajemen Client", path: "/client-management", icon: <Users size={20} /> }
+          ]
+        : []),
+      ...(!user
+        ? [{ name: "Login", path: "/login", icon: <LogIn size={20} /> }]
+        : []),
+    ];
 
   return (
     <>

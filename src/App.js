@@ -55,7 +55,7 @@ function App() {
         <Route
           path="/home"
           element={
-            <ProtectedRoute role="client">
+            <ProtectedRoute role={["client", "admin"]}>
               <ListMobil />
             </ProtectedRoute>
           }
