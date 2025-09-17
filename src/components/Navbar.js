@@ -167,7 +167,7 @@ export default function Navbar() {
           </Link>
         </div>
         {/* Optional: Add user info or additional elements here for larger screens */}
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="flex items-center space-x-4">
           {user ? (
             <>
               <button
