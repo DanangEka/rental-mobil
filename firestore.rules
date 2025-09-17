@@ -42,5 +42,14 @@ service cloud.firestore {
       );
     }
 
+    // === NOTIFICATIONS ===
+    match /notifications/{notifId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Admin can create notifications for users
+      allow create, update: if request.auth != null && request.auth.token.admin == true;
+    }
+
   }
 }

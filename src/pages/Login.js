@@ -31,13 +31,13 @@ export default function Login() {
           role: "client",
           createdAt: new Date(),
         });
-        navigate("/profil");
+        navigate("/");
       } else {
         const role = userDoc.data().role;
         if (role === "admin") {
-          navigate("/admin-dashboard");
+          navigate("/");
         } else if (role === "client") {
-          navigate("/profil");
+          navigate("/");
         } else {
           setError("Role tidak dikenali.");
         }
@@ -66,7 +66,7 @@ export default function Login() {
         });
       }
 
-      navigate("/profil");
+      navigate("/");
     } catch (err) {
       console.error("Google login error:", err);
       setError("Gagal login dengan Google.");
@@ -82,9 +82,9 @@ export default function Login() {
         if (userDoc.exists()) {
           const role = userDoc.data().role;
           if (role === "admin") {
-            navigate("/admin-dashboard");
+            navigate("/");
           } else if (role === "client") {
-            navigate("/profil");
+            navigate("/");
           }
         }
       }

@@ -1,17 +1,28 @@
-import { auth } from "../services/firebase";
+import { useEffect, useState } from "react";
 import { Instagram, MapPin, Phone } from "lucide-react";
 import logo from "../assets/logo.png";
 
 export default function CompanyProfile() {
-  if (!auth.currentUser) {
-    return <div className="p-4 text-white">Silakan login terlebih dahulu.</div>;
-  }
+  const [animate, setAnimate] = useState(false);
+
+  useEffect(() => {
+    setAnimate(true);
+  }, []);
 
   return (
-    <div className="p-4 min-h-screen" style={{ backgroundColor: '#010101' }}>
+    <div
+      className={`p-4 min-h-screen transition-opacity duration-700 ${
+        animate ? "opacity-100" : "opacity-0"
+      }`}
+      style={{ backgroundColor: "#010101" }}
+    >
       {/* Logo */}
       <div className="flex justify-center mb-8">
-        <img src={logo} alt="Logo" className="h-32 w-32 rounded-full object-contain shadow-2xl border-4 border-red-600" />
+        <img
+          src={logo}
+          alt="Logo"
+          className="h-32 w-32 rounded-full object-contain shadow-2xl border-4 border-red-600"
+        />
       </div>
 
       {/* Informasi Usaha */}

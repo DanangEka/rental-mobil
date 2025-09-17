@@ -3,18 +3,29 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../services/firebase";
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { setDoc, doc, serverTimestamp } from "firebase/firestore";
-
 export default function SignUp() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     nama: "",
     alamat: "",
+    provinsi: "",
+    kabupaten: "",
+    kecamatan: "",
+    kelurahan: "",
+    rt: "",
+    rw: "",
     nomorTelepon: "",
     email: "",
     password: "",
     ktpFile: null,
+    penanggungJawab: "",
+    penanggungJawabAlamat: "",
+    penanggungJawabTelepon: "",
   });
   const [loading, setLoading] = useState(false);
+  const [showPenanggungJawab, setShowPenanggungJawab] = useState(false);
+
+  const javaProvinces = ["banten", "dki jakarta", "jawa barat", "jawa tengah", "jawa timur", "di yogyakarta"];
 
   // 🔹 fungsi upload ke Cloudinary
   const uploadToCloudinary = async (file) => {
@@ -52,12 +63,23 @@ export default function SignUp() {
     if (
       !form.nama ||
       !form.alamat ||
+      !form.provinsi ||
+      !form.kabupaten ||
+      !form.kecamatan ||
+      !form.kelurahan ||
+      !form.rt ||
+      !form.rw ||
       !form.nomorTelepon ||
       !form.email ||
       !form.password ||
       !form.ktpFile
     ) {
       alert("Semua field harus diisi!");
+      return;
+    }
+
+    if (showPenanggungJawab && (!form.penanggungJawab.trim() || !form.penanggungJawabAlamat.trim() || !form.penanggungJawabTelepon.trim())) {
+      alert("Semua field penanggung jawab harus diisi untuk provinsi di luar Jawa!");
       return;
     }
 
@@ -85,9 +107,18 @@ export default function SignUp() {
         uid: user.uid,
         nama: form.nama,
         alamat: form.alamat,
+        provinsi: form.provinsi,
+        kabupaten: form.kabupaten,
+        kecamatan: form.kecamatan,
+        kelurahan: form.kelurahan,
+        rt: form.rt,
+        rw: form.rw,
         nomorTelepon: form.nomorTelepon,
         email: form.email,
         ktpURL: ktpURL,
+        penanggungJawab: form.penanggungJawab,
+        penanggungJawabAlamat: form.penanggungJawabAlamat,
+        penanggungJawabTelepon: form.penanggungJawabTelepon,
         role: "client",
         createdAt: serverTimestamp(),
       });
@@ -97,8 +128,8 @@ export default function SignUp() {
       await signOut(auth);
       console.log("✅ User berhasil logout setelah signup.");
 
-      alert("Pendaftaran berhasil! Silakan login dengan akun Anda.");
-      navigate("/login");
+      alert("Pendaftaran berhasil! Selamat datang di Cakra Lima Tujuh.");
+      navigate("/");
     } catch (error) {
       console.error("❌ Gagal di step signup:", error);
       alert("Gagal mendaftar: " + error.message);
@@ -107,6 +138,8 @@ export default function SignUp() {
       console.log("👉 Proses signup selesai.");
     }
   };
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-red-900 via-red-700 to-red-900 py-8 px-4">
@@ -136,49 +169,15 @@ export default function SignUp() {
                 name="nama"
                 value={form.nama}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-800 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors placeholder-gray-400"
+                className="w-full px-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors placeholder-gray-500"
                 placeholder="Masukkan nama lengkap Anda"
                 required
               />
             </div>
 
-            {/* Alamat */}
-            <div className="md:col-span-2">
-              <label htmlFor="alamat" className="block text-sm font-semibold text-gray-700 mb-2">
-                Alamat
-              </label>
-              <textarea
-                id="alamat"
-                name="alamat"
-                value={form.alamat}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500 resize-none"
-                rows={4}
-                placeholder="Masukkan alamat lengkap Anda"
-                required
-              />
-            </div>
-
-            {/* Nomor Telepon */}
-            <div>
-              <label htmlFor="nomorTelepon" className="block text-sm font-semibold text-gray-700 mb-2">
-                Nomor Telepon
-              </label>
-              <input
-                type="tel"
-                id="nomorTelepon"
-                name="nomorTelepon"
-                value={form.nomorTelepon}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
-                placeholder="Masukkan nomor telepon"
-                required
-              />
-            </div>
-
             {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+            <div className="md:col-span-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-red-300 mb-2">
                 Email
               </label>
               <input
@@ -187,7 +186,7 @@ export default function SignUp() {
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
                 placeholder="Masukkan email Anda"
                 required
               />
@@ -195,7 +194,7 @@ export default function SignUp() {
 
             {/* Password */}
             <div className="md:col-span-2">
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-semibold text-red-300 mb-2">
                 Password
               </label>
               <input
@@ -204,15 +203,209 @@ export default function SignUp() {
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
                 placeholder="Masukkan password Anda"
                 required
               />
             </div>
 
+            {/* Nomor Telepon */}
+            <div className="md:col-span-2">
+              <label htmlFor="nomorTelepon" className="block text-sm font-semibold text-red-300 mb-2">
+                Nomor Telepon
+              </label>
+              <input
+                type="tel"
+                id="nomorTelepon"
+                name="nomorTelepon"
+                value={form.nomorTelepon}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                placeholder="Masukkan nomor telepon"
+                required
+              />
+            </div>
+
+            {/* Provinsi */}
+            <div>
+              <label htmlFor="provinsi" className="block text-sm font-semibold text-red-300 mb-2">
+                Provinsi
+              </label>
+              <input
+                type="text"
+                id="provinsi"
+                name="provinsi"
+                value={form.provinsi}
+                onChange={handleChange}
+                onBlur={() => {
+                  if (form.provinsi.trim() && !javaProvinces.includes(form.provinsi.toLowerCase())) {
+                    setShowPenanggungJawab(true);
+                  } else {
+                    setShowPenanggungJawab(false);
+                  }
+                }}
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                placeholder="Masukkan Provinsi"
+                required
+              />
+            </div>
+
+            {/* Kabupaten */}
+            <div>
+              <label htmlFor="kabupaten" className="block text-sm font-semibold text-red-300 mb-2">
+                Kabupaten
+              </label>
+              <input
+                type="text"
+                id="kabupaten"
+                name="kabupaten"
+                value={form.kabupaten}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                placeholder="Masukkan Kabupaten"
+                required
+              />
+            </div>
+
+            {/* Kecamatan */}
+            <div>
+              <label htmlFor="kecamatan" className="block text-sm font-semibold text-red-300 mb-2">
+                Kecamatan
+              </label>
+              <input
+                type="text"
+                id="kecamatan"
+                name="kecamatan"
+                value={form.kecamatan}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                placeholder="Masukkan Kecamatan"
+                required
+              />
+            </div>
+
+            {/* Kelurahan */}
+            <div>
+              <label htmlFor="kelurahan" className="block text-sm font-semibold text-red-300 mb-2">
+                Kelurahan / Desa
+              </label>
+              <input
+                type="text"
+                id="kelurahan"
+                name="kelurahan"
+                value={form.kelurahan}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                placeholder="Masukkan Kelurahan / Desa"
+                required
+              />
+            </div>
+
+            {/* RT */}
+            <div>
+              <label htmlFor="rt" className="block text-sm font-semibold text-red-300 mb-2">
+                RT
+              </label>
+              <input
+                type="text"
+                id="rt"
+                name="rt"
+                value={form.rt}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                placeholder="Masukkan RT"
+                required
+              />
+            </div>
+
+            {/* RW */}
+            <div>
+              <label htmlFor="rw" className="block text-sm font-semibold text-red-300 mb-2">
+                RW
+              </label>
+              <input
+                type="text"
+                id="rw"
+                name="rw"
+                value={form.rw}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                placeholder="Masukkan RW"
+                required
+              />
+            </div>
+
+            {/* Alamat */}
+            <div className="md:col-span-2">
+              <label htmlFor="alamat" className="block text-sm font-semibold text-red-300 mb-2">
+                Alamat Lengkap
+              </label>
+              <textarea
+                id="alamat"
+                name="alamat"
+                value={form.alamat}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500 resize-none"
+                rows={4}
+                placeholder="Masukkan alamat lengkap Anda"
+                required
+              />
+            </div>
+
+            {/* Penanggung Jawab */}
+            {showPenanggungJawab && (
+              <>
+                <div className="md:col-span-2">
+                  <label htmlFor="penanggungJawab" className="block text-sm font-semibold text-red-300 mb-2">
+                    Nama Penanggung Jawab
+                  </label>
+                  <input
+                    type="text"
+                    id="penanggungJawab"
+                    name="penanggungJawab"
+                    value={form.penanggungJawab}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                    placeholder="Masukkan nama penanggung jawab"
+                    required
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="penanggungJawabAlamat" className="block text-sm font-semibold text-red-300 mb-2">
+                    Alamat Lengkap Penanggung Jawab
+                  </label>
+                  <textarea
+                    id="penanggungJawabAlamat"
+                    name="penanggungJawabAlamat"
+                    value={form.penanggungJawabAlamat}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500 resize-none"
+                    rows={4}
+                    placeholder="Masukkan alamat lengkap penanggung jawab"
+                    required
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="penanggungJawabTelepon" className="block text-sm font-semibold text-red-300 mb-2">
+                    Nomor Telepon Penanggung Jawab
+                  </label>
+                  <input
+                    type="tel"
+                    id="penanggungJawabTelepon"
+                    name="penanggungJawabTelepon"
+                    value={form.penanggungJawabTelepon}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 placeholder-gray-500"
+                    placeholder="Masukkan nomor telepon penanggung jawab"
+                    required
+                  />
+                </div>
+              </>
+            )}
+
             {/* KTP */}
             <div className="md:col-span-2">
-              <label htmlFor="ktpFile" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="ktpFile" className="block text-sm font-semibold text-red-300 mb-2">
                 Upload Foto KTP
               </label>
               <input
@@ -221,7 +414,7 @@ export default function SignUp() {
                 name="ktpFile"
                 accept="image/*"
                 onChange={handleChange}
-                className="w-full text-gray-700 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors file:cursor-pointer"
+                className="w-full text-gray-900 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors file:cursor-pointer"
                 required
               />
               <p className="text-xs text-gray-500 mt-1">

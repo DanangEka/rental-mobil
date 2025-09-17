@@ -1,12 +1,14 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login"; // Ganti dari LoginClient/LoginAdmin jadi satu Login.jsx
-import Home from "./pages/Home";
+import LandingPage from "./pages/LandingPage";
+import ListMobil from "./pages/ListMobil";
 import AdminDashboard from "./pages/AdminDashboard";
 import CarManagement from "./pages/CarManagement";
 import ClientManagement from "./pages/ClientManagement";
 import Profile from "./pages/Profile";
 import CompanyProfile from "./pages/CompanyProfile";
 import SignUp from "./pages/SignUp";
+
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -50,7 +52,16 @@ function App() {
         />
         <Route path="/company-profile" element={<CompanyProfile />} />
         <Route path="/signup" element={<SignUp />} />
-        <Route path="/" element={<Home />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute role="client">
+              <ListMobil />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/" element={<LandingPage />} />
       </Routes>
     </Router>
   );

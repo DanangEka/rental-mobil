@@ -33,7 +33,7 @@ export default function Home() {
     }
   };
 
-  // Ambil data mobil dan pemesanan user
+  // Ambil data mobil
   useEffect(() => {
     if (!auth.currentUser) {
       navigate("/login");
@@ -51,15 +51,6 @@ export default function Home() {
       );
     });
 
-    // Realtime listener pemesanan user
-    const ordersQuery = query(
-      collection(db, "pemesanan"),
-      where("uid", "==", auth.currentUser.uid)
-    );
-    const unsubscribeOrders = onSnapshot(ordersQuery, (snapshot) => {
-      setUserOrders(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-    });
-
     // Cek admin role
     auth.currentUser.getIdTokenResult().then((idTokenResult) => {
       setIsAdmin(idTokenResult.claims.admin === true);
@@ -72,9 +63,32 @@ export default function Home() {
 
     return () => {
       unsubscribeMobil();
-      unsubscribeOrders();
     };
   }, [navigate]);
+
+  // Realtime listener pemesanan user or all orders if admin
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    let unsubscribeOrders;
+    if (isAdmin) {
+      unsubscribeOrders = onSnapshot(collection(db, "pemesanan"), (snapshot) => {
+        setUserOrders(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      });
+    } else {
+      const ordersQuery = query(
+        collection(db, "pemesanan"),
+        where("uid", "==", auth.currentUser.uid)
+      );
+      unsubscribeOrders = onSnapshot(ordersQuery, (snapshot) => {
+        setUserOrders(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      });
+    }
+
+    return () => {
+      if (unsubscribeOrders) unsubscribeOrders();
+    };
+  }, [isAdmin]);
 
   const handleTanggalChange = (id, type, value) => {
     if (type === "mulai") {
@@ -552,6 +566,53 @@ const handlePaymentSubmit = async (order) => {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Section for Admin to view all incoming orders */}
+        {isAdmin && userOrders.length > 0 && (
+          <div className="max-w-7xl mx-auto px-4 py-8 md:px-6 md:py-12 lg:px-8">
+            <h2 className="text-2xl font-bold text-white mb-6">Pesanan Masuk</h2>
+            <div className="space-y-4">
+              {userOrders.map((order) => (
+                <div key={order.id} className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <span className="text-sm text-gray-400">Mobil</span>
+                      <p className="text-white font-semibold">{order.namaMobil}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-400">Email Client</span>
+                      <p className="text-white">{order.email}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-400">Tanggal Sewa</span>
+                      <p className="text-white">
+                        {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString() : 'N/A'} - {order.tanggalSelesai ? new Date(order.tanggalSelesai).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-400">Status</span>
+                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                        order.status === 'diproses' ? 'bg-yellow-600 text-white' :
+                        order.status === 'disetujui' ? 'bg-green-600 text-white' :
+                        order.status === 'menunggu pembayaran' ? 'bg-orange-600 text-white' :
+                        order.status === 'pembayaran berhasil' ? 'bg-blue-600 text-white' :
+                        order.status === 'selesai' ? 'bg-purple-600 text-white' :
+                        order.status === 'ditolak' ? 'bg-red-600 text-white' :
+                        'bg-gray-600 text-white'
+                      }`}>
+                        {order.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <span className="text-sm text-gray-400">Total Biaya</span>
+                    <p className="text-green-400 font-bold">Rp {order.perkiraanHarga?.toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

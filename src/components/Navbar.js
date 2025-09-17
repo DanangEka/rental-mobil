@@ -2,18 +2,33 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from "../services/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { Menu, X, Home, User, LogIn, LogOut, Gauge, Car, Users } from "lucide-react";
+import { doc, getDoc, collection, query, where, orderBy, onSnapshot, updateDoc } from "firebase/firestore";
+import { Menu, X, Home, User, LogIn, LogOut, Gauge, Car, Users, Bell } from "lucide-react";
 import logo from "../assets/logo.png";
 
 export default function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
+  const toggleNotification = () => {
+    setNotificationOpen(!notificationOpen);
+    if (!notificationOpen && unreadCount > 0) {
+      // Mark all as read
+      notifications.forEach(async (notif) => {
+        if (!notif.read) {
+          await updateDoc(doc(db, "notifications", notif.id), { read: true });
+        }
+      });
+    }
+  };
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -32,18 +47,37 @@ export default function Navbar() {
         if (docSnap.exists()) {
           setRole(docSnap.data().role);
         }
+        // Fetch notifications for the user
+        const q = query(collection(db, "notifications"), where("userId", "==", currentUser.uid), orderBy("timestamp", "desc"));
+        const unsubscribeNotifications = onSnapshot(q, (querySnapshot) => {
+          const notifs = [];
+          let unread = 0;
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            notifs.push({ id: doc.id, ...data });
+            if (!data.read) unread++;
+          });
+          setNotifications(notifs);
+          setUnreadCount(unread);
+        });
+        return () => {
+          unsubscribeNotifications();
+        };
       } else {
         setRole(null);
+        setNotifications([]);
+        setUnreadCount(0);
       }
     });
     return () => unsubscribe();
   }, []);
 
   const menu = [
-    { name: "Home", path: "/", icon: <Home size={20} /> },
-    { name: "Profil Perusahaan", path: "/company-profile", icon: <User size={20} /> },
+    { name: "Tentang Kami", path: "/company-profile", icon: <User size={20} /> },
     ...(user && role === "client"
-      ? [{ name: "Profil", path: "/profil", icon: <User size={20} /> }]
+      ? [
+          { name: "Profil", path: "/profil", icon: <User size={20} /> }
+        ]
       : []),
     ...(user && role === "admin"
       ? [
@@ -120,9 +154,11 @@ export default function Navbar() {
           >
             <Menu className="text-white w-6 h-6" />
           </button>
-          <img src={logo} alt="Logo" className="h-10 w-10 rounded-full shadow-md" />
+          <Link to="/">
+            <img src={logo} alt="Logo" className="h-10 w-10 rounded-full shadow-md" />
+          </Link>
           <Link
-            to={user ? "/" : "/login"}
+            to="/"
             className="font-bold text-xl md:text-2xl tracking-wide hover:text-red-200 transition-colors duration-200"
           >
             Cakra Lima Tujuh
@@ -130,13 +166,64 @@ export default function Navbar() {
         </div>
         {/* Optional: Add user info or additional elements here for larger screens */}
         <div className="hidden md:flex items-center space-x-4">
-          {user && (
-            <span className="text-sm text-red-200">
-              Welcome, {user.email?.split('@')[0]}
-            </span>
+          {user ? (
+            <>
+              <button
+                onClick={toggleNotification}
+                className="relative p-2 hover:bg-red-700 rounded-lg transition-colors duration-200"
+              >
+                <Bell className="text-white w-6 h-6" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              <span className="text-sm text-red-200">
+                Welcome, {user.email?.split('@')[0]}
+              </span>
+            </>
+          ) : (
+            <div className="flex items-center space-x-4">
+              <Link
+                to="/login"
+                className="px-4 py-2 bg-transparent border border-red-300 text-red-200 rounded-lg hover:bg-red-700 hover:text-white transition-colors duration-200 font-medium"
+              >
+                Login
+              </Link>
+              <Link
+                to="/signup"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium"
+              >
+                Sign Up
+              </Link>
+            </div>
           )}
         </div>
       </nav>
+
+      {/* Notification Dropdown */}
+      {notificationOpen && user && (
+        <div className="absolute top-16 right-4 bg-white border border-gray-300 rounded-lg shadow-lg z-50 w-80 max-h-96 overflow-y-auto">
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800">Notifikasi</h3>
+          </div>
+          <div className="p-2">
+            {notifications.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">Tidak ada notifikasi</p>
+            ) : (
+              notifications.map((notif) => (
+                <div key={notif.id} className={`p-3 border-b border-gray-100 ${!notif.read ? 'bg-blue-50' : ''}`}>
+                  <p className="text-sm text-gray-800">{notif.message}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {new Date(notif.timestamp?.toDate()).toLocaleString()}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

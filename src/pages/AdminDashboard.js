@@ -6,7 +6,9 @@ import {
   updateDoc,
   doc,
   getDoc,
-  onSnapshot
+  onSnapshot,
+  addDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import axios from "axios";
 import jsPDF from "jspdf";
@@ -68,10 +70,12 @@ export default function AdminDashboard() {
   }, [isAdmin]);
 
   const handleStatus = async (id, status, mobilId) => {
+    const pemesananDoc = await getDoc(doc(db, "pemesanan", id));
+    const pemesananData = pemesananDoc.data();
+    const userId = pemesananData.uid;
+
     await updateDoc(doc(db, "pemesanan", id), { status });
     if (status === "disetujui") {
-      const pemesananDoc = await getDoc(doc(db, "pemesanan", id));
-      const pemesananData = pemesananDoc.data();
       const dpAmount = Math.ceil(pemesananData.perkiraanHarga * 0.5);
       await updateDoc(doc(db, "pemesanan", id), {
         status: "menunggu pembayaran",
@@ -79,10 +83,31 @@ export default function AdminDashboard() {
         paymentStatus: "pending"
       });
       await updateDoc(doc(db, "mobil", mobilId), { tersedia: false, status: "disewa" });
+      // Send notification
+      await addDoc(collection(db, "notifications"), {
+        userId,
+        message: `Pemesanan mobil ${pemesananData.namaMobil} telah disetujui. Silakan lakukan pembayaran DP sebesar Rp ${dpAmount.toLocaleString()}.`,
+        read: false,
+        timestamp: serverTimestamp()
+      });
     } else if (status === "ditolak") {
       await updateDoc(doc(db, "mobil", mobilId), { tersedia: true, status: "normal" });
+      // Send notification
+      await addDoc(collection(db, "notifications"), {
+        userId,
+        message: `Pemesanan mobil ${pemesananData.namaMobil} telah ditolak.`,
+        read: false,
+        timestamp: serverTimestamp()
+      });
     } else if (status === "selesai") {
       await updateDoc(doc(db, "mobil", mobilId), { tersedia: true, status: "normal" });
+      // Send notification
+      await addDoc(collection(db, "notifications"), {
+        userId,
+        message: `Pemesanan mobil ${pemesananData.namaMobil} telah selesai. Terima kasih telah menggunakan layanan kami.`,
+        read: false,
+        timestamp: serverTimestamp()
+      });
     }
   };
 
@@ -93,6 +118,14 @@ export default function AdminDashboard() {
     await updateDoc(doc(db, "pemesanan", id), {
       status: status,
       paymentStatus: "completed"
+    });
+
+    // Send notification
+    await addDoc(collection(db, "notifications"), {
+      userId: order.uid,
+      message: `Pembayaran untuk pemesanan mobil ${order.namaMobil} telah dikonfirmasi. Pemesanan Anda siap untuk digunakan.`,
+      read: false,
+      timestamp: serverTimestamp()
     });
 
     try {
