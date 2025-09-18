@@ -1,4 +1,4 @@
-import { collection, doc, updateDoc, addDoc, query, where, onSnapshot, getDoc } from "firebase/firestore";
+import { collection, doc, updateDoc, addDoc, query, where, onSnapshot, getDoc, getDocs, orderBy, Timestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "../services/firebase";
 import { useEffect, useState } from "react";
@@ -17,6 +17,35 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
+
+  const addNotification = async (message) => {
+    try {
+      console.log("Adding notification for user:", auth.currentUser.uid, "message:", message);
+      await addDoc(collection(db, "notifications"), {
+        userId: auth.currentUser.uid,
+        message,
+        timestamp: Timestamp.now(),
+        read: false,
+      });
+      console.log("Notification added successfully");
+    } catch (error) {
+      console.error("Failed to add notification:", error);
+    }
+  };
+
+  const addAdminNotification = async (message) => {
+    try {
+      await addDoc(collection(db, "notifications"), {
+        userId: "admin",
+        message,
+        timestamp: Timestamp.now(),
+        read: false,
+      });
+      console.log("Admin notification added successfully");
+    } catch (error) {
+      console.error("Failed to add admin notification:", error);
+    }
+  };
 
   const fetchUserData = async () => {
     try {
@@ -171,7 +200,8 @@ export default function Home() {
         tersedia: false,
       });
 
-      alert("Pemesanan berhasil! Silakan tunggu konfirmasi.");
+      await addNotification("Pemesanan berhasil! Silakan tunggu konfirmasi.");
+      await addAdminNotification(`Pesanan baru dari ${auth.currentUser.email}: ${m.nama}`);
     } catch (err) {
       console.error("Gagal menyewa:", err);
       alert("Terjadi kesalahan saat menyewa. Error: " + err.message);
@@ -216,7 +246,8 @@ const handlePaymentSubmit = async (order) => {
     });
 
     // 3. Update state lokal agar UI berubah
-    alert("Bukti Pembayaran Telah Terkirim");
+    await addNotification("Bukti Pembayaran Telah Terkirim");
+    await addAdminNotification(`Pembayaran diterima dari ${order.email}: ${order.namaMobil}`);
     setUserOrders((prev) =>
       prev.map((o) =>
         o.id === order.id

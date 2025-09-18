@@ -8,6 +8,7 @@ import {
   deleteDoc
 } from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
+import DataTable from 'react-data-table-component';
 
 export default function ClientManagement() {
   const [clients, setClients] = useState([]);
@@ -32,6 +33,101 @@ export default function ClientManagement() {
            c.alamat?.toLowerCase().includes(searchClients.toLowerCase()) ||
            c.nomorTelepon?.includes(searchClients);
   });
+
+  const columns = [
+    {
+      name: 'KTP',
+      cell: row => (
+        <img
+          src={row.ktpURL}
+          alt="KTP"
+          className="w-16 h-16 object-cover rounded"
+          onError={(e) => {
+            e.target.src = 'https://via.placeholder.com/64x64?text=KTP';
+          }}
+        />
+      ),
+      width: '100px'
+    },
+    {
+      name: 'Nama Lengkap',
+      cell: row => (
+        <input
+          type="text"
+          value={row.nama}
+          onChange={e => handleEditClient(row.id, "nama", e.target.value)}
+          className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
+        />
+      ),
+      sortable: true
+    },
+    {
+      name: 'Email',
+      cell: row => (
+        <input
+          type="email"
+          value={row.email}
+          onChange={e => handleEditClient(row.id, "email", e.target.value)}
+          className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
+        />
+      ),
+      sortable: true
+    },
+    {
+      name: 'Alamat',
+      cell: row => (
+        <textarea
+          value={row.alamat}
+          onChange={e => handleEditClient(row.id, "alamat", e.target.value)}
+          className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500 resize-none"
+          rows={2}
+        />
+      ),
+      sortable: true
+    },
+    {
+      name: 'Nomor Telepon',
+      cell: row => (
+        <input
+          type="text"
+          value={row.nomorTelepon}
+          onChange={e => handleEditClient(row.id, "nomorTelepon", e.target.value)}
+          className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
+        />
+      ),
+      sortable: true
+    },
+    {
+      name: 'Role',
+      selector: row => row.role,
+      sortable: true
+    },
+    {
+      name: 'Dibuat',
+      selector: row => row.createdAt ? new Date(row.createdAt.seconds * 1000).toLocaleDateString() : 'N/A',
+      sortable: true
+    },
+    {
+      name: 'Aksi',
+      cell: row => (
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleResetPassword(row.email)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+          >
+            Reset Password
+          </button>
+          <button
+            onClick={() => handleDeleteClient(row.id)}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+          >
+            Hapus
+          </button>
+        </div>
+      ),
+      width: '200px'
+    }
+  ];
 
   const checkAdmin = async () => {
     const user = auth.currentUser;
@@ -117,96 +213,37 @@ export default function ClientManagement() {
             />
           </div>
         </div>
-        {/* Clients Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Clients DataTable */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
           {filteredClients.length === 0 ? (
-            <div className="col-span-full text-center py-12">
+            <div className="text-center py-12">
               <div className="text-gray-400 text-lg">Tidak ada client yang ditemukan</div>
             </div>
           ) : (
-            filteredClients.map(c => (
-              <div key={c.id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 border border-gray-100 overflow-hidden">
-                {/* KTP Image */}
-                <div className="aspect-video bg-gray-100">
-                  <img
-                    src={c.ktpURL}
-                    alt="KTP"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.src = 'https://via.placeholder.com/400x200?text=KTP+Not+Available';
-                    }}
-                  />
-                </div>
-
-                {/* Client Info */}
-                <div className="p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-                    <input
-                      type="text"
-                      value={c.nama}
-                      onChange={e => handleEditClient(c.id, "nama", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors font-semibold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input
-                      type="email"
-                      value={c.email}
-                      onChange={e => handleEditClient(c.id, "email", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
-                    <textarea
-                      value={c.alamat}
-                      onChange={e => handleEditClient(c.id, "alamat", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors resize-none"
-                      rows={2}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nomor Telepon</label>
-                    <input
-                      type="text"
-                      value={c.nomorTelepon}
-                      onChange={e => handleEditClient(c.id, "nomorTelepon", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                    />
-                  </div>
-
-                  <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
-                    <div className="flex justify-between items-center">
-                      <span>Role: <span className="font-medium text-gray-900">{c.role}</span></span>
-                      <span>Dibuat: <span className="font-medium text-gray-900">
-                        {c.createdAt ? new Date(c.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
-                      </span></span>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      onClick={() => handleResetPassword(c.email)}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 font-semibold shadow-md hover:shadow-lg"
-                    >
-                      Reset Password
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClient(c.id)}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 font-semibold shadow-md hover:shadow-lg"
-                    >
-                      Hapus
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
+            <DataTable
+              columns={columns}
+              data={filteredClients}
+              pagination
+              paginationPerPage={10}
+              paginationRowsPerPageOptions={[5, 10, 15, 20]}
+              highlightOnHover
+              striped
+              responsive
+              customStyles={{
+                headCells: {
+                  style: {
+                    backgroundColor: '#dc2626',
+                    color: 'white',
+                    fontWeight: 'bold'
+                  }
+                },
+                rows: {
+                  style: {
+                    minHeight: '72px'
+                  }
+                }
+              }}
+            />
           )}
         </div>
       </div>

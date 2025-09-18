@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from "../services/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, updateDoc } from "firebase/firestore";
-import { Menu, X, User, LogIn, LogOut, Gauge, Car, Users, Bell } from "lucide-react";
+import { Menu, X, User, LogIn, LogOut, Gauge, Car, Users, Bell, ClipboardList, TrendingUp } from "lucide-react";
 import logo from "../assets/logo.png";
 
 export default function Navbar() {
@@ -46,23 +46,14 @@ export default function Navbar() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setRole(docSnap.data().role);
-        }
-        // Fetch notifications for the user
-        const q = query(collection(db, "notifications"), where("userId", "==", currentUser.uid), orderBy("timestamp", "desc"));
-        const unsubscribeNotifications = onSnapshot(q, (querySnapshot) => {
-          const notifs = [];
-          let unread = 0;
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            notifs.push({ id: doc.id, ...data });
-            if (!data.read) unread++;
+        } else {
+          // If no document, check if admin via claims
+          currentUser.getIdTokenResult().then((idTokenResult) => {
+            if (idTokenResult.claims.admin === true) {
+              setRole("admin");
+            }
           });
-          setNotifications(notifs);
-          setUnreadCount(unread);
-        });
-        return () => {
-          unsubscribeNotifications();
-        };
+        }
       } else {
         setRole(null);
         setNotifications([]);
@@ -71,6 +62,59 @@ export default function Navbar() {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user || role === undefined) return;
+
+    const unsubscribes = [];
+
+    // Always fetch user notifications
+    const qUser = query(collection(db, "notifications"), where("userId", "==", user.uid), orderBy("timestamp", "desc"));
+    const unsubscribeUser = onSnapshot(qUser, (querySnapshot) => {
+      console.log("User notifications snapshot:", querySnapshot.docs.length);
+      const userNotifs = [];
+      let userUnread = 0;
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        console.log("User notification data:", data);
+        userNotifs.push({ id: doc.id, ...data });
+        if (!data.read) userUnread++;
+      });
+
+      // If admin, also fetch admin notifications
+      if (role === "admin") {
+        const qAdmin = query(collection(db, "notifications"), where("userId", "==", "admin"), orderBy("timestamp", "desc"));
+        const unsubscribeAdmin = onSnapshot(qAdmin, (adminSnapshot) => {
+          console.log("Admin notifications snapshot:", adminSnapshot.docs.length);
+          const adminNotifs = [];
+          let adminUnread = 0;
+          adminSnapshot.forEach((doc) => {
+            const data = doc.data();
+            console.log("Admin notification data:", data);
+            adminNotifs.push({ id: doc.id, ...data });
+            if (!data.read) adminUnread++;
+          });
+
+          // Merge and sort
+          const allNotifs = [...userNotifs, ...adminNotifs].sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+          const allUnread = userUnread + adminUnread;
+          console.log("Setting all notifications:", allNotifs, "unread:", allUnread);
+          setNotifications(allNotifs);
+          setUnreadCount(allUnread);
+        });
+        unsubscribes.push(unsubscribeAdmin);
+      } else {
+        console.log("Setting user notifications:", userNotifs, "unread:", userUnread);
+        setNotifications(userNotifs);
+        setUnreadCount(userUnread);
+      }
+    });
+    unsubscribes.push(unsubscribeUser);
+
+    return () => {
+      unsubscribes.forEach(unsub => unsub());
+    };
+  }, [user, role]);
 
     const menu = [
       { name: "Tentang Kami", path: "/company-profile", icon: <User size={20} /> },
@@ -82,7 +126,8 @@ export default function Navbar() {
         : []),
       ...(user && role === "admin"
         ? [
-            { name: "Admin Dashboard", path: "/admin-dashboard", icon: <Gauge size={20} /> },
+            { name: "Admin Dashboard", path: "/admin-dashboard", icon: <TrendingUp size={20} /> },
+            { name: "Manajemen Pesanan", path: "/manajemen-pesanan", icon: <ClipboardList size={20} /> },
             { name: "List Mobil", path: "/home", icon: <Car size={20} /> },
             { name: "Manajemen Mobil", path: "/car-management", icon: <Car size={20} /> },
             { name: "Manajemen Client", path: "/client-management", icon: <Users size={20} /> }
@@ -149,7 +194,7 @@ export default function Navbar() {
 
       {/* Top Navbar */}
       <nav className="bg-[#990000] text-white px-4 py-4 md:px-6 md:py-4 flex justify-between items-center shadow-lg z-40 relative">
-        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4">
           <button
             onClick={toggleSidebar}
             className="p-2 hover:bg-red-700 rounded-lg transition-colors duration-200"
@@ -157,17 +202,17 @@ export default function Navbar() {
             <Menu className="text-white w-6 h-6" />
           </button>
           <Link to="/">
-            <img src={logo} alt="Logo" className="h-10 w-10 rounded-full shadow-md" />
+            <img src={logo} alt="Logo" className="h-10 w-10 rounded-full shadow-md object-contain" />
           </Link>
           <Link
             to="/"
-            className="font-bold text-xl md:text-2xl tracking-wide hover:text-red-200 transition-colors duration-200"
+            className="font-bold text-lg md:text-2xl tracking-wide hover:text-red-200 transition-colors duration-200"
           >
             Cakra Lima Tujuh
           </Link>
         </div>
         {/* Optional: Add user info or additional elements here for larger screens */}
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-nowrap items-center space-x-2 sm:space-x-4">
           {user ? (
             <>
               <button
@@ -181,21 +226,21 @@ export default function Navbar() {
                   </span>
                 )}
               </button>
-              <span className="text-sm text-red-200">
+              <span className="hidden sm:inline text-sm text-red-200 truncate max-w-[120px]">
                 Welcome, {user.email?.split('@')[0]}
               </span>
             </>
           ) : (
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-nowrap items-center space-x-2 sm:space-x-4">
               <Link
                 to="/login"
-                className="px-4 py-2 bg-transparent border border-red-300 text-red-200 rounded-lg hover:bg-red-700 hover:text-white transition-colors duration-200 font-medium"
+                className="px-3 py-1 sm:px-4 sm:py-2 bg-transparent border border-red-300 text-red-200 rounded-lg hover:bg-red-700 hover:text-white transition-colors duration-200 font-medium text-sm sm:text-base whitespace-nowrap"
               >
                 Login
               </Link>
               <Link
                 to="/signup"
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium"
+                className="px-3 py-1 sm:px-4 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium text-sm sm:text-base whitespace-nowrap"
               >
                 Sign Up
               </Link>
@@ -206,7 +251,7 @@ export default function Navbar() {
 
       {/* Notification Dropdown */}
       {notificationOpen && user && (
-        <div className="absolute top-16 right-4 bg-white border border-gray-300 rounded-lg shadow-lg z-50 w-80 max-h-96 overflow-y-auto">
+        <div className="absolute top-16 right-4 left-4 sm:right-4 sm:left-auto bg-white border border-gray-300 rounded-lg shadow-lg z-50 w-[90vw] sm:w-80 max-h-96 overflow-y-auto">
           <div className="p-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-800">Notifikasi</h3>
           </div>

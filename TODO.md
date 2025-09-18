@@ -1,9 +1,9 @@
-# TODO: Implement Notification Button and System
+# TODO: Move Browser Pop-up Notifications to Notification Button Feature
 
 ## Tasks
-- [x] Add notification icon button in Navbar next to username
-- [x] Create notifications dropdown/modal component
-- [x] Fetch notifications from Firestore 'notifications' collection
-- [x] Show badge with unread count on notification icon
-- [x] Mark notifications as read when viewed
-- [ ] Add logic to send notifications on order status updates (optional)
+- [x] Create a helper function in ListMobil.js to add notifications to Firestore for the current user
+- [x] Replace alert("Pemesanan berhasil! Silakan tunggu konfirmasi.") with notification creation
+- [x] Replace alert("Bukti Pembayaran Telah Terkirim") with notification creation
+- [ ] Replace other alert() calls if any with notifications (decided to keep error alerts as pop-ups)
+- [x] Test the notification feature to ensure notifications appear in the Navbar dropdown (confirmed by user)
+- [x] Add notifications for admins on new orders and payments

@@ -156,16 +156,6 @@ export default function CarManagement() {
           <p className="text-gray-600">Kelola inventaris mobil rental Anda</p>
         </div>
 
-        <div className="mb-8">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Cari Mobil</label>
-          <input
-            type="text"
-            placeholder="Cari berdasarkan nama, status, harga..."
-            value={searchMobil}
-            onChange={(e) => setSearchMobil(e.target.value)}
-            className="w-full md:w-80 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-          />
-        </div>
         {/* Form Tambah Mobil */}
         <div className="bg-gray-50 rounded-xl p-6 mb-8">
           <h3 className="text-xl font-semibold text-gray-900 mb-6">Tambah Mobil Baru</h3>
@@ -229,46 +219,62 @@ export default function CarManagement() {
           </button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {filteredMobil.map(m => (
-            <div key={m.id} className="border p-6 rounded-xl bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-              <img src={m.gambar} alt={m.nama} className="h-40 w-full object-cover rounded-lg mb-4" />
-              <input
-                type="text"
-                value={m.nama}
-                onChange={e => handleEditMobil(m.id, "nama", e.target.value)}
-                className="text-xl font-bold w-full mb-2 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-              />
-              <input
-                type="number"
-                value={m.harga}
-                onChange={e => handleEditMobil(m.id, "harga", parseInt(e.target.value))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-              />
-              <input
-                type="text"
-                value={m.gambar}
-                onChange={e => handleEditMobil(m.id, "gambar", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-              />
-              <p className="text-sm text-gray-600 mb-4">{m.tersedia ? 'Tersedia' : 'Tidak Tersedia'} | Status: {m.status}</p>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => toggleServis(m.id, m.status)}
-                  className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors duration-200"
-                >
-                  {m.status === 'servis' ? 'Kembalikan Normal' : 'Set Servis'}
-                </button>
-                <button
-                  onClick={() => handleHapusMobil(m.id)}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200"
-                >
-                  Hapus
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <table className="min-w-full border border-gray-300 rounded-lg overflow-hidden shadow-md">
+          <thead className="bg-red-700 text-white">
+            <tr>
+              <th className="px-4 py-3 text-left">Nama Mobil</th>
+              <th className="px-4 py-3 text-left">Harga per Hari</th>
+              <th className="px-4 py-3 text-left">Gambar</th>
+              <th className="px-4 py-3 text-left">Status</th>
+              <th className="px-4 py-3 text-left">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {mobil.map((m) => (
+              <tr key={m.id} className="border-t border-gray-300 hover:bg-gray-100">
+                <td className="px-4 py-3">
+                  <input
+                    type="text"
+                    value={m.nama}
+                    onChange={(e) => handleEditMobil(m.id, "nama", e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <input
+                    type="number"
+                    value={m.harga}
+                    onChange={(e) => handleEditMobil(m.id, "harga", parseInt(e.target.value))}
+                    className="w-full border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <img src={m.gambar} alt={m.nama} className="h-20 w-32 object-cover rounded-lg" />
+                </td>
+                <td className="px-4 py-3">
+                  <p className="mb-2">{m.tersedia ? "Tersedia" : "Tidak Tersedia"}</p>
+                  <p>Status: {m.status}</p>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => toggleServis(m.id, m.status)}
+                      className="bg-yellow-600 text-white px-3 py-1 rounded-lg hover:bg-yellow-700 transition-colors duration-200"
+                    >
+                      {m.status === "servis" ? "Kembalikan Normal" : "Set Servis"}
+                    </button>
+                    <button
+                      onClick={() => handleHapusMobil(m.id)}
+                      className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 transition-colors duration-200"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
     </div>
   );

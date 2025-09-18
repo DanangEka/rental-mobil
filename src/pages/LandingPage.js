@@ -16,12 +16,12 @@ export default function LandingPage() {
             <p className="text-xl md:text-2xl lg:text-3xl opacity-90 mb-8 max-w-3xl mx-auto leading-relaxed animate-fadeInUp delay-200">
               Pilih dari koleksi mobil premium kami dengan harga terjangkau dan layanan profesional
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fadeInUp delay-300">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fadeInUp delay-300 max-w-xs mx-auto sm:max-w-none">
               <button
                 onClick={() => {
                   navigate("/company-profile");
                 }}
-                className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-red-900 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg inline-block text-center"
+                className="w-full sm:w-auto bg-transparent border-2 border-white text-white hover:bg-white hover:text-red-900 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg inline-block text-center"
               >
                 Tentang Kami
               </button>
@@ -33,7 +33,7 @@ export default function LandingPage() {
                     navigate("/login");
                   }
                 }}
-                className="bg-white text-red-900 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg inline-block text-center hover:bg-red-900 hover:text-white ml-4"
+                className="w-full sm:w-auto bg-white text-red-900 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg inline-block text-center hover:bg-red-900 hover:text-white"
               >
                 Sewa Sekarang
               </button>
