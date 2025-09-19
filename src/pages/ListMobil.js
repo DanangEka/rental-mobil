@@ -231,14 +231,9 @@ const handlePaymentSubmit = async (order) => {
 
     const paymentProofURL = cloudinaryRes.data.secure_url;
 
-    // 2. Kirim data ke Google Sheets webhook / backend kamu
-    const apiUrl =
-      process.env.NODE_ENV === "production"
-        ? "/api/payment-success"
-        : process.env.SHEET_WEBHOOK_URL;
-
-    await axios.post(apiUrl, {
-      ...order,
+    // 2. Update data pemesanan di Firestore langsung
+    const orderDocRef = doc(db, "pemesanan", order.id);
+    await updateDoc(orderDocRef, {
       paymentMethod: paymentMethod[order.id] || order.paymentMethod,
       paymentProof: paymentProofURL,
       paymentStatus: "submitted",
@@ -577,7 +572,7 @@ const handlePaymentSubmit = async (order) => {
                           <div className="text-center py-6">
                             <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-900 rounded-full mb-3">
                               <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c-.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               </svg>
                             </div>
@@ -600,52 +595,6 @@ const handlePaymentSubmit = async (order) => {
           </div>
         )}
 
-        {/* Section for Admin to view all incoming orders */}
-        {isAdmin && userOrders.length > 0 && (
-          <div className="max-w-7xl mx-auto px-4 py-8 md:px-6 md:py-12 lg:px-8">
-            <h2 className="text-2xl font-bold text-white mb-6">Pesanan Masuk</h2>
-            <div className="space-y-4">
-              {userOrders.map((order) => (
-                <div key={order.id} className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <span className="text-sm text-gray-400">Mobil</span>
-                      <p className="text-white font-semibold">{order.namaMobil}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-400">Email Client</span>
-                      <p className="text-white">{order.email}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-400">Tanggal Sewa</span>
-                      <p className="text-white">
-                        {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString() : 'N/A'} - {order.tanggalSelesai ? new Date(order.tanggalSelesai).toLocaleDateString() : 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-400">Status</span>
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                        order.status === 'diproses' ? 'bg-yellow-600 text-white' :
-                        order.status === 'disetujui' ? 'bg-green-600 text-white' :
-                        order.status === 'menunggu pembayaran' ? 'bg-orange-600 text-white' :
-                        order.status === 'pembayaran berhasil' ? 'bg-blue-600 text-white' :
-                        order.status === 'selesai' ? 'bg-purple-600 text-white' :
-                        order.status === 'ditolak' ? 'bg-red-600 text-white' :
-                        'bg-gray-600 text-white'
-                      }`}>
-                        {order.status}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <span className="text-sm text-gray-400">Total Biaya</span>
-                    <p className="text-green-400 font-bold">Rp {order.perkiraanHarga?.toLocaleString()}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

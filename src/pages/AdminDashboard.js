@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, getDocs } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { Bar, Line } from "react-chartjs-2";
 import {
@@ -30,10 +30,13 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({
     availableCars: 0,
     rentedCars: 0,
+    serviceCars: 0,
+    totalCars: 0,
     totalCustomers: 0,
     todayRevenue: 0,
     monthlyRevenue: 0,
   });
+
   const [revenueData, setRevenueData] = useState({
     daily: {
       labels: [],
@@ -56,34 +59,45 @@ export default function AdminDashboard() {
       }],
     },
   });
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    // Listener mobil
+    const unsubscribeCars = onSnapshot(collection(db, "mobil"), (carsSnapshot) => {
+      let available = 0;
+      let rented = 0;
+      let servis = 0;
+
+      carsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.status === "normal") {
+          available++;
+        } else if (data.status === "disewa") {
+          rented++;
+        } else if (data.status === "servis") {
+          servis++;
+        }
+      });
+
+      setStats((prev) => ({
+        ...prev,
+        availableCars: available,
+        rentedCars: rented,
+        serviceCars: servis,
+        totalCars: carsSnapshot.size,
+      }));
+    });
+
+    // Listener user
+    const unsubscribeUsers = onSnapshot(collection(db, "users"), (usersSnapshot) => {
+      setStats((prev) => ({ ...prev, totalCustomers: usersSnapshot.size }));
+    });
+
+    // Hitung pendapatan
+    const fetchRevenue = async () => {
       try {
-        // Fetch cars stats
-        const carsQuery = collection(db, "mobil");
-        const carsSnapshot = await getDocs(carsQuery);
-        let available = 0;
-        let rented = 0;
-
-        carsSnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.status === "tersedia") {
-            available++;
-          } else if (data.status === "disewa") {
-            rented++;
-          }
-        });
-
-        // Fetch customers count
-        const customersQuery = collection(db, "users");
-        const customersSnapshot = await getDocs(customersQuery);
-        const totalCustomers = customersSnapshot.size;
-
-        // Fetch orders for revenue calculation
-        const ordersQuery = collection(db, "pemesanan");
-        const ordersSnapshot = await getDocs(ordersQuery);
+        const ordersSnapshot = await getDocs(collection(db, "pemesanan"));
 
         let todayRevenue = 0;
         let monthlyRevenue = 0;
@@ -96,29 +110,23 @@ export default function AdminDashboard() {
         ordersSnapshot.forEach((doc) => {
           const data = doc.data();
           if (data.status === "selesai" && data.perkiraanHarga) {
-            const orderDate = data.tanggalMulai?.toDate();
+            let orderDate;
+            if (data.tanggalMulai?.toDate) {
+              orderDate = data.tanggalMulai.toDate();
+            } else if (data.tanggalMulai instanceof Date) {
+              orderDate = data.tanggalMulai;
+            }
 
             if (orderDate) {
-              // Daily revenue
               const dayKey = orderDate.toDateString();
-              if (!dailyRevenue[dayKey]) {
-                dailyRevenue[dayKey] = 0;
-              }
-              dailyRevenue[dayKey] += data.perkiraanHarga;
+              dailyRevenue[dayKey] = (dailyRevenue[dayKey] || 0) + data.perkiraanHarga;
 
-              // Monthly revenue
               const monthKey = `${orderDate.getFullYear()}-${orderDate.getMonth() + 1}`;
-              if (!monthlyRevenueData[monthKey]) {
-                monthlyRevenueData[monthKey] = 0;
-              }
-              monthlyRevenueData[monthKey] += data.perkiraanHarga;
+              monthlyRevenueData[monthKey] = (monthlyRevenueData[monthKey] || 0) + data.perkiraanHarga;
 
-              // Today's revenue
               if (orderDate.toDateString() === today.toDateString()) {
                 todayRevenue += data.perkiraanHarga;
               }
-
-              // Monthly revenue
               if (orderDate >= startOfMonth) {
                 monthlyRevenue += data.perkiraanHarga;
               }
@@ -126,7 +134,7 @@ export default function AdminDashboard() {
           }
         });
 
-        // Prepare chart data
+        // Data harian (7 hari terakhir)
         const last7Days = [];
         const dailyValues = [];
         for (let i = 6; i >= 0; i--) {
@@ -137,6 +145,7 @@ export default function AdminDashboard() {
           dailyValues.push(dailyRevenue[dayKey] || 0);
         }
 
+        // Data bulanan (6 bulan terakhir)
         const last6Months = [];
         const monthlyValues = [];
         for (let i = 5; i >= 0; i--) {
@@ -147,13 +156,11 @@ export default function AdminDashboard() {
           monthlyValues.push(monthlyRevenueData[monthKey] || 0);
         }
 
-        setStats({
-          availableCars: available,
-          rentedCars: rented,
-          totalCustomers,
+        setStats((prev) => ({
+          ...prev,
           todayRevenue,
           monthlyRevenue,
-        });
+        }));
 
         setRevenueData({
           daily: {
@@ -174,31 +181,32 @@ export default function AdminDashboard() {
 
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching dashboard stats:", error);
+        console.error("Error fetching revenue:", error);
         setLoading(false);
       }
     };
 
-    fetchStats();
+    fetchRevenue();
+
+    return () => {
+      unsubscribeCars();
+      unsubscribeUsers();
+    };
   }, []);
 
   const chartOptions = {
     responsive: true,
     plugins: {
-      legend: {
-        position: 'top',
-      },
+      legend: { position: 'top' },
     },
     scales: {
       y: {
         beginAtZero: true,
         ticks: {
-          callback: function(value) {
-            return 'Rp ' + value.toLocaleString();
-          }
-        }
-      }
-    }
+          callback: (value) => 'Rp ' + value.toLocaleString(),
+        },
+      },
+    },
   };
 
   if (loading) {
@@ -217,7 +225,7 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
 
-        {/* Stats Cards */}
+        {/* Stats Cards Mobil */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center">
@@ -245,6 +253,33 @@ export default function AdminDashboard() {
 
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center">
+              <div className="p-3 bg-red-100 rounded-full">
+                <Car className="h-8 w-8 text-red-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Mobil Diservis</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.serviceCars}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-gray-100 rounded-full">
+                <Car className="h-8 w-8 text-gray-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Mobil</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalCars}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Customers & Revenue */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
               <div className="p-3 bg-purple-100 rounded-full">
                 <Users className="h-8 w-8 text-purple-600" />
               </div>
@@ -266,15 +301,18 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Monthly Revenue Card */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex items-center mb-4">
-            <TrendingUp className="h-6 w-6 text-red-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-900">Pendapatan Bulan Ini</h2>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-red-100 rounded-full">
+                <TrendingUp className="h-8 w-8 text-red-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Pendapatan Bulan Ini</p>
+                <p className="text-2xl font-bold text-red-600">Rp {stats.monthlyRevenue.toLocaleString()}</p>
+              </div>
+            </div>
           </div>
-          <p className="text-3xl font-bold text-red-600">Rp {stats.monthlyRevenue.toLocaleString()}</p>
         </div>
 
         {/* Charts */}

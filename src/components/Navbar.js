@@ -13,6 +13,7 @@ export default function Navbar() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [orderNotifications, setOrderNotifications] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -103,6 +104,17 @@ export default function Navbar() {
           setUnreadCount(allUnread);
         });
         unsubscribes.push(unsubscribeAdmin);
+
+        // Fetch admin orders as notifications
+        const qOrders = query(collection(db, "pemesanan"), orderBy("tanggal", "desc"));
+        const unsubscribeOrders = onSnapshot(qOrders, (orderSnapshot) => {
+          const orders = [];
+          orderSnapshot.forEach((doc) => {
+            orders.push({ id: doc.id, ...doc.data() });
+          });
+          setOrderNotifications(orders);
+        });
+        unsubscribes.push(unsubscribeOrders);
       } else {
         console.log("Setting user notifications:", userNotifs, "unread:", userUnread);
         setNotifications(userNotifs);
@@ -256,17 +268,51 @@ export default function Navbar() {
             <h3 className="text-lg font-semibold text-gray-800">Notifikasi</h3>
           </div>
           <div className="p-2">
-            {notifications.length === 0 ? (
+            {notifications.length === 0 && orderNotifications.length === 0 ? (
               <p className="text-gray-500 text-center py-4">Tidak ada notifikasi</p>
             ) : (
-              notifications.map((notif) => (
-                <div key={notif.id} className={`p-3 border-b border-gray-100 ${!notif.read ? 'bg-blue-50' : ''}`}>
-                  <p className="text-sm text-gray-800">{notif.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(notif.timestamp?.toDate()).toLocaleString()}
-                  </p>
-                </div>
-              ))
+              <>
+                {notifications.length > 0 && notifications.map((notif) => (
+                  <div key={notif.id} className={`p-3 border-b border-gray-100 ${!notif.read ? 'bg-blue-50' : ''}`}>
+                    <p className="text-sm text-gray-800">{notif.message}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(notif.timestamp?.toDate()).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+                {orderNotifications.length > 0 && (
+                  <>
+                    <div className="p-4 border-t border-gray-200">
+                      <h4 className="text-md font-semibold text-gray-700">Pesanan Masuk</h4>
+                    </div>
+                    {orderNotifications.map((order) => (
+                      <div key={order.id} className="p-3 border-b border-gray-100 bg-gray-50">
+                        <p className="text-sm font-semibold text-gray-900">{order.namaMobil}</p>
+                        <p className="text-xs text-gray-700">Client: {order.email}</p>
+                        <p className="text-xs text-gray-700">
+                          Tanggal: {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString() : 'N/A'} - {order.tanggalSelesai ? new Date(order.tanggalSelesai).toLocaleDateString() : 'N/A'}
+                        </p>
+                        <p className="text-xs font-medium text-gray-800">
+                          Status: <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                            order.status === 'diproses' ? 'bg-yellow-600 text-white' :
+                            order.status === 'disetujui' ? 'bg-green-600 text-white' :
+                            order.status === 'menunggu pembayaran' ? 'bg-orange-600 text-white' :
+                            order.status === 'pembayaran berhasil' ? 'bg-blue-600 text-white' :
+                            order.status === 'selesai' ? 'bg-purple-600 text-white' :
+                            order.status === 'ditolak' ? 'bg-red-600 text-white' :
+                            'bg-gray-600 text-white'
+                          }`}>
+                            {order.status}
+                          </span>
+                        </p>
+                        <p className="text-xs font-semibold text-green-600">
+                          Total: Rp {order.perkiraanHarga?.toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
             )}
           </div>
         </div>
