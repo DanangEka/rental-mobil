@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { auth, db, googleProvider } from "../services/firebase";
+import { auth, db } from "../services/firebase";
 import {
   signInWithEmailAndPassword,
-  signInWithPopup,
   onAuthStateChanged,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -45,31 +44,6 @@ export default function Login() {
     } catch (err) {
       console.error("Login error:", err);
       setError("Email atau password salah.");
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        // Buat dokumen user baru dengan role client
-        await setDoc(userRef, {
-          uid: user.uid,
-          name: user.displayName || "User",
-          email: user.email,
-          role: "client",
-          createdAt: new Date(),
-        });
-      }
-
-      navigate("/");
-    } catch (err) {
-      console.error("Google login error:", err);
-      setError("Gagal login dengan Google.");
     }
   };
 
@@ -154,35 +128,14 @@ export default function Login() {
           </button>
         </div>
 
-        {/* OR Divider */}
-        <div className="flex items-center gap-4">
-          <hr className="flex-grow border-gray-300" />
-          <span className="text-gray-500 text-sm font-medium">atau</span>
-          <hr className="flex-grow border-gray-300" />
-        </div>
-
-        {/* Google Login */}
-        <div className="space-y-4">
-          <button
-            className="border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 w-full py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-sm hover:shadow-md"
-            onClick={handleGoogleLogin}
+        <div className="text-center">
+          <span className="text-gray-600 text-sm">Belum punya akun? </span>
+          <Link
+            to="/signup"
+            className="text-red-600 hover:text-red-700 font-semibold text-sm transition-colors"
           >
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google"
-              className="w-5 h-5"
-            />
-            <span className="text-gray-700 font-medium">Lanjutkan dengan Google</span>
-          </button>
-          <div className="text-center">
-            <span className="text-gray-600 text-sm">Belum punya akun? </span>
-            <Link
-              to="/signup"
-              className="text-red-600 hover:text-red-700 font-semibold text-sm transition-colors"
-            >
-              Daftar sekarang
-            </Link>
-          </div>
+            Daftar sekarang
+          </Link>
         </div>
       </div>
     </div>
