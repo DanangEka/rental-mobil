@@ -12,6 +12,8 @@ import {
 } from "firebase/firestore";
 import axios from "axios";
 import jsPDF from "jspdf";
+import { Search, Filter, RefreshCw, Download, Eye, CheckCircle, XCircle, Clock, AlertTriangle } from "lucide-react";
+import { Edit } from "lucide-react";
 
 export default function ManajemenPesanan() {
   const [pemesanan, setPemesanan] = useState([]);
@@ -20,7 +22,10 @@ export default function ManajemenPesanan() {
   const [filterRentalType, setFilterRentalType] = useState("semua");
   const [searchPemesanan, setSearchPemesanan] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [sortBy, setSortBy] = useState("newest");
+  const [showEditRequests, setShowEditRequests] = useState(true);
 
   const fetchUsers = async () => {
     try {
@@ -135,6 +140,51 @@ export default function ManajemenPesanan() {
     }
   };
 
+  const handleEditRequestApproval = async (id, status) => {
+    const orderDoc = await getDoc(doc(db, "pemesanan", id));
+    const order = { id, ...orderDoc.data() };
+
+    if (status === "approved") {
+      // Apply the edit request
+      await updateDoc(doc(db, "pemesanan", id), {
+        tanggalMulai: order.editRequest.tanggalMulai,
+        tanggalSelesai: order.editRequest.tanggalSelesai,
+        durasiHari: order.editRequest.durasiHari,
+        perkiraanHarga: order.editRequest.perkiraanHarga,
+        editRequest: {
+          ...order.editRequest,
+          status: "approved",
+          approvedAt: new Date().toISOString()
+        }
+      });
+
+      // Send notification to user
+      await addDoc(collection(db, "notifications"), {
+        userId: order.uid,
+        message: `Permintaan edit tanggal untuk pemesanan mobil ${order.namaMobil} telah disetujui. Tanggal sewa telah diubah.`,
+        read: false,
+        timestamp: serverTimestamp()
+      });
+    } else {
+      // Reject the edit request
+      await updateDoc(doc(db, "pemesanan", id), {
+        editRequest: {
+          ...order.editRequest,
+          status: "rejected",
+          rejectedAt: new Date().toISOString()
+        }
+      });
+
+      // Send notification to user
+      await addDoc(collection(db, "notifications"), {
+        userId: order.uid,
+        message: `Permintaan edit tanggal untuk pemesanan mobil ${order.namaMobil} telah ditolak.`,
+        read: false,
+        timestamp: serverTimestamp()
+      });
+    }
+  };
+
   const generateInvoicePDF = (order, user) => {
     const doc = new jsPDF();
     doc.setFontSize(16);
@@ -211,41 +261,165 @@ export default function ManajemenPesanan() {
     const pdfData = doc.output('dataurlnewwindow');
   };
 
-  const filteredPemesanan = pemesanan.filter(p => {
-    const user = users.find(u => u.id === p.uid);
-    const matchesStatus = filterStatus === "semua" || p.status === filterStatus;
-    const matchesRentalType = filterRentalType === "semua" || p.rentalType === filterRentalType;
-    const matchesSearch = searchPemesanan === "" ||
-      p.namaMobil?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
-      p.email?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
-      user?.nama?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
-      user?.nomorTelepon?.includes(searchPemesanan) ||
-      p.status?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
-      p.rentalType?.toLowerCase().includes(searchPemesanan.toLowerCase());
-    return matchesStatus && matchesRentalType && matchesSearch;
-  });
+  // Enhanced filtering and sorting
+  const filteredPemesanan = pemesanan
+    .filter(p => {
+      const user = users.find(u => u.id === p.uid);
+      const matchesStatus = filterStatus === "semua" || p.status === filterStatus;
+      const matchesRentalType = filterRentalType === "semua" || p.rentalType === filterRentalType;
+      const matchesSearch = searchPemesanan === "" ||
+        p.namaMobil?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
+        p.email?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
+        user?.nama?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
+        user?.nomorTelepon?.includes(searchPemesanan) ||
+        p.status?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
+        p.rentalType?.toLowerCase().includes(searchPemesanan.toLowerCase());
+      return matchesStatus && matchesRentalType && matchesSearch;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.tanggal) - new Date(a.tanggal);
+        case "oldest":
+          return new Date(a.tanggal) - new Date(b.tanggal);
+        case "price-high":
+          return (b.perkiraanHarga || 0) - (a.perkiraanHarga || 0);
+        case "price-low":
+          return (a.perkiraanHarga || 0) - (b.perkiraanHarga || 0);
+        default:
+          return 0;
+      }
+    });
 
-  if (loading) return <p className="p-4">Memuat data...</p>;
-  if (!isAdmin) return <p className="p-4 text-red-600 font-semibold">Anda tidak memiliki akses ke halaman ini.</p>;
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // The onSnapshot will automatically update the data
+    setTimeout(() => setRefreshing(false), 1000);
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
+        <div className="flex flex-col justify-center items-center h-64 space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+          <p className="text-lg text-gray-600">Memuat data pesanan...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
+        <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+          <div className="text-center py-12">
+            <AlertTriangle className="mx-auto h-12 w-12 text-red-400 mb-4" />
+            <p className="text-red-600 font-semibold text-lg">Akses Ditolak</p>
+            <p className="text-gray-600">Anda tidak memiliki akses ke halaman ini.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
-      <section className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Manajemen Pesanan</h1>
-          <p className="text-gray-600">Kelola pemesanan dan status pembayaran</p>
+    <div className="p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
+      <section className="bg-white p-4 sm:p-8 rounded-2xl shadow-xl border border-gray-100">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Manajemen Pesanan</h1>
+              <p className="text-gray-600 text-sm sm:text-base">Kelola pemesanan dan status pembayaran</p>
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="mt-4 sm:mt-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+              {refreshing ? 'Memperbarui...' : 'Perbarui'}
+            </button>
+          </div>
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
+            <div className="bg-blue-50 p-4 sm:p-6 rounded-xl border border-blue-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm sm:text-lg font-semibold text-blue-900">Total Pesanan</h3>
+                  <p className="text-2xl sm:text-3xl font-bold text-blue-600">{filteredPemesanan.length}</p>
+                </div>
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Clock className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-green-50 p-4 sm:p-6 rounded-xl border border-green-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm sm:text-lg font-semibold text-green-900">Disetujui</h3>
+                  <p className="text-2xl sm:text-3xl font-bold text-green-600">
+                    {filteredPemesanan.filter(p => p.status === "disetujui" || p.status === "pembayaran berhasil").length}
+                  </p>
+                </div>
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-yellow-50 p-4 sm:p-6 rounded-xl border border-yellow-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm sm:text-lg font-semibold text-yellow-900">Diproses</h3>
+                  <p className="text-2xl sm:text-3xl font-bold text-yellow-600">
+                    {filteredPemesanan.filter(p => p.status === "diproses").length}
+                  </p>
+                </div>
+                <div className="p-2 bg-yellow-100 rounded-lg">
+                  <Clock className="h-6 w-6 text-yellow-600" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-red-50 p-4 sm:p-6 rounded-xl border border-red-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm sm:text-lg font-semibold text-red-900">Ditolak</h3>
+                  <p className="text-2xl sm:text-3xl font-bold text-red-600">
+                    {filteredPemesanan.filter(p => p.status === "ditolak").length}
+                  </p>
+                </div>
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <XCircle className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Filter */}
-        <div className="bg-gray-50 rounded-xl p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter & Pencarian</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-gray-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2 sm:mb-0">Filter & Pencarian</h3>
+            <div className="flex items-center gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
+              >
+                <option value="newest">Terbaru</option>
+                <option value="oldest">Terlama</option>
+                <option value="price-high">Harga Tertinggi</option>
+                <option value="price-low">Harga Terendah</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Filter Status</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
               >
                 <option value="semua">Semua Status</option>
                 <option value="diproses">Diproses</option>
@@ -261,34 +435,50 @@ export default function ManajemenPesanan() {
               <select
                 value={filterRentalType}
                 onChange={(e) => setFilterRentalType(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
               >
                 <option value="semua">Semua Tipe</option>
                 <option value="Lepas Kunci">Lepas Kunci</option>
                 <option value="Driver">Driver</option>
               </select>
             </div>
-            <div>
+            <div className="sm:col-span-2 lg:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Cari Pesanan</label>
-              <input
-                type="text"
-                placeholder="Cari berdasarkan mobil, email, status..."
-                value={searchPemesanan}
-                onChange={(e) => setSearchPemesanan(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Cari berdasarkan mobil, email, status..."
+                  value={searchPemesanan}
+                  onChange={(e) => setSearchPemesanan(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search size={16} className="text-gray-400" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* List Pesanan */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {filteredPemesanan.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-gray-400 text-lg">Tidak ada pemesanan yang ditemukan</div>
+              <div className="text-gray-400 text-lg">
+                {pemesanan.length === 0 ? "Belum ada pemesanan" : "Tidak ada pemesanan yang sesuai filter"}
+              </div>
+              <p className="text-gray-400 text-sm mt-2">
+                {pemesanan.length === 0 ? "Pemesanan akan muncul di sini" : "Coba ubah filter atau pencarian"}
+              </p>
             </div>
           ) : (
-            filteredPemesanan.map((p) => {
+            <>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  Menampilkan {filteredPemesanan.length} dari {pemesanan.length} pemesanan
+                </p>
+              </div>
+              {filteredPemesanan.map((p) => {
               const user = users.find(u => u.id === p.uid);
               return (
                 <div key={p.id} className="border border-gray-200 rounded-xl p-6 bg-white shadow-md">
@@ -356,6 +546,38 @@ export default function ManajemenPesanan() {
                     </div>
                   )}
 
+                  {/* Edit Request */}
+                  {p.editRequest && (
+                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Edit size={16} className="text-blue-600" />
+                        <span className="text-sm font-medium text-blue-900">Permintaan Edit Tanggal</span>
+                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                          p.editRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          p.editRequest.status === 'approved' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {p.editRequest.status}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-700">Tanggal Baru:</span>
+                          <p className="text-gray-900">
+                            {new Date(p.editRequest.tanggalMulai).toLocaleDateString()} - {new Date(p.editRequest.tanggalSelesai).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Harga Baru:</span>
+                          <p className="text-gray-900">Rp {p.editRequest.perkiraanHarga?.toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Diminta pada: {new Date(p.editRequest.requestedAt).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Bukti Pembayaran */}
                   <div className="mb-4">
                     <span className="text-sm font-medium text-gray-500">Bukti Pembayaran</span>
@@ -381,6 +603,25 @@ export default function ManajemenPesanan() {
                   </div>
 
                   <div className="flex flex-wrap gap-3">
+                    {/* Edit Request Approval */}
+                    {p.editRequest && p.editRequest.status === "pending" && (
+                      <>
+                        <button
+                          onClick={() => handleEditRequestApproval(p.id, "approved")}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Setujui Edit
+                        </button>
+                        <button
+                          onClick={() => handleEditRequestApproval(p.id, "rejected")}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Tolak Edit
+                        </button>
+                      </>
+                    )}
+
+                    {/* Regular Order Actions */}
                     {p.status === "diproses" && (
                       <>
                         <button
@@ -432,7 +673,8 @@ export default function ManajemenPesanan() {
                   </div>
                 </div>
               );
-            })
+            })}
+            </>
           )}
         </div>
       </section>

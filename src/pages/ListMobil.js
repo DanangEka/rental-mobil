@@ -4,10 +4,12 @@ import { db, auth, storage } from "../services/firebase";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { Car, MapPin, Calendar, Users, Fuel, Settings, Search, Filter, RefreshCw, Star } from "lucide-react";
 
-export default function Home() {
+export default function ListMobil() {
   const navigate = useNavigate();
   const [mobil, setMobil] = useState([]);
+  const [filteredMobil, setFilteredMobil] = useState([]);
   const [tanggalMulai, setTanggalMulai] = useState({});
   const [tanggalSelesai, setTanggalSelesai] = useState({});
   const [rentalType, setRentalType] = useState({});
@@ -16,7 +18,11 @@ export default function Home() {
   const [userOrders, setUserOrders] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [userData, setUserData] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("name");
+  const [filterStatus, setFilterStatus] = useState("semua");
 
   const addNotification = async (message) => {
     try {
@@ -119,6 +125,48 @@ export default function Home() {
     };
   }, [isAdmin]);
 
+  // Enhanced filtering and sorting
+  useEffect(() => {
+    let filtered = mobil.filter(m => {
+      const matchesSearch = searchTerm === "" ||
+        m.nama?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.merek?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.tahun?.toString().includes(searchTerm);
+
+      const matchesStatus = filterStatus === "semua" ||
+        m.status?.toLowerCase() === filterStatus.toLowerCase() ||
+        (filterStatus === "tersedia" && m.tersedia === true);
+
+      return matchesSearch && matchesStatus;
+    });
+
+    // Sort the filtered results
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.nama.localeCompare(b.nama);
+        case "price-low":
+          return a.harga - b.harga;
+        case "price-high":
+          return b.harga - a.harga;
+        case "year-new":
+          return b.tahun - a.tahun;
+        case "year-old":
+          return a.tahun - b.tahun;
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredMobil(filtered);
+  }, [mobil, searchTerm, filterStatus, sortBy]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // The onSnapshot will automatically update the data
+    setTimeout(() => setRefreshing(false), 1000);
+  };
+
   const handleTanggalChange = (id, type, value) => {
     if (type === "mulai") {
       setTanggalMulai((prev) => ({ ...prev, [id]: value }));
@@ -138,6 +186,12 @@ export default function Home() {
   const handleSewa = async (m) => {
     if (!auth.currentUser) {
       alert("Silakan login terlebih dahulu.");
+      return;
+    }
+
+    // Check verification status
+    if (userData?.verificationStatus !== "verified") {
+      alert("Akun Anda belum diverifikasi. Silakan upload KTP di halaman profil untuk verifikasi terlebih dahulu.");
       return;
     }
 
@@ -174,7 +228,7 @@ export default function Home() {
     if (selectedRentalType === "Driver") {
       perkiraanHarga += 250000;
     }
-    
+
     try {
       await addDoc(collection(db, "pemesanan"), {
         uid: auth.currentUser.uid,
@@ -274,7 +328,150 @@ const handlePaymentSubmit = async (order) => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 md:px-6 md:py-12 lg:px-8">
-        {mobil.length === 0 ? (
+        {/* Search and Filter Section */}
+        <div className="mb-8 bg-gray-900 rounded-2xl p-4 sm:p-6 border border-gray-800">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white mb-2 sm:mb-0">Cari & Filter Mobil</h2>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+              {refreshing ? 'Memperbarui...' : 'Perbarui'}
+            </button>
+          </div>
+
+          {/* Verification Status Alert */}
+          {userData && userData.verificationStatus !== "verified" && (
+            <div className={`mb-4 p-4 rounded-lg border ${
+              userData.verificationStatus === "unverified"
+                ? "bg-red-900 border-red-700 text-red-100"
+                : "bg-yellow-900 border-yellow-700 text-yellow-100"
+            }`}>
+              <div className="flex items-center gap-2">
+                <div className="flex-shrink-0">
+                  {userData.verificationStatus === "unverified" ? "❌" : "⏳"}
+                </div>
+                <div>
+                  <h3 className="font-semibold">
+                    {userData.verificationStatus === "unverified"
+                      ? "Akun Belum Diverifikasi"
+                      : "Verifikasi Sedang Diproses"}
+                  </h3>
+                  <p className="text-sm opacity-90">
+                    {userData.verificationStatus === "unverified"
+                      ? "Upload KTP di halaman profil untuk dapat melakukan pemesanan mobil."
+                      : "KTP Anda sedang dalam proses verifikasi admin. Silakan tunggu konfirmasi."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="sm:col-span-2 lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Cari Mobil</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Cari berdasarkan nama, merek, tahun..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search size={16} className="text-gray-400" />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Urutkan</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              >
+                <option value="name">Nama (A-Z)</option>
+                <option value="price-low">Harga Terendah</option>
+                <option value="price-high">Harga Tertinggi</option>
+                <option value="year-new">Tahun Terbaru</option>
+                <option value="year-old">Tahun Terlama</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              >
+                <option value="semua">Semua Status</option>
+                <option value="tersedia">Tersedia</option>
+                <option value="disewa">Disewa</option>
+                <option value="servis">Servis</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+            <div className="bg-green-900 p-4 rounded-xl border border-green-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-green-300">Tersedia</h3>
+                  <p className="text-2xl font-bold text-green-400">
+                    {filteredMobil.filter(m => m.tersedia === true || m.status === "tersedia").length}
+                  </p>
+                </div>
+                <div className="p-2 bg-green-800 rounded-lg">
+                  <Car className="h-6 w-6 text-green-400" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-red-900 p-4 rounded-xl border border-red-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-red-300">Disewa</h3>
+                  <p className="text-2xl font-bold text-red-400">
+                    {filteredMobil.filter(m => m.status === "disewa" || m.tersedia === false).length}
+                  </p>
+                </div>
+                <div className="p-2 bg-red-800 rounded-lg">
+                  <Users className="h-6 w-6 text-red-400" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-yellow-900 p-4 rounded-xl border border-yellow-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-yellow-300">Servis</h3>
+                  <p className="text-2xl font-bold text-yellow-400">
+                    {filteredMobil.filter(m => m.status === "servis").length}
+                  </p>
+                </div>
+                <div className="p-2 bg-yellow-800 rounded-lg">
+                  <Settings className="h-6 w-6 text-yellow-400" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-blue-900 p-4 rounded-xl border border-blue-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-blue-300">Total</h3>
+                  <p className="text-2xl font-bold text-blue-400">{filteredMobil.length}</p>
+                </div>
+                <div className="p-2 bg-blue-800 rounded-lg">
+                  <Car className="h-6 w-6 text-blue-400" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {filteredMobil.length === 0 ? (
           <div className="text-center py-16 md:py-20">
             <div className="text-gray-300 text-xl md:text-2xl font-medium">
               Tidak ada mobil tersedia saat ini
@@ -283,7 +480,7 @@ const handlePaymentSubmit = async (order) => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-8 md:gap-10 lg:gap-12">
-            {mobil.map((m) => {
+            {filteredMobil.map((m) => {
               const statusLower = m.status?.toLowerCase();
               const order = getUserOrderForCar(m.id);
               const orderStatus = order?.status?.toLowerCase();

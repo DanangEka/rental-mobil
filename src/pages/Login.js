@@ -28,14 +28,24 @@ export default function Login() {
           uid: user.uid,
           email: user.email,
           role: "client",
+          verificationStatus: "unverified",
           createdAt: new Date(),
         });
         navigate("/");
       } else {
-        const role = userDoc.data().role;
+        const userData = userDoc.data();
+        const role = userData.role;
+        const verificationStatus = userData.verificationStatus;
+
         if (role === "admin") {
           navigate("/");
         } else if (role === "client") {
+          // Check verification status for client
+          if (verificationStatus === "unverified") {
+            alert("Akun Anda belum diverifikasi. Silakan upload KTP di halaman profil untuk verifikasi.");
+          } else if (verificationStatus === "pending") {
+            alert("Akun Anda sedang dalam proses verifikasi. Silakan tunggu konfirmasi admin.");
+          }
           navigate("/");
         } else {
           setError("Role tidak dikenali.");
@@ -54,10 +64,19 @@ export default function Login() {
         const userDoc = await getDoc(userRef);
 
         if (userDoc.exists()) {
-          const role = userDoc.data().role;
+          const userData = userDoc.data();
+          const role = userData.role;
+          const verificationStatus = userData.verificationStatus;
+
           if (role === "admin") {
             navigate("/");
           } else if (role === "client") {
+            // Check verification status for client
+            if (verificationStatus === "unverified") {
+              alert("Akun Anda belum diverifikasi. Silakan upload KTP di halaman profil untuk verifikasi.");
+            } else if (verificationStatus === "pending") {
+              alert("Akun Anda sedang dalam proses verifikasi. Silakan tunggu konfirmasi admin.");
+            }
             navigate("/");
           }
         }

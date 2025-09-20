@@ -104,10 +104,15 @@ export default function Profile() {
       }
       const docRef = doc(db, "users", auth.currentUser.uid);
       let ktpURL = userData.ktpURL;
+      let newVerificationStatus = userData.verificationStatus;
+
       if (editedData.ktpFile) {
         const uploadRes = await uploadToCloudinary(editedData.ktpFile);
         ktpURL = uploadRes.secure_url;
+        // Set status to pending when KTP is uploaded
+        newVerificationStatus = "pending";
       }
+
       // Remove email from update data to avoid Firestore error
       const updateData = {
         nama: editedData.nama || "",
@@ -123,12 +128,18 @@ export default function Profile() {
         penanggungJawabAlamat: editedData.penanggungJawabAlamat || "",
         penanggungJawabTelepon: editedData.penanggungJawabTelepon || "",
         ktpURL: ktpURL || null,
+        verificationStatus: newVerificationStatus,
       };
-      
+
       await updateDoc(docRef, updateData);
-      setUserData({ ...userData, ...editedData, ktpURL });
+      setUserData({ ...userData, ...editedData, ktpURL, verificationStatus: newVerificationStatus });
       setEditMode(false);
-      alert("Profil berhasil diperbarui!");
+
+      if (newVerificationStatus === "pending") {
+        alert("Profil berhasil diperbarui! KTP Anda telah diupload dan sedang dalam proses verifikasi admin.");
+      } else {
+        alert("Profil berhasil diperbarui!");
+      }
     } catch (error) {
       console.error("Error updating profile:", error);
       alert("Gagal memperbarui profil.");
@@ -159,6 +170,26 @@ export default function Profile() {
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-1">{userData.nama || "Nama Lengkap"}</h3>
           <p className="text-gray-600">{userData.email}</p>
+
+          {/* Verification Status */}
+          <div className="mt-4 w-full">
+            <div className={`px-4 py-2 rounded-lg text-center text-sm font-medium ${
+              userData.verificationStatus === "verified"
+                ? "bg-green-100 text-green-800 border border-green-200"
+                : userData.verificationStatus === "pending"
+                ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                : "bg-red-100 text-red-800 border border-red-200"
+            }`}>
+              {userData.verificationStatus === "verified" && "✅ Akun Terverifikasi"}
+              {userData.verificationStatus === "pending" && "⏳ Menunggu Verifikasi"}
+              {userData.verificationStatus === "unverified" && "❌ Belum Terverifikasi"}
+            </div>
+            {userData.verificationStatus === "unverified" && (
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Upload KTP untuk verifikasi akun
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Right: Profile Form */}
@@ -456,26 +487,57 @@ export default function Profile() {
             <div className="md:col-span-2">
               <label htmlFor="ktpFile" className="block text-sm font-semibold text-red-300 mb-2">
                 Foto KTP
+                {userData.verificationStatus === "unverified" && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
               </label>
+
               {editMode ? (
-                <input
-                  type="file"
-                  id="ktpFile"
-                  name="ktpFile"
-                  accept="image/*"
-                  onChange={handleChange}
-                  className="w-full text-gray-900 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors file:cursor-pointer"
-                />
+                <div className="space-y-3">
+                  <input
+                    type="file"
+                    id="ktpFile"
+                    name="ktpFile"
+                    accept="image/*"
+                    onChange={handleChange}
+                    className="w-full text-gray-900 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors file:cursor-pointer"
+                  />
+                  {userData.verificationStatus === "unverified" && (
+                    <p className="text-sm text-red-600 font-medium">
+                      Upload KTP diperlukan untuk verifikasi akun
+                    </p>
+                  )}
+                </div>
               ) : null}
+
               <div className="mt-4 flex justify-center">
                 {userData.ktpURL ? (
-                  <img
-                    src={userData.ktpURL}
-                    alt="Foto KTP"
-                    className="max-w-xs rounded-lg shadow-lg border-2 border-red-600"
-                  />
+                  <div className="text-center">
+                    <img
+                      src={userData.ktpURL}
+                      alt="Foto KTP"
+                      className="max-w-xs rounded-lg shadow-lg border-2 border-red-600"
+                    />
+                    {userData.verificationStatus === "pending" && (
+                      <p className="text-yellow-600 text-sm mt-2 font-medium">
+                        KTP sedang dalam proses verifikasi admin
+                      </p>
+                    )}
+                    {userData.verificationStatus === "verified" && (
+                      <p className="text-green-600 text-sm mt-2 font-medium">
+                        KTP telah diverifikasi
+                      </p>
+                    )}
+                  </div>
                 ) : (
-                  <p className="text-gray-400">Foto KTP tidak tersedia</p>
+                  <div className="text-center">
+                    <p className="text-gray-400 mb-2">Foto KTP tidak tersedia</p>
+                    {userData.verificationStatus === "unverified" && (
+                      <p className="text-red-600 text-sm font-medium">
+                        Upload KTP untuk verifikasi akun
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

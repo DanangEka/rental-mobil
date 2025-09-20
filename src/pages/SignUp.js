@@ -17,7 +17,6 @@ export default function SignUp() {
     nomorTelepon: "",
     email: "",
     password: "",
-    ktpFile: null,
     penanggungJawab: "",
     penanggungJawabAlamat: "",
     penanggungJawabTelepon: "",
@@ -27,35 +26,11 @@ export default function SignUp() {
 
   const javaProvinces = ["banten", "dki jakarta", "jawa barat", "jawa tengah", "jawa timur", "di yogyakarta"];
 
-  // 🔹 fungsi upload ke Cloudinary
-  const uploadToCloudinary = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "rental-mobil"); // ganti sesuai Cloudinary
-    formData.append("cloud_name", "dnfruux8d"); // ganti sesuai Cloudinary
 
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/dnfruux8d/image/upload`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
-
-    if (!res.ok) {
-      throw new Error("Upload ke Cloudinary gagal");
-    }
-
-    return res.json(); // hasilnya ada secure_url
-  };
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === "ktpFile") {
-      setForm({ ...form, ktpFile: files[0] });
-    } else {
-      setForm({ ...form, [name]: value });
-    }
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
   };
 
   const handleSubmit = async (e) => {
@@ -71,8 +46,7 @@ export default function SignUp() {
       !form.rw ||
       !form.nomorTelepon ||
       !form.email ||
-      !form.password ||
-      !form.ktpFile
+      !form.password
     ) {
       alert("Semua field harus diisi!");
       return;
@@ -97,12 +71,7 @@ export default function SignUp() {
       const user = userCredential.user;
       console.log("✅ User dibuat di Auth:", user.uid, user.email);
 
-      // 2) Upload file KTP ke Cloudinary
-      const uploadRes = await uploadToCloudinary(form.ktpFile);
-      const ktpURL = uploadRes.secure_url;
-      console.log("✅ File KTP berhasil diupload ke Cloudinary:", ktpURL);
-
-      // 3) Simpan data user ke Firestore (docId = UID user)
+      // 2) Simpan data user ke Firestore (docId = UID user)
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         nama: form.nama,
@@ -115,20 +84,20 @@ export default function SignUp() {
         rw: form.rw,
         nomorTelepon: form.nomorTelepon,
         email: form.email,
-        ktpURL: ktpURL,
         penanggungJawab: form.penanggungJawab,
         penanggungJawabAlamat: form.penanggungJawabAlamat,
         penanggungJawabTelepon: form.penanggungJawabTelepon,
         role: "client",
+        verificationStatus: "unverified",
         createdAt: serverTimestamp(),
       });
       console.log("✅ User berhasil disimpan di Firestore:", user.uid);
 
-      // 4) Logout & arahkan ke login
+      // 3) Logout & arahkan ke login
       await signOut(auth);
       console.log("✅ User berhasil logout setelah signup.");
 
-      alert("Pendaftaran berhasil! Selamat datang di Cakra Lima Tujuh.");
+      alert("Pendaftaran berhasil! Silakan login dan lengkapi verifikasi KTP di profil Anda.");
       navigate("/");
     } catch (error) {
       console.error("❌ Gagal di step signup:", error);
@@ -403,24 +372,7 @@ export default function SignUp() {
               </>
             )}
 
-            {/* KTP */}
-            <div className="md:col-span-2">
-              <label htmlFor="ktpFile" className="block text-sm font-semibold text-red-300 mb-2">
-                Upload Foto KTP
-              </label>
-              <input
-                type="file"
-                id="ktpFile"
-                name="ktpFile"
-                accept="image/*"
-                onChange={handleChange}
-                className="w-full text-gray-900 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors file:cursor-pointer"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Upload foto KTP yang jelas untuk verifikasi
-              </p>
-            </div>
+
           </div>
 
           <button

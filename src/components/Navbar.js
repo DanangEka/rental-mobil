@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from "../services/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, updateDoc } from "firebase/firestore";
-import { Menu, X, User, LogIn, LogOut, Gauge, Car, Users, Bell, ClipboardList, TrendingUp } from "lucide-react";
+import { Menu, X, User, LogIn, LogOut, Gauge, Car, Users, Bell, ClipboardList, TrendingUp, History } from "lucide-react";
 import logo from "../assets/logo.png";
 
 export default function Navbar() {
@@ -133,7 +133,8 @@ export default function Navbar() {
       ...(user && role === "client"
         ? [
             { name: "Profil", path: "/profil", icon: <User size={20} /> },
-            { name: "List Mobil", path: "/home", icon: <Car size={20} /> }
+            { name: "List Mobil", path: "/home", icon: <Car size={20} /> },
+            { name: "History Pesanan", path: "/history-pesanan", icon: <History size={20} /> }
           ]
         : []),
       ...(user && role === "admin"

@@ -9,6 +9,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Profile from "./pages/Profile";
 import CompanyProfile from "./pages/CompanyProfile";
 import SignUp from "./pages/SignUp";
+import HistoryPesanan from "./pages/HistoryPesanan";
 
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -56,6 +57,14 @@ function App() {
           element={
             <ProtectedRoute role="client">
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/history-pesanan"
+          element={
+            <ProtectedRoute role="client">
+              <HistoryPesanan />
             </ProtectedRoute>
           }
         />
