@@ -10,6 +10,16 @@ import Profile from "./pages/Profile";
 import CompanyProfile from "./pages/CompanyProfile";
 import SignUp from "./pages/SignUp";
 import HistoryPesanan from "./pages/HistoryPesanan";
+import DriverDashboard from "./pages/DriverDashboard";
+import DriverOrders from "./pages/DriverOrders";
+import VehicleVerification from "./pages/VehicleVerification";
+import PaymentVerification from "./pages/PaymentVerification";
+import DriverProfile from "./pages/DriverProfile";
+import AdminDriverManagement from "./pages/AdminDriverManagement";
+import AdminVehicleVerifications from "./pages/AdminVehicleVerifications";
+import AdminPaymentVerifications from "./pages/AdminPaymentVerifications";
+import AdminDriverProfiles from "./pages/AdminDriverProfiles";
+import AdminAddDriver from "./pages/AdminAddDriver";
 
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -75,6 +85,90 @@ function App() {
           element={
             <ProtectedRoute role={["client", "admin"]}>
               <ListMobil />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Driver Routes */}
+        <Route
+          path="/driver-dashboard"
+          element={
+            <ProtectedRoute role="driver">
+              <DriverDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/driver-orders"
+          element={
+            <ProtectedRoute role="driver">
+              <DriverOrders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vehicle-verification"
+          element={
+            <ProtectedRoute role="driver">
+              <VehicleVerification />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payment-verification"
+          element={
+            <ProtectedRoute role="driver">
+              <PaymentVerification />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/driver-profile"
+          element={
+            <ProtectedRoute role="driver">
+              <DriverProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin Driver Management Routes */}
+        <Route
+          path="/admin-driver-management"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminDriverManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-vehicle-verifications"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminVehicleVerifications />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-payment-verifications"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminPaymentVerifications />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-driver-profiles"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminDriverProfiles />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-add-driver"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminAddDriver />
             </ProtectedRoute>
           }
         />

@@ -47,6 +47,9 @@ export default function Login() {
             alert("Akun Anda sedang dalam proses verifikasi. Silakan tunggu konfirmasi admin.");
           }
           navigate("/");
+        } else if (role === "driver") {
+          // Driver login - redirect to driver dashboard
+          navigate("/driver-dashboard");
         } else {
           setError("Role tidak dikenali.");
         }
@@ -78,6 +81,9 @@ export default function Login() {
               alert("Akun Anda sedang dalam proses verifikasi. Silakan tunggu konfirmasi admin.");
             }
             navigate("/");
+          } else if (role === "driver") {
+            // Driver login - redirect to driver dashboard
+            navigate("/driver-dashboard");
           }
         }
       }

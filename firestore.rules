@@ -7,10 +7,10 @@ service cloud.firestore {
       // Boleh baca data sendiri
       allow read: if request.auth != null && request.auth.uid == userId;
 
-      // Boleh buat data sendiri, tapi hanya bisa set role = "client"
+      // Boleh buat data sendiri, bisa set role = "client" atau "driver"
       allow create: if request.auth != null
                     && request.auth.uid == userId
-                    && request.resource.data.role == "client";
+                    && (request.resource.data.role == "client" || request.resource.data.role == "driver");
 
       // Boleh update data sendiri, tapi tidak boleh mengubah role
       allow update: if request.auth != null
@@ -23,12 +23,24 @@ service cloud.firestore {
 
     // === PEMESANAN ===
     match /pemesanan/{docId} {
+      // User bisa baca pesanan miliknya, admin bisa baca semua, driver bisa baca pesanan yang ditugaskan
       allow read: if request.auth != null && (
-        resource.data.uid == request.auth.uid || // user hanya bisa baca pesanannya sendiri
-        request.auth.token.admin == true         // admin bisa baca semua
+        resource.data.uid == request.auth.uid ||        // user baca pesanannya sendiri
+        request.auth.token.admin == true ||            // admin baca semua
+        resource.data.driverId == request.auth.uid     // driver baca pesanan yang ditugaskan
       );
+
+      // User hanya bisa create pesanan untuk dirinya sendiri
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if request.auth.token.admin == true;
+
+      // Admin bisa update/delete pesanan apapun
+      allow update, delete: if request.auth != null && request.auth.token.admin == true;
+
+      // Driver bisa update status pesanan yang ditugaskan kepadanya
+      allow update: if request.auth != null
+                    && resource.data.driverId == request.auth.uid
+                    && request.resource.data.diff(resource.data).changedKeys()
+                          .hasOnly(["status", "updatedAt"]);
     }
 
     // === MOBIL ===
@@ -47,6 +59,50 @@ service cloud.firestore {
       allow read: if request.auth != null && (resource.data.userId == request.auth.uid || request.auth.token.admin == true);
       allow create: if request.auth != null && (request.resource.data.userId == request.auth.uid || request.resource.data.userId == "admin" || request.auth.token.admin == true);
       allow update: if request.auth != null && (resource.data.userId == request.auth.uid || request.auth.token.admin == true);
+    }
+
+    // === VEHICLE VERIFICATIONS ===
+    match /vehicleVerifications/{docId} {
+      // Driver bisa baca verifikasi miliknya, admin bisa baca semua
+      allow read: if request.auth != null && (
+        resource.data.driverId == request.auth.uid ||
+        request.auth.token.admin == true
+      );
+
+      // Driver bisa create verifikasi untuk dirinya sendiri
+      allow create: if request.auth != null
+                    && request.resource.data.driverId == request.auth.uid;
+
+      // Driver bisa update verifikasi miliknya, admin bisa update semua
+      allow update: if request.auth != null && (
+        resource.data.driverId == request.auth.uid ||
+        request.auth.token.admin == true
+      );
+
+      // Admin bisa delete semua
+      allow delete: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // === PAYMENT VERIFICATIONS ===
+    match /paymentVerifications/{docId} {
+      // Driver bisa baca verifikasi pembayaran miliknya, admin bisa baca semua
+      allow read: if request.auth != null && (
+        resource.data.driverId == request.auth.uid ||
+        request.auth.token.admin == true
+      );
+
+      // Driver bisa create verifikasi pembayaran untuk dirinya sendiri
+      allow create: if request.auth != null
+                    && request.resource.data.driverId == request.auth.uid;
+
+      // Driver bisa update verifikasi pembayaran miliknya, admin bisa update semua
+      allow update: if request.auth != null && (
+        resource.data.driverId == request.auth.uid ||
+        request.auth.token.admin == true
+      );
+
+      // Admin bisa delete semua
+      allow delete: if request.auth != null && request.auth.token.admin == true;
     }
 
   }

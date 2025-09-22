@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from "../services/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, updateDoc } from "firebase/firestore";
-import { Menu, X, User, LogIn, LogOut, Gauge, Car, Users, Bell, ClipboardList, TrendingUp, History } from "lucide-react";
+import { Menu, X, User, LogIn, LogOut, Gauge, Car, Users, Bell, ClipboardList, TrendingUp, History, FileText, CreditCard, Camera, CheckCircle, Settings, UserPlus } from "lucide-react";
 import logo from "../assets/logo.png";
 
 export default function Navbar() {
@@ -143,7 +143,18 @@ export default function Navbar() {
             { name: "Manajemen Pesanan", path: "/manajemen-pesanan", icon: <ClipboardList size={20} /> },
             { name: "List Mobil", path: "/home", icon: <Car size={20} /> },
             { name: "Manajemen Mobil", path: "/car-management", icon: <Car size={20} /> },
-            { name: "Manajemen Client", path: "/client-management", icon: <Users size={20} /> }
+            { name: "Manajemen Client", path: "/client-management", icon: <Users size={20} /> },
+            { name: "Management Driver", path: "/admin-driver-management", icon: <Settings size={20} /> },
+            { name: "Tambah Driver", path: "/admin-add-driver", icon: <UserPlus size={20} /> }
+          ]
+        : []),
+      ...(user && role === "driver"
+        ? [
+            { name: "Dashboard", path: "/driver-dashboard", icon: <Gauge size={20} /> },
+            { name: "Order", path: "/driver-orders", icon: <ClipboardList size={20} /> },
+            { name: "Verifikasi Mobil", path: "/vehicle-verification", icon: <Camera size={20} /> },
+            { name: "Verifikasi Pembayaran", path: "/payment-verification", icon: <CreditCard size={20} /> },
+            { name: "Profil Driver", path: "/driver-profile", icon: <User size={20} /> }
           ]
         : []),
       ...(!user
