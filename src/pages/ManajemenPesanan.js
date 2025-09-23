@@ -12,8 +12,9 @@ import {
 } from "firebase/firestore";
 import axios from "axios";
 import jsPDF from "jspdf";
-import { Search, Filter, RefreshCw, Download, Eye, CheckCircle, XCircle, Clock, AlertTriangle } from "lucide-react";
+import { Search, Filter, RefreshCw, Download, Eye, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign } from "lucide-react";
 import { Edit } from "lucide-react";
+import InvoiceGenerator from "../components/InvoiceGenerator";
 
 export default function ManajemenPesanan() {
   const [pemesanan, setPemesanan] = useState([]);
@@ -68,7 +69,11 @@ export default function ManajemenPesanan() {
     if (!isAdmin) return;
     const unsubscribe = onSnapshot(collection(db, "pemesanan"), (snapshot) => {
       const pemesananData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      pemesananData.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+      pemesananData.sort((a, b) => {
+        const dateA = a.tanggal ? new Date(a.tanggal) : new Date(0);
+        const dateB = b.tanggal ? new Date(b.tanggal) : new Date(0);
+        return dateB - dateA;
+      });
       setPemesanan(pemesananData);
     });
     return () => unsubscribe();
@@ -116,6 +121,107 @@ export default function ManajemenPesanan() {
     }
   };
 
+  const handleMarkAsLunas = async (id, mobilId) => {
+    const pemesananDoc = await getDoc(doc(db, "pemesanan", id));
+    const pemesananData = pemesananDoc.data();
+    const userId = pemesananData.uid;
+
+    // Mark order as fully paid (Lunas)
+    await updateDoc(doc(db, "pemesanan", id), {
+      status: "lunas",
+      paymentStatus: "fully_paid",
+      lunasAt: new Date().toISOString()
+    });
+
+    // Make car available again
+    await updateDoc(doc(db, "mobil", mobilId), {
+      tersedia: true,
+      status: "normal"
+    });
+
+    // Send notification to user
+    await addDoc(collection(db, "notifications"), {
+      userId,
+      message: `Pemesanan mobil ${pemesananData.namaMobil} telah lunas (pembayaran penuh). Terima kasih telah menggunakan layanan kami.`,
+      read: false,
+      timestamp: serverTimestamp()
+    });
+
+    // Send notification to admin
+    await addDoc(collection(db, "notifications"), {
+      userId: "admin",
+      message: `Order ${pemesananData.namaMobil} telah lunas - ${pemesananData.email}`,
+      read: false,
+      timestamp: serverTimestamp()
+    });
+  };
+
+  const handleBalancePaymentApproval = async (id, status) => {
+    const orderDoc = await getDoc(doc(db, "pemesanan", id));
+    const order = { id, ...orderDoc.data() };
+
+    if (status === "approved") {
+      // Approve the balance payment
+      await updateDoc(doc(db, "pemesanan", id), {
+        status: "lunas",
+        paymentStatus: "fully_paid",
+        balancePaymentRequest: {
+          ...order.balancePaymentRequest,
+          status: "approved",
+          approvedAt: new Date().toISOString()
+        },
+        lunasAt: new Date().toISOString()
+      });
+
+      // Make car available again
+      await updateDoc(doc(db, "mobil", order.mobilId), {
+        tersedia: true,
+        status: "normal"
+      });
+
+      // Send notification to user
+      await addDoc(collection(db, "notifications"), {
+        userId: order.uid,
+        message: `Pembayaran pelunasan untuk mobil ${order.namaMobil} telah dikonfirmasi. Order telah lunas. Terima kasih telah menggunakan layanan kami.`,
+        read: false,
+        timestamp: serverTimestamp()
+      });
+
+      // Send notification to admin
+      await addDoc(collection(db, "notifications"), {
+        userId: "admin",
+        message: `Balance payment approved: ${order.namaMobil} - ${order.email} - ${order.balancePaymentRequest.paymentMethod}`,
+        read: false,
+        timestamp: serverTimestamp()
+      });
+    } else {
+      // Reject the balance payment
+      await updateDoc(doc(db, "pemesanan", id), {
+        balancePaymentRequest: {
+          ...order.balancePaymentRequest,
+          status: "rejected",
+          rejectedAt: new Date().toISOString()
+        }
+      });
+
+      // Send notification to user
+      await addDoc(collection(db, "notifications"), {
+        userId: order.uid,
+        message: `Pembayaran pelunasan untuk mobil ${order.namaMobil} telah ditolak. Silakan hubungi admin untuk informasi lebih lanjut.`,
+        read: false,
+        timestamp: serverTimestamp()
+      });
+
+      // Send notification to admin
+      await addDoc(collection(db, "notifications"), {
+        userId: "admin",
+        message: `Balance payment rejected: ${order.namaMobil} - ${order.email} - ${order.balancePaymentRequest.paymentMethod}`,
+        read: false,
+        timestamp: serverTimestamp()
+      });
+    }
+  };
+
   const handlePaymentApproval = async (id, status) => {
     const orderDoc = await getDoc(doc(db, "pemesanan", id));
     const order = { id, ...orderDoc.data() };
@@ -137,6 +243,63 @@ export default function ManajemenPesanan() {
       await axios.post('/api/payment-success', order);
     } catch (err) {
       console.error('Error calling payment success API:', err);
+    }
+  };
+
+  const handleCashRentalApproval = async (id, status) => {
+    const orderDoc = await getDoc(doc(db, "pemesanan", id));
+    const order = { id, ...orderDoc.data() };
+
+    if (status === "approved") {
+      // Approve the cash rental
+      await updateDoc(doc(db, "pemesanan", id), {
+        status: "approve sewa",
+        paymentStatus: "cash_approved",
+        approvedAt: new Date().toISOString()
+      });
+
+      // Update car status to rented
+      await updateDoc(doc(db, "mobil", order.mobilId), {
+        tersedia: false,
+        status: "disewa"
+      });
+
+      // Send notification to user
+      await addDoc(collection(db, "notifications"), {
+        userId: order.uid,
+        message: `Permintaan sewa cash untuk mobil ${order.namaMobil} telah disetujui. Mobil siap untuk diambil.`,
+        read: false,
+        timestamp: serverTimestamp()
+      });
+
+      // Send notification to admin about driver assignment
+      await addDoc(collection(db, "notifications"), {
+        userId: "admin",
+        message: `Sewa cash disetujui: ${order.namaMobil} - ${order.email}. Siap untuk ditugaskan ke driver.`,
+        read: false,
+        timestamp: serverTimestamp()
+      });
+    } else {
+      // Reject the cash rental
+      await updateDoc(doc(db, "pemesanan", id), {
+        status: "ditolak",
+        paymentStatus: "cash_rejected",
+        rejectedAt: new Date().toISOString()
+      });
+
+      // Update car status back to available
+      await updateDoc(doc(db, "mobil", order.mobilId), {
+        tersedia: true,
+        status: "tersedia"
+      });
+
+      // Send notification to user
+      await addDoc(collection(db, "notifications"), {
+        userId: order.uid,
+        message: `Permintaan sewa cash untuk mobil ${order.namaMobil} telah ditolak.`,
+        read: false,
+        timestamp: serverTimestamp()
+      });
     }
   };
 
@@ -185,80 +348,12 @@ export default function ManajemenPesanan() {
     }
   };
 
-  const generateInvoicePDF = (order, user) => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("INVOICE SEWA MOBIL HARIAN", 105, 15, { align: "center" });
-    doc.setFontSize(12);
-    doc.text("Cakra Lima Tujuh", 105, 25, { align: "center" });
-    doc.text("Lembah Harapan, Blok AA-57, Lidah Wetan, Kec. Lakarsantri, Surabaya.", 105, 32, { align: "center" });
-    doc.text("Email: limatujuhcakra@gmail.com", 105, 39, { align: "center" });
-
-    doc.setLineWidth(0.5);
-    doc.line(15, 45, 195, 45);
-
-    let y = 55;
-    doc.text("Kepada Yth.,", 15, y);
-    y += 7;
-    doc.text(`Nama       : ${user?.nama || order.namaClient || "-"}`, 15, y);
-    y += 7;
-    doc.text(`Alamat     : ${user?.alamat || "-"}`, 15, y);
-    y += 7;
-    doc.text(`No. Telepon: ${user?.nomorTelepon || order.telepon || "-"}`, 15, y);
-
-    y += 15;
-    doc.setFontSize(14);
-    doc.text("Detail Rental Mobil", 15, y);
-    y += 7;
-
-    // Table headers
-    doc.setFontSize(12);
-    doc.setFillColor(220, 220, 220);
-    doc.rect(15, y, 90, 10, "F");
-    doc.rect(105, y, 90, 10, "F");
-    doc.setTextColor(0, 0, 0);
-    doc.text("Deskripsi", 20, y + 7);
-    doc.text("Detail", 110, y + 7);
-    y += 10;
-
-    // Table rows
-    const addRow = (desc, detail) => {
-      doc.rect(15, y, 90, 10);
-      doc.rect(105, y, 90, 10);
-      doc.text(desc, 20, y + 7);
-      doc.text(detail, 110, y + 7);
-      y += 10;
-    };
-
-    addRow("Merek Mobil", order.namaMobil || "-");
-    addRow("Plat Nomor", order.platNomor || "-");
-    addRow("Tanggal Sewa", order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString() : "-");
-    addRow("Tanggal Kembali", order.tanggalSelesai ? new Date(order.tanggalSelesai).toLocaleDateString() : "-");
-    addRow("Lama Sewa", (order.durasiHari || 1) + " Hari");
-    addRow("Harga Sewa per Hari", `Rp ${order.hargaPerhari?.toLocaleString() || "0"}`);
-
-    y += 10;
-    doc.setFontSize(14);
-    doc.text("Rincian Biaya", 15, y);
-    y += 7;
-
-    // Table headers for cost
-    doc.setFontSize(12);
-    doc.setFillColor(220, 220, 220);
-    doc.rect(15, y, 135, 10, "F");
-    doc.rect(150, y, 45, 10, "F");
-    doc.setTextColor(0, 0, 0);
-    doc.text("Deskripsi", 20, y + 7);
-    doc.text("Jumlah", 155, y + 7);
-    y += 10;
-
-    // Cost rows
-    addRow(`Biaya Sewa (${order.durasiHari || 1} Hari)`, `Rp ${order.perkiraanHarga?.toLocaleString() || "0"}`);
-    addRow("Biaya Driver", "Rp 0");
-    addRow("Total Pembayaran", `Rp ${order.perkiraanHarga.toLocaleString()}`);
-
-    // Open in new tab
-    const pdfData = doc.output('dataurlnewwindow');
+  const generateInvoicePDF = (order, user, type = "full") => {
+    if (type === "dp") {
+      InvoiceGenerator.generateDPInvoice(order, user);
+    } else {
+      InvoiceGenerator.generateFullInvoice(order, user);
+    }
   };
 
   // Enhanced filtering and sorting
@@ -279,9 +374,13 @@ export default function ManajemenPesanan() {
     .sort((a, b) => {
       switch (sortBy) {
         case "newest":
-          return new Date(b.tanggal) - new Date(a.tanggal);
+          const dateA = a.tanggal ? new Date(a.tanggal) : new Date(0);
+          const dateB = b.tanggal ? new Date(b.tanggal) : new Date(0);
+          return dateB - dateA;
         case "oldest":
-          return new Date(a.tanggal) - new Date(b.tanggal);
+          const dateA2 = a.tanggal ? new Date(a.tanggal) : new Date(0);
+          const dateB2 = b.tanggal ? new Date(b.tanggal) : new Date(0);
+          return dateA2 - dateB2;
         case "price-high":
           return (b.perkiraanHarga || 0) - (a.perkiraanHarga || 0);
         case "price-low":
@@ -393,6 +492,19 @@ export default function ManajemenPesanan() {
                 </div>
               </div>
             </div>
+            <div className="bg-emerald-50 p-4 sm:p-6 rounded-xl border border-emerald-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm sm:text-lg font-semibold text-emerald-900">Lunas</h3>
+                  <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
+                    {filteredPemesanan.filter(p => p.status === "lunas").length}
+                  </p>
+                </div>
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <DollarSign className="h-6 w-6 text-emerald-600" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -427,7 +539,9 @@ export default function ManajemenPesanan() {
                 <option value="menunggu pembayaran">Menunggu Pembayaran</option>
                 <option value="pembayaran berhasil">Pembayaran Berhasil</option>
                 <option value="selesai">Selesai</option>
+                <option value="lunas">Lunas</option>
                 <option value="ditolak">Ditolak</option>
+                <option value="balance_pending">Menunggu Pelunasan</option>
               </select>
             </div>
             <div>
@@ -528,9 +642,11 @@ export default function ManajemenPesanan() {
                       <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
                         p.status === 'diproses' ? 'bg-yellow-100 text-yellow-800' :
                         p.status === 'disetujui' ? 'bg-green-100 text-green-800' :
+                        p.status === 'approve sewa' ? 'bg-purple-100 text-purple-800' :
                         p.status === 'menunggu pembayaran' ? 'bg-orange-100 text-orange-800' :
                         p.status === 'pembayaran berhasil' ? 'bg-blue-100 text-blue-800' :
                         p.status === 'selesai' ? 'bg-purple-100 text-purple-800' :
+                        p.status === 'lunas' ? 'bg-emerald-100 text-emerald-800' :
                         p.status === 'ditolak' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
@@ -602,6 +718,74 @@ export default function ManajemenPesanan() {
                     )}
                   </div>
 
+                  {/* Balance Payment Request */}
+                  {p.balancePaymentRequest && (
+                    <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <DollarSign size={16} className="text-orange-600" />
+                        <span className="text-sm font-medium text-orange-900">Permintaan Pembayaran Pelunasan</span>
+                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                          p.balancePaymentRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          p.balancePaymentRequest.status === 'approved' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {p.balancePaymentRequest.status}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-700">Metode Pembayaran:</span>
+                          <p className="text-gray-900">{p.balancePaymentRequest.paymentMethod}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Jumlah:</span>
+                          <p className="text-gray-900">Rp {p.balancePaymentRequest.amount?.toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Diminta pada: {new Date(p.balancePaymentRequest.requestedAt).toLocaleString()}
+                      </p>
+
+                      {/* Balance Payment Proof */}
+                      {p.balancePaymentRequest.paymentProof && (
+                        <div className="mt-3">
+                          <span className="text-sm font-medium text-gray-700">Bukti Pembayaran Pelunasan:</span>
+                          <a
+                            href={p.balancePaymentRequest.paymentProof}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline block mb-2"
+                          >
+                            Lihat Bukti (klik untuk membuka di tab baru)
+                          </a>
+                          <img
+                            src={p.balancePaymentRequest.paymentProof}
+                            alt="Bukti Pembayaran Pelunasan"
+                            className="w-48 rounded-lg shadow-md border"
+                          />
+                        </div>
+                      )}
+
+                      {/* Approval Buttons for Pending Balance Payments */}
+                      {p.balancePaymentRequest.status === "pending" && (
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => handleBalancePaymentApproval(p.id, "approved")}
+                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
+                          >
+                            Setujui Pelunasan
+                          </button>
+                          <button
+                            onClick={() => handleBalancePaymentApproval(p.id, "rejected")}
+                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                          >
+                            Tolak Pelunasan
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-3">
                     {/* Edit Request Approval */}
                     {p.editRequest && p.editRequest.status === "pending" && (
@@ -617,6 +801,24 @@ export default function ManajemenPesanan() {
                           className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
                         >
                           Tolak Edit
+                        </button>
+                      </>
+                    )}
+
+                    {/* Cash Rental Approval */}
+                    {p.paymentStatus === "pending_approval" && p.paymentMethod === "Cash" && (
+                      <>
+                        <button
+                          onClick={() => handleCashRentalApproval(p.id, "approved")}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Approve Sewa
+                        </button>
+                        <button
+                          onClick={() => handleCashRentalApproval(p.id, "rejected")}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Tolak Sewa
                         </button>
                       </>
                     )}
@@ -657,10 +859,59 @@ export default function ManajemenPesanan() {
                     {p.status === "pembayaran berhasil" && (
                       <>
                         <button
-                          onClick={() => generateInvoicePDF(p, user)}
+                          onClick={() => generateInvoicePDF(p, user, "dp")}
                           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
                         >
-                          Lihat Invoice PDF
+                          Invoice DP (50%)
+                        </button>
+                        <button
+                          onClick={() => handleStatus(p.id, "selesai", p.mobilId)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Selesai
+                        </button>
+                      </>
+                    )}
+                    {p.status === "selesai" && (
+                      <>
+                        <button
+                          onClick={() => generateInvoicePDF(p, user, "full")}
+                          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Invoice Pembayaran Penuh
+                        </button>
+                        <button
+                          onClick={() => handleMarkAsLunas(p.id, p.mobilId)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                        >
+                          <DollarSign size={16} />
+                          Tandai Lunas
+                        </button>
+                      </>
+                    )}
+                    {p.status === "disetujui" && (
+                      <>
+                        <button
+                          onClick={() => handleStatus(p.id, "selesai", p.mobilId)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Selesai
+                        </button>
+                      </>
+                    )}
+                    {p.status === "approve sewa" && (
+                      <>
+                        <button
+                          onClick={() => handlePaymentApproval(p.id, "pembayaran berhasil")}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Konfirmasi Pembayaran
+                        </button>
+                        <button
+                          onClick={() => handleStatus(p.id, "ditolak", p.mobilId)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Tolak
                         </button>
                         <button
                           onClick={() => handleStatus(p.id, "selesai", p.mobilId)}

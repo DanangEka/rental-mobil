@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Car, MapPin, Calendar, Users, Fuel, Settings, Search, Filter, RefreshCw, Star } from "lucide-react";
-import InvoiceGenerator from "../components/InvoiceGenerator";
 
 export default function ListMobil() {
   const navigate = useNavigate();
@@ -16,6 +15,8 @@ export default function ListMobil() {
   const [rentalType, setRentalType] = useState({});
   const [paymentMethod, setPaymentMethod] = useState({});
   const [paymentProof, setPaymentProof] = useState({});
+  const [cashAmount, setCashAmount] = useState({});
+  const [cashPaymentProof, setCashPaymentProof] = useState({});
   const [userOrders, setUserOrders] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -24,8 +25,6 @@ export default function ListMobil() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [filterStatus, setFilterStatus] = useState("semua");
-  const [showPaymentPopup, setShowPaymentPopup] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
 
   const addNotification = async (message) => {
     try {
@@ -307,21 +306,6 @@ export default function ListMobil() {
             : o
         )
       );
-
-      // 4. Generate DP Invoice
-      try {
-        const updatedOrder = {
-          ...order,
-          paymentMethod: paymentMethod[order.id] || order.paymentMethod,
-          paymentProof: paymentProofURL,
-          paymentStatus: "submitted"
-        };
-        InvoiceGenerator.generateDPInvoice(updatedOrder, userData);
-        await addNotification("Invoice DP telah dibuat dan didownload");
-      } catch (invoiceError) {
-        console.error("Error generating DP invoice:", invoiceError);
-        // Don't show error to user as payment was successful
-      }
     } catch (err) {
       console.error("Gagal mengirim bukti pembayaran:", err);
       alert("Terjadi kesalahan saat mengirim bukti pembayaran. Error: " + err.message);
@@ -329,63 +313,62 @@ export default function ListMobil() {
   };
 
   const handleCashPayment = async (order) => {
-    const selectedPaymentMethod = paymentMethod[order.id] || order.paymentMethod;
-
-    if (!selectedPaymentMethod) {
+    if (!paymentMethod[order.id] && !order.paymentMethod) {
       alert("Silakan pilih metode pembayaran.");
       return;
     }
 
-    if (selectedPaymentMethod !== "Cash") {
-      alert("Metode pembayaran harus Cash untuk menggunakan fitur ini.");
+    if (!cashAmount[order.id]) {
+      alert("Silakan masukkan jumlah pembayaran.");
+      return;
+    }
+
+    if (!cashPaymentProof[order.id]) {
+      alert("Silakan upload foto bukti pembayaran.");
       return;
     }
 
     try {
-      // Update data pemesanan untuk cash payment tanpa upload bukti
+      // Upload gambar ke Cloudinary
+      const formData = new FormData();
+      formData.append("file", cashPaymentProof[order.id]);
+      formData.append("upload_preset", process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET);
+
+      const cloudinaryRes = await axios.post(
+        `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        formData
+      );
+
+      const paymentProofURL = cloudinaryRes.data.secure_url;
+
+      // Update data pemesanan untuk cash payment
       const orderDocRef = doc(db, "pemesanan", order.id);
       await updateDoc(orderDocRef, {
-        paymentMethod: selectedPaymentMethod,
-        paymentStatus: "pending_approval", // Status baru untuk menunggu approval admin
+        paymentMethod: paymentMethod[order.id] || order.paymentMethod,
+        paymentStatus: "cash_submitted",
+        cashAmount: cashAmount[order.id],
+        cashPaymentProof: paymentProofURL,
         waktuUpload: new Date().toISOString(),
       });
 
       // Update state lokal agar UI berubah
-      await addNotification("Permintaan sewa dengan pembayaran cash telah diajukan");
-      await addAdminNotification(`Permintaan sewa cash dari ${order.email}: ${order.namaMobil} - Menunggu Approval`);
+      await addNotification("Permintaan pembayaran cash telah diajukan");
+      await addAdminNotification(`Permintaan pembayaran cash dari ${order.email}: ${order.namaMobil}`);
       setUserOrders((prev) =>
         prev.map((o) =>
           o.id === order.id
-            ? { ...o, paymentStatus: "pending_approval" }
+            ? { ...o, paymentStatus: "cash_submitted", cashAmount: cashAmount[order.id], cashPaymentProof: paymentProofURL }
             : o
         )
       );
-
-      // Generate DP Invoice for cash payment request
-      try {
-        const updatedOrder = {
-          ...order,
-          paymentMethod: selectedPaymentMethod,
-          paymentStatus: "pending_approval"
-        };
-        InvoiceGenerator.generateDPInvoice(updatedOrder, userData);
-        await addNotification("Invoice DP untuk pembayaran cash telah dibuat");
-      } catch (invoiceError) {
-        console.error("Error generating DP invoice for cash payment:", invoiceError);
-        // Don't show error to user as payment request was successful
-      }
     } catch (err) {
       console.error("Gagal mengajukan pembayaran cash:", err);
       alert("Terjadi kesalahan saat mengajukan pembayaran cash. Error: " + err.message);
     }
   };
 
-
-
   return (
-    <div
-      className={`min-h-screen bg-black ${mobil.length > 0 ? "pb-20" : ""}`}
-    >
+    <div className="min-h-screen bg-black">
       <div className="bg-red-900 text-white px-4 py-8 md:py-12 lg:py-16">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 tracking-tight">
@@ -530,8 +513,10 @@ export default function ListMobil() {
             <div className="bg-blue-900 p-4 rounded-xl border border-blue-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-blue-300">Total</h3>
-                  <p className="text-2xl font-bold text-blue-400">{filteredMobil.length}</p>
+                  <h3 className="text-sm font-semibold text-blue-300">Total Mobil</h3>
+                  <p className="text-2xl font-bold text-blue-400">
+                    {filteredMobil.length}
+                  </p>
                 </div>
                 <div className="p-2 bg-blue-800 rounded-lg">
                   <Car className="h-6 w-6 text-blue-400" />
@@ -541,12 +526,10 @@ export default function ListMobil() {
           </div>
         </div>
 
-        {filteredMobil.length === 0 ? (
-          <div className="text-center py-16 md:py-20">
-            <div className="text-gray-300 text-xl md:text-2xl font-medium">
-              Tidak ada mobil tersedia saat ini
-            </div>
-            <p className="text-gray-400 mt-2">Silakan kembali lagi nanti</p>
+        {/* Mobile Grid */}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-8 md:gap-10 lg:gap-12">
@@ -612,109 +595,146 @@ export default function ListMobil() {
                             </div>
                           );
                         } else if (
-  ["disetujui", "menunggu pembayaran", "approved"].includes(orderStatus?.trim())
-) {
-  if (order.paymentStatus === "submitted") {
-    return (
-      <div className="text-center py-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-green-900 rounded-full mb-3">
-          <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <div className="text-green-400 text-base font-semibold">
-          Bukti Pembayaran Berhasil Diupload
-        </div>
-        <div className="text-gray-400 text-sm mt-1">
-          Menunggu konfirmasi admin
-        </div>
-      </div>
-    );
-  } else if (order.paymentStatus === "pending_approval") {
-    return (
-      <div className="text-center py-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-900 rounded-full mb-3">
-          <div className="w-6 h-6 bg-yellow-500 rounded-full animate-pulse"></div>
-        </div>
-        <div className="text-yellow-400 text-base font-semibold">
-          Permintaan Sewa Cash Menunggu Approval
-        </div>
-        <div className="text-gray-400 text-sm mt-1">
-          Admin akan meninjau permintaan Anda
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="space-y-4">
-      <div className="text-center bg-gray-800 rounded-lg p-4 border border-gray-700">
-        <div className="text-green-400 text-base font-semibold">
-          Pesanan Disetujui
-        </div>
-        <div className="text-gray-300 text-sm mt-1">
-          Silakan lakukan pembayaran DP untuk melanjutkan
-        </div>
-      </div>
-      <div>
-        <label className="text-sm text-gray-300 font-medium block mb-2">
-          Metode Pembayaran
-        </label>
-        <select
-          value={paymentMethod[order.id] || order.paymentMethod || ""}
-          onChange={(e) => {
-            const selectedMethod = e.target.value;
-            setPaymentMethod((prev) => ({
-              ...prev,
-              [order.id]: selectedMethod,
-            }));
+                          ["disetujui", "menunggu pembayaran", "approved"].includes(orderStatus?.trim())
+                        ) {
+                          if (order.paymentStatus === "submitted") {
+                            return (
+                              <div className="text-center py-6">
+                                <div className="inline-flex items-center justify-center w-12 h-12 bg-green-900 rounded-full mb-3">
+                                  <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </div>
+                                <div className="text-green-400 text-base font-semibold">
+                                  Bukti Pembayaran Berhasil Diupload
+                                </div>
+                                <div className="text-gray-400 text-sm mt-1">
+                                  Menunggu konfirmasi admin
+                                </div>
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="space-y-4">
+                              <div className="text-center bg-gray-800 rounded-lg p-4 border border-gray-700">
+                                <div className="text-green-400 text-base font-semibold">
+                                  Pesanan Disetujui
+                                </div>
+                                <div className="text-gray-300 text-sm mt-1">
+                                  Silakan lakukan pembayaran DP untuk melanjutkan
+                                </div>
+                              </div>
+                              <div>
+                                <label className="text-sm text-gray-300 font-medium block mb-2">
+                                  Metode Pembayaran
+                                </label>
+                                <select
+                                  value={paymentMethod[order.id] || order.paymentMethod || ""}
+                                  onChange={(e) =>
+                                    setPaymentMethod((prev) => ({
+                                      ...prev,
+                                      [order.id]: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                >
+                                  <option value="">Pilih Metode</option>
+                                  <option value="Transfer Bank">Transfer Bank</option>
+                                  <option value="E-Wallet">E-Wallet</option>
+                                  <option value="Cash">Cash</option>
+                                </select>
+                              </div>
+                              {((paymentMethod[order.id] || order.paymentMethod) === "Cash") ? (
+                                <div className="space-y-4">
+                                  <div className="bg-blue-900 border border-blue-700 text-blue-100 px-4 py-3 rounded-lg">
+                                    <div className="flex items-center">
+                                      <div className="flex-shrink-0">
+                                        <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                        </svg>
+                                      </div>
+                                      <div className="ml-3">
+                                        <h3 className="text-sm font-medium text-blue-300">
+                                          Pembayaran Cash
+                                        </h3>
+                                        <div className="mt-1 text-sm text-blue-200">
+                                          <p>Pembayaran akan dilakukan secara cash saat pengambilan mobil.</p>
+                                          <p className="mt-1">Isi form di bawah untuk melanjutkan.</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
 
-            // Show popup for Transfer Bank or E-Wallet
-            if (selectedMethod === "Transfer Bank" || selectedMethod === "E-Wallet") {
-              setSelectedPaymentMethod(selectedMethod);
-              setShowPaymentPopup(true);
-            }
-          }}
-          className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-        >
-          <option value="">Pilih Metode</option>
-          <option value="Transfer Bank">Transfer Bank</option>
-          <option value="E-Wallet">E-Wallet</option>
-          <option value="Cash">Cash</option>
-        </select>
-      </div>
-      {/* Hide upload field for cash payments */}
-      {((paymentMethod[order.id] || order.paymentMethod) !== "Cash") && (
-        <div>
-          <label className="text-sm text-gray-300 font-medium block mb-2">
-            Bukti Pembayaran
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) =>
-              setPaymentProof((prev) => ({
-                ...prev,
-                [order.id]: e.target.files[0],
-              }))
-            }
-            className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-3 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors"
-          />
-        </div>
-      )}
-      <button
-        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-sm shadow-md hover:shadow-lg"
-        onClick={() => {
-          if ((paymentMethod[order.id] || order.paymentMethod) === "Cash") {
-            handleCashPayment(order);
-          } else {
-            handlePaymentSubmit(order);
-          }
-        }}
-      >
-        {(paymentMethod[order.id] || order.paymentMethod) === "Cash" ? "Ajukan Sewa" : "Kirim Bukti Pembayaran"}
-      </button>
-    </div>
-  );
+                                  <div>
+                                    <label className="text-sm text-gray-300 font-medium block mb-2">
+                                      Jumlah Pembayaran (Rp)
+                                    </label>
+                                    <input
+                                      type="number"
+                                      placeholder="Masukkan jumlah pembayaran"
+                                      value={cashAmount[order.id] || ""}
+                                      onChange={(e) =>
+                                        setCashAmount((prev) => ({
+                                          ...prev,
+                                          [order.id]: e.target.value,
+                                        }))
+                                      }
+                                      className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="text-sm text-gray-300 font-medium block mb-2">
+                                      Bukti Pembayaran Cash
+                                    </label>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) =>
+                                        setCashPaymentProof((prev) => ({
+                                          ...prev,
+                                          [order.id]: e.target.files[0],
+                                        }))
+                                      }
+                                      className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-3 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors"
+                                    />
+                                  </div>
+
+                                  <button
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-sm shadow-md hover:shadow-lg"
+                                    onClick={() => handleCashPayment(order)}
+                                  >
+                                    Ajukan Pembayaran Cash
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <div>
+                                    <label className="text-sm text-gray-300 font-medium block mb-2">
+                                      Bukti Pembayaran
+                                    </label>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) =>
+                                        setPaymentProof((prev) => ({
+                                          ...prev,
+                                          [order.id]: e.target.files[0],
+                                        }))
+                                      }
+                                      className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-3 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors"
+                                    />
+                                  </div>
+                                  <button
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-sm shadow-md hover:shadow-lg"
+                                    onClick={() => handlePaymentSubmit(order)}
+                                  >
+                                    Kirim Bukti Pembayaran
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          );
                         } else if (orderStatus === "pembayaran berhasil") {
                           return (
                             <div className="text-center py-6">
@@ -727,20 +747,6 @@ export default function ListMobil() {
                                 Pembayaran Telah Dikonfirmasi
                               </div>
                               <div className="text-gray-400 text-sm mt-1">Mobil siap diambil</div>
-                            </div>
-                          );
-                        } else if (orderStatus === "approve sewa") {
-                          return (
-                            <div className="text-center py-6">
-                              <div className="inline-flex items-center justify-center w-12 h-12 bg-green-900 rounded-full mb-3">
-                                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                              </div>
-                              <div className="text-green-400 text-base font-semibold">
-                                Sewa Cash Telah Disetujui
-                              </div>
-                              <div className="text-gray-400 text-sm mt-1">Mobil siap untuk diambil</div>
                             </div>
                           );
                         }
@@ -759,70 +765,70 @@ export default function ListMobil() {
                           <div className="space-y-4">
                             <div className="grid grid-cols-1 gap-3">
                               <div>
-                                  <label className="text-sm text-red-400 font-medium block mb-2">
-                                    Tanggal Mulai
-                                  </label>
-                                  <input
-                                    type="datetime-local"
-                                    value={tanggalMulai[m.id] || ""}
-                                    onChange={(e) =>
-                                      handleTanggalChange(m.id, "mulai", e.target.value)
+                                <label className="text-sm text-red-400 font-medium block mb-2">
+                                  Tanggal Mulai
+                                </label>
+                                <input
+                                  type="datetime-local"
+                                  value={tanggalMulai[m.id] || ""}
+                                  onChange={(e) =>
+                                    handleTanggalChange(m.id, "mulai", e.target.value)
+                                  }
+                                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm text-red-400 font-medium block mb-2">
+                                  Tanggal Selesai
+                                </label>
+                                <input
+                                  type="datetime-local"
+                                  value={tanggalSelesai[m.id] || ""}
+                                  onChange={(e) =>
+                                    handleTanggalChange(m.id, "selesai", e.target.value)
+                                  }
+                                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm text-red-400 font-medium block mb-2">
+                                  Tipe Sewa
+                                </label>
+                                <div className="flex bg-gray-100 rounded-lg p-1">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setRentalType((prev) => ({
+                                        ...prev,
+                                        [m.id]: "Lepas Kunci",
+                                      }))
                                     }
-                                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-sm text-red-400 font-medium block mb-2">
-                                    Tanggal Selesai
-                                  </label>
-                                  <input
-                                    type="datetime-local"
-                                    value={tanggalSelesai[m.id] || ""}
-                                    onChange={(e) =>
-                                      handleTanggalChange(m.id, "selesai", e.target.value)
+                                    className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                                      rentalType[m.id] === "Lepas Kunci" || !rentalType[m.id]
+                                        ? "bg-red-600 text-white shadow-md"
+                                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"
+                                    }`}
+                                  >
+                                    Lepas Kunci
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setRentalType((prev) => ({
+                                        ...prev,
+                                        [m.id]: "Driver",
+                                      }))
                                     }
-                                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                                  />
+                                    className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                                      rentalType[m.id] === "Driver"
+                                        ? "bg-red-600 text-white shadow-md"
+                                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"
+                                    }`}
+                                  >
+                                    Driver
+                                  </button>
                                 </div>
-                                <div>
-                                  <label className="text-sm text-red-400 font-medium block mb-2">
-                                    Tipe Sewa
-                                  </label>
-                                  <div className="flex bg-gray-100 rounded-lg p-1">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setRentalType((prev) => ({
-                                          ...prev,
-                                          [m.id]: "Lepas Kunci",
-                                        }))
-                                      }
-                                      className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-                                        rentalType[m.id] === "Lepas Kunci" || !rentalType[m.id]
-                                          ? "bg-red-600 text-white shadow-md"
-                                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"
-                                      }`}
-                                    >
-                                      Lepas Kunci
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setRentalType((prev) => ({
-                                          ...prev,
-                                          [m.id]: "Driver",
-                                        }))
-                                      }
-                                      className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-                                        rentalType[m.id] === "Driver"
-                                          ? "bg-red-600 text-white shadow-md"
-                                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"
-                                      }`}
-                                    >
-                                      Driver
-                                    </button>
-                                  </div>
-                                </div>
+                              </div>
                             </div>
 
                             {tanggalMulai[m.id] && tanggalSelesai[m.id] && (
@@ -844,7 +850,8 @@ export default function ListMobil() {
                                     return total.toLocaleString();
                                   })()}
                                 </p>
-                                {(rentalType[m.id] || "Lepas Kunci") === "Driver" && (
+                                {(rentalType[m.id] ||
+ "Lepas Kunci") === "Driver" && (
                                   <p className="text-sm text-gray-500 mt-1">
                                     Termasuk biaya driver: Rp 250.000
                                   </p>
@@ -883,21 +890,30 @@ export default function ListMobil() {
                           <div className="text-center py-6">
                             <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-900 rounded-full mb-3">
                               <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c-.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
                               </svg>
                             </div>
                             <div className="text-yellow-400 text-base font-semibold">
-                              Sedang dalam perawatan
+                              Mobil dalam servis
                             </div>
-                            <div className="text-gray-400 text-sm mt-1">
-                              Akan tersedia segera
-                            </div>
+                            <div className="text-gray-400 text-sm mt-1">Cek kembali nanti</div>
                           </div>
                         );
                       }
 
-                      return null;
+                      return (
+                        <div className="text-center py-6">
+                          <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-900 rounded-full mb-3">
+                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <div className="text-gray-400 text-base font-semibold">
+                            Status tidak diketahui
+                          </div>
+                          <div className="text-gray-500 text-sm mt-1">Cek kembali nanti</div>
+                        </div>
+                      );
                     })()}
                   </div>
                 </div>
@@ -905,38 +921,7 @@ export default function ListMobil() {
             })}
           </div>
         )}
-
       </div>
-
-      {/* Payment Method Popups */}
-      {showPaymentPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 relative">
-            <button
-              onClick={() => setShowPaymentPopup(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
-            >
-              ×
-            </button>
-            <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
-              {selectedPaymentMethod === "Transfer Bank" ? "Transfer Bank" : "E-Wallet"}
-            </h3>
-            <div className="text-center">
-              <img
-                src={selectedPaymentMethod === "Transfer Bank" ? "/src/assets/tfbank.png" : "/src/assets/qris.png"}
-                alt={selectedPaymentMethod === "Transfer Bank" ? "Transfer Bank" : "QRIS"}
-                className="w-full max-w-xs mx-auto rounded-lg shadow-md"
-              />
-              <p className="text-gray-600 mt-4 text-sm">
-                {selectedPaymentMethod === "Transfer Bank"
-                  ? "Silakan transfer ke rekening yang tertera di gambar"
-                  : "Scan QRIS untuk melakukan pembayaran"
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

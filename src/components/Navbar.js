@@ -97,7 +97,18 @@ export default function Navbar() {
           });
 
           // Merge and sort
-          const allNotifs = [...userNotifs, ...adminNotifs].sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+          const allNotifs = [...userNotifs, ...adminNotifs].sort((a, b) => {
+            const dateA = a.timestamp && typeof a.timestamp.toDate === "function"
+              ? a.timestamp.toDate()
+              : new Date(0);
+
+            const dateB = b.timestamp && typeof b.timestamp.toDate === "function"
+              ? b.timestamp.toDate()
+              : new Date(0);
+
+            return dateB - dateA;
+          });
+
           const allUnread = userUnread + adminUnread;
           console.log("Setting all notifications:", allNotifs, "unread:", allUnread);
           setNotifications(allNotifs);
@@ -105,15 +116,33 @@ export default function Navbar() {
         });
         unsubscribes.push(unsubscribeAdmin);
 
-        // Fetch admin orders as notifications
-        const qOrders = query(collection(db, "pemesanan"), orderBy("tanggal", "desc"));
-        const unsubscribeOrders = onSnapshot(qOrders, (orderSnapshot) => {
-          const orders = [];
-          orderSnapshot.forEach((doc) => {
-            orders.push({ id: doc.id, ...doc.data() });
-          });
-          setOrderNotifications(orders);
-        });
+        // Fetch admin orders as notifications - using getDocs to avoid composite index issues
+        const fetchOrders = async () => {
+          try {
+            // Use getDocs instead of onSnapshot to avoid real-time listener issues
+            const { getDocs } = await import("firebase/firestore");
+            const querySnapshot = await getDocs(collection(db, "pemesanan"));
+
+            const orders = [];
+            querySnapshot.forEach((doc) => {
+              orders.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Sort by date client-side to avoid composite index
+            orders.sort((a, b) => {
+              const dateA = a.tanggal ? new Date(a.tanggal) : new Date(0);
+              const dateB = b.tanggal ? new Date(b.tanggal) : new Date(0);
+              return dateB - dateA;
+            });
+
+            setOrderNotifications(orders);
+          } catch (error) {
+            console.error("Error fetching orders:", error);
+            setOrderNotifications([]);
+          }
+        };
+
+        const unsubscribeOrders = fetchOrders();
         unsubscribes.push(unsubscribeOrders);
       } else {
         console.log("Setting user notifications:", userNotifs, "unread:", userUnread);

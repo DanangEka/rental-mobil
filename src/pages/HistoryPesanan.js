@@ -9,9 +9,12 @@ import {
   query,
   where,
   orderBy,
-  onSnapshot
+  onSnapshot,
+  addDoc
 } from "firebase/firestore";
-import { Calendar, Edit, X, AlertTriangle, Clock, CheckCircle, RefreshCw, Filter, Check } from "lucide-react";
+import axios from "axios";
+import { Calendar, Edit, X, AlertTriangle, Clock, CheckCircle, RefreshCw, Filter, Check, FileText, CreditCard, Upload } from "lucide-react";
+import InvoiceGenerator from "../components/InvoiceGenerator";
 
 export default function HistoryPesanan() {
   const [pemesanan, setPemesanan] = useState([]);
@@ -28,6 +31,13 @@ export default function HistoryPesanan() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [searchTerm, setSearchTerm] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState({});
+  const [paymentProof, setPaymentProof] = useState({});
+  const [showPaymentSection, setShowPaymentSection] = useState({});
+  const [showBalancePaymentModal, setShowBalancePaymentModal] = useState(false);
+  const [selectedOrderForBalance, setSelectedOrderForBalance] = useState(null);
+  const [balancePaymentMethod, setBalancePaymentMethod] = useState("");
+  const [balancePaymentProof, setBalancePaymentProof] = useState(null);
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -197,6 +207,231 @@ export default function HistoryPesanan() {
     return diffDays * hargaPerhari;
   };
 
+  const addNotification = async (message) => {
+    try {
+      console.log("Adding notification for user:", auth.currentUser.uid, "message:", message);
+      await addDoc(collection(db, "notifications"), {
+        userId: auth.currentUser.uid,
+        message,
+        timestamp: new Date(),
+        read: false,
+      });
+      console.log("Notification added successfully");
+    } catch (error) {
+      console.error("Failed to add notification:", error);
+    }
+  };
+
+  const addAdminNotification = async (message) => {
+    try {
+      await addDoc(collection(db, "notifications"), {
+        userId: "admin",
+        message,
+        timestamp: new Date(),
+        read: false,
+      });
+      console.log("Admin notification added successfully");
+    } catch (error) {
+      console.error("Failed to add admin notification:", error);
+    }
+  };
+
+  const handlePaymentSubmit = async (order) => {
+    if (!paymentMethod[order.id] && !order.paymentMethod) {
+      alert("Silakan pilih metode pembayaran.");
+      return;
+    }
+    if (!paymentProof[order.id]) {
+      alert("Silakan unggah bukti pembayaran.");
+      return;
+    }
+
+    try {
+      // 1. Upload gambar ke Cloudinary
+      const formData = new FormData();
+      formData.append("file", paymentProof[order.id]);
+      formData.append("upload_preset", process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET);
+
+      const cloudinaryRes = await axios.post(
+        `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        formData
+      );
+
+      const paymentProofURL = cloudinaryRes.data.secure_url;
+
+      // 2. Update data pemesanan di Firestore
+      const orderDocRef = doc(db, "pemesanan", order.id);
+      await updateDoc(orderDocRef, {
+        paymentMethod: paymentMethod[order.id] || order.paymentMethod,
+        paymentProof: paymentProofURL,
+        paymentStatus: "submitted",
+        waktuUpload: new Date().toISOString(),
+      });
+
+      // 3. Update state lokal
+      await addNotification("Bukti Pembayaran Telah Terkirim");
+      await addAdminNotification(`Pembayaran diterima dari ${order.email}: ${order.namaMobil}`);
+      setPemesanan((prev) =>
+        prev.map((o) =>
+          o.id === order.id
+            ? { ...o, paymentStatus: "submitted", paymentProof: paymentProofURL }
+            : o
+        )
+      );
+
+      // 4. Generate DP Invoice
+      try {
+        const updatedOrder = {
+          ...order,
+          paymentMethod: paymentMethod[order.id] || order.paymentMethod,
+          paymentProof: paymentProofURL,
+          paymentStatus: "submitted"
+        };
+        InvoiceGenerator.generateDPInvoice(updatedOrder, auth.currentUser);
+        await addNotification("Invoice DP telah dibuat dan didownload");
+      } catch (invoiceError) {
+        console.error("Error generating DP invoice:", invoiceError);
+      }
+    } catch (err) {
+      console.error("Gagal mengirim bukti pembayaran:", err);
+      alert("Terjadi kesalahan saat mengirim bukti pembayaran. Error: " + err.message);
+    }
+  };
+
+  const handleCashPayment = async (order) => {
+    if (!paymentMethod[order.id] && !order.paymentMethod) {
+      alert("Silakan pilih metode pembayaran.");
+      return;
+    }
+
+    try {
+      // Update data pemesanan untuk cash payment tanpa upload bukti
+      const orderDocRef = doc(db, "pemesanan", order.id);
+      await updateDoc(orderDocRef, {
+        paymentMethod: paymentMethod[order.id] || order.paymentMethod,
+        paymentStatus: "cash_submitted",
+        waktuUpload: new Date().toISOString(),
+      });
+
+      // Update state lokal
+      await addNotification("Permintaan pembayaran cash telah diajukan");
+      await addAdminNotification(`Permintaan pembayaran cash dari ${order.email}: ${order.namaMobil}`);
+      setPemesanan((prev) =>
+        prev.map((o) =>
+          o.id === order.id
+            ? { ...o, paymentStatus: "cash_submitted" }
+            : o
+        )
+      );
+
+      // Generate DP Invoice for cash payment request
+      try {
+        const updatedOrder = {
+          ...order,
+          paymentMethod: paymentMethod[order.id] || order.paymentMethod,
+          paymentStatus: "cash_submitted"
+        };
+        InvoiceGenerator.generateDPInvoice(updatedOrder, auth.currentUser);
+        await addNotification("Invoice DP untuk pembayaran cash telah dibuat");
+      } catch (invoiceError) {
+        console.error("Error generating DP invoice for cash payment:", invoiceError);
+      }
+    } catch (err) {
+      console.error("Gagal mengajukan pembayaran cash:", err);
+      alert("Terjadi kesalahan saat mengajukan pembayaran cash. Error: " + err.message);
+    }
+  };
+
+  const togglePaymentSection = (orderId) => {
+    setShowPaymentSection((prev) => ({
+      ...prev,
+      [orderId]: !prev[orderId]
+    }));
+  };
+
+  const handleBalancePaymentClick = (order) => {
+    setSelectedOrderForBalance(order);
+    setBalancePaymentMethod("");
+    setBalancePaymentProof(null);
+    setShowBalancePaymentModal(true);
+  };
+
+  const handleBalancePaymentSubmit = async () => {
+    if (!balancePaymentMethod) {
+      alert("Silakan pilih metode pembayaran.");
+      return;
+    }
+
+    if (balancePaymentMethod !== "Cash" && !balancePaymentProof) {
+      alert("Silakan unggah bukti pembayaran.");
+      return;
+    }
+
+    try {
+      let balancePaymentProofURL = null;
+
+      // Upload payment proof if not cash
+      if (balancePaymentMethod !== "Cash" && balancePaymentProof) {
+        const formData = new FormData();
+        formData.append("file", balancePaymentProof);
+        formData.append("upload_preset", process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET);
+
+        const cloudinaryRes = await axios.post(
+          `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          formData
+        );
+
+        balancePaymentProofURL = cloudinaryRes.data.secure_url;
+      }
+
+      // Update order with balance payment request
+      const orderRef = doc(db, "pemesanan", selectedOrderForBalance.id);
+      await updateDoc(orderRef, {
+        balancePaymentRequest: {
+          paymentMethod: balancePaymentMethod,
+          paymentProof: balancePaymentProofURL,
+          status: "pending",
+          requestedAt: new Date().toISOString(),
+          amount: selectedOrderForBalance.perkiraanHarga * 0.5 // 50% balance
+        }
+      });
+
+      // Add notifications
+      await addNotification(`Permintaan pembayaran pelunasan telah diajukan untuk ${selectedOrderForBalance.namaMobil}`);
+      await addAdminNotification(`Permintaan pembayaran pelunasan dari ${selectedOrderForBalance.email}: ${selectedOrderForBalance.namaMobil} - ${balancePaymentMethod}`);
+
+      // Update local state
+      setPemesanan((prev) =>
+        prev.map((o) =>
+          o.id === selectedOrderForBalance.id
+            ? {
+                ...o,
+                balancePaymentRequest: {
+                  paymentMethod: balancePaymentMethod,
+                  paymentProof: balancePaymentProofURL,
+                  status: "pending",
+                  requestedAt: new Date().toISOString(),
+                  amount: o.perkiraanHarga * 0.5
+                }
+              }
+            : o
+        )
+      );
+
+      // Close modal and reset state
+      setShowBalancePaymentModal(false);
+      setSelectedOrderForBalance(null);
+      setBalancePaymentMethod("");
+      setBalancePaymentProof(null);
+
+      alert("Permintaan pembayaran pelunasan telah diajukan. Menunggu konfirmasi admin.");
+
+    } catch (error) {
+      console.error("Error submitting balance payment:", error);
+      alert("Terjadi kesalahan saat mengajukan pembayaran pelunasan. Silakan coba lagi.");
+    }
+  };
+
 
 
   const handleCancelSubmit = async () => {
@@ -224,7 +459,7 @@ export default function HistoryPesanan() {
   };
 
   const isOngoingOrder = (status) => {
-    return ["diproses", "disetujui", "menunggu pembayaran", "pembayaran berhasil"].includes(status);
+    return ["diproses", "disetujui", "menunggu pembayaran", "pembayaran berhasil", "approve sewa"].includes(status);
   };
 
   const canEditOrder = (order) => {
@@ -262,8 +497,10 @@ export default function HistoryPesanan() {
       case "menunggu pembayaran": return "bg-orange-100 text-orange-800";
       case "pembayaran berhasil": return "bg-blue-100 text-blue-800";
       case "selesai": return "bg-purple-100 text-purple-800";
+      case "lunas": return "bg-emerald-100 text-emerald-800";
       case "ditolak": return "bg-red-100 text-red-800";
       case "dibatalkan": return "bg-gray-100 text-gray-800";
+      case "approve sewa": return "bg-purple-100 text-purple-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -324,8 +561,10 @@ export default function HistoryPesanan() {
                 <option value="all">Semua Status</option>
                 <option value="ongoing">Sedang Berlangsung</option>
                 <option value="selesai">Selesai</option>
+                <option value="lunas">Lunas</option>
                 <option value="dibatalkan">Dibatalkan</option>
                 <option value="ditolak">Ditolak</option>
+                <option value="approve sewa">Approve Sewa (Cash)</option>
                 <option value="edit_approved">Edit Disetujui</option>
               </select>
 
@@ -392,6 +631,19 @@ export default function HistoryPesanan() {
               </div>
               <div className="p-2 bg-red-100 rounded-lg">
                 <X className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-emerald-50 p-4 sm:p-6 rounded-xl border border-emerald-200 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm sm:text-lg font-semibold text-emerald-900">Lunas</h3>
+                <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
+                  {filteredPemesanan.filter(p => p.status === "lunas").length}
+                </p>
+              </div>
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <CheckCircle className="h-6 w-6 text-emerald-600" />
               </div>
             </div>
           </div>
@@ -532,6 +784,15 @@ export default function HistoryPesanan() {
                           Batalkan
                         </button>
                       )}
+
+                      {/* Payment Section Toggle Button */}
+                      <button
+                        onClick={() => togglePaymentSection(p.id)}
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <CreditCard size={16} />
+                        {showPaymentSection[p.id] ? 'Tutup Pembayaran' : 'Bayar Sekarang'}
+                      </button>
                     </div>
                     {getDaysUntilStart(p) <= 1 && getDaysUntilStart(p) > 0 && (!p.editRequest || p.editRequest.status !== "approved") && (
                       <p className="text-sm text-orange-600 mt-2 flex items-center gap-1">
@@ -539,6 +800,141 @@ export default function HistoryPesanan() {
                         Edit tanggal tidak dapat dilakukan H-1 sebelum tanggal sewa
                       </p>
                     )}
+
+                    {/* Payment Section */}
+                    {showPaymentSection[p.id] && (
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Pembayaran</h4>
+                        <div className="space-y-4">
+                          {/* Payment Method Selection */}
+                          <div>
+                            <label className="text-sm text-gray-700 font-medium block mb-2">
+                              Metode Pembayaran
+                            </label>
+                            <select
+                              value={paymentMethod[p.id] || p.paymentMethod || ""}
+                              onChange={(e) =>
+                                setPaymentMethod((prev) => ({
+                                  ...prev,
+                                  [p.id]: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="">Pilih metode pembayaran</option>
+                              <option value="Transfer Bank">Transfer Bank</option>
+                              <option value="E-Wallet">E-Wallet</option>
+                              <option value="Cash">Cash</option>
+                            </select>
+                          </div>
+
+                          {/* Payment Proof Upload - Hide for Cash */}
+                          {((paymentMethod[p.id] || p.paymentMethod) !== "Cash") && (
+                            <div>
+                              <label className="text-sm text-gray-700 font-medium block mb-2">
+                                Bukti Pembayaran
+                              </label>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) =>
+                                  setPaymentProof((prev) => ({
+                                    ...prev,
+                                    [p.id]: e.target.files[0],
+                                  }))
+                                }
+                                className="w-full bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg p-3 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors"
+                              />
+                            </div>
+                          )}
+
+                          {/* Submit Payment Button */}
+                          <button
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-sm shadow-md hover:shadow-lg"
+                            onClick={() => {
+                              if ((paymentMethod[p.id] || p.paymentMethod) === "Cash") {
+                                handleCashPayment(p);
+                              } else {
+                                handlePaymentSubmit(p);
+                              }
+                              setShowPaymentSection((prev) => ({
+                                ...prev,
+                                [p.id]: false
+                              }));
+                            }}
+                          >
+                            {(paymentMethod[p.id] || p.paymentMethod) === "Cash" ? "Ajukan Pembayaran Cash" : "Kirim Bukti Pembayaran"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Invoice Buttons for Completed Orders */}
+                {p.status === "selesai" && (
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => InvoiceGenerator.generateFullInvoice(p, auth.currentUser)}
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <FileText size={16} />
+                        Invoice Pembayaran Penuh
+                      </button>
+                      <button
+                        onClick={() => handleBalancePaymentClick(p)}
+                        className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <CreditCard size={16} />
+                        Bayar Pelunasan
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Invoice Button for Payment Confirmed Orders */}
+                {p.status === "pembayaran berhasil" && (
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => InvoiceGenerator.generateDPInvoice(p, auth.currentUser)}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <FileText size={16} />
+                        Invoice Down Payment (50%)
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Invoice Button for Lunas Orders */}
+                {p.status === "lunas" && (
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => InvoiceGenerator.generateFullInvoice(p, auth.currentUser)}
+                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <FileText size={16} />
+                        Invoice Pembayaran Lunas
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Invoice Button for Cash Payment Approved Orders */}
+                {p.status === "approve sewa" && (
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => InvoiceGenerator.generateDPInvoice(p, auth.currentUser)}
+                        className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <FileText size={16} />
+                        Invoice Down Payment (Cash)
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -621,6 +1017,83 @@ export default function HistoryPesanan() {
                 className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg transition-colors"
               >
                 Tidak
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Balance Payment Modal */}
+      {showBalancePaymentModal && selectedOrderForBalance && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <CreditCard className="h-6 w-6 text-orange-500" />
+              <h3 className="text-xl font-bold text-gray-900">Bayar Pelunasan</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Pembayaran pelunasan untuk <strong>{selectedOrderForBalance.namaMobil}</strong>
+              <br />
+              <span className="text-sm text-gray-500">
+                Jumlah: Rp {(selectedOrderForBalance.perkiraanHarga * 0.5).toLocaleString()}
+              </span>
+            </p>
+
+            <div className="space-y-4">
+              {/* Payment Method Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Metode Pembayaran
+                </label>
+                <select
+                  value={balancePaymentMethod}
+                  onChange={(e) => setBalancePaymentMethod(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                >
+                  <option value="">Pilih metode pembayaran</option>
+                  <option value="Transfer Bank">Transfer Bank</option>
+                  <option value="E-Wallet">E-Wallet</option>
+                  <option value="Cash">Cash</option>
+                </select>
+              </div>
+
+              {/* Payment Proof Upload - Hide for Cash */}
+              {balancePaymentMethod !== "Cash" && balancePaymentMethod && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bukti Pembayaran
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setBalancePaymentProof(e.target.files[0])}
+                    className="w-full bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg p-3 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-600 file:text-white hover:file:bg-orange-700 transition-colors"
+                  />
+                </div>
+              )}
+
+              {/* Cash Payment Info */}
+              {balancePaymentMethod === "Cash" && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-700">
+                    Pembayaran cash akan diverifikasi langsung oleh admin tanpa perlu upload bukti pembayaran.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleBalancePaymentSubmit}
+                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Ajukan Pembayaran
+              </button>
+              <button
+                onClick={() => setShowBalancePaymentModal(false)}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+              >
+                Batal
               </button>
             </div>
           </div>
