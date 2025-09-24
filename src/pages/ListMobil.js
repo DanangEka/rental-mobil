@@ -13,6 +13,8 @@ export default function ListMobil() {
   const [filteredMobil, setFilteredMobil] = useState([]);
   const [tanggalMulai, setTanggalMulai] = useState({});
   const [tanggalSelesai, setTanggalSelesai] = useState({});
+  const [lokasiPenyerahan, setLokasiPenyerahan] = useState({});
+  const [titikTemuAddress, setTitikTemuAddress] = useState({});
   const [rentalType, setRentalType] = useState({});
   const [paymentMethod, setPaymentMethod] = useState({});
   const [paymentProof, setPaymentProof] = useState({});
@@ -173,8 +175,12 @@ export default function ListMobil() {
   const handleTanggalChange = (id, type, value) => {
     if (type === "mulai") {
       setTanggalMulai((prev) => ({ ...prev, [id]: value }));
-    } else {
+    } else if (type === "selesai") {
       setTanggalSelesai((prev) => ({ ...prev, [id]: value }));
+    } else if (type === "lokasi") {
+      setLokasiPenyerahan((prev) => ({ ...prev, [id]: value }));
+    } else if (type === "titikTemu") {
+      setTitikTemuAddress((prev) => ({ ...prev, [id]: value }));
     }
   };
 
@@ -250,6 +256,8 @@ export default function ListMobil() {
         namaClient: userData?.nama || userData?.NamaLengkap || auth.currentUser.displayName || "",
         telepon: userData?.nomorTelepon || userData?.NomorTelepon || auth.currentUser.phoneNumber || "",
         dpAmount: perkiraanHarga * 0.5,
+        lokasiPenyerahan: lokasiPenyerahan[m.id] || "",
+        titikTemuAddress: titikTemuAddress[m.id] || "",
       });
 
       await updateDoc(doc(db, "mobil", m.id), {
@@ -784,6 +792,39 @@ export default function ListMobil() {
                                     className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
                                   />
                                 </div>
+                                <div>
+                                  <label className="text-sm text-red-400 font-medium block mb-2">
+                                    Lokasi Penyerahan Unit
+                                  </label>
+                                  <select
+                                    value={lokasiPenyerahan[m.id] || ""}
+                                    onChange={(e) =>
+                                      handleTanggalChange(m.id, "lokasi", e.target.value)
+                                    }
+                                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                  >
+                                    <option value="">Pilih Lokasi Penyerahan</option>
+                                    <option value="Rumah">Rumah</option>
+                                    <option value="Kantor">Kantor</option>
+                                    <option value="Titik Temu">Titik Temu</option>
+                                  </select>
+                                </div>
+                                {lokasiPenyerahan[m.id] === "Titik Temu" && (
+                                  <div>
+                                    <label className="text-sm text-red-400 font-medium block mb-2">
+                                      Alamat Titik Temu
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={titikTemuAddress[m.id] || ""}
+                                      onChange={(e) =>
+                                        handleTanggalChange(m.id, "titikTemu", e.target.value)
+                                      }
+                                      placeholder="Masukkan alamat titik temu"
+                                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                    />
+                                  </div>
+                                )}
                                 <div>
                                   <label className="text-sm text-red-400 font-medium block mb-2">
                                     Tipe Sewa

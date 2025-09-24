@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
-import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
-import { ClipboardList, CheckCircle, Clock, DollarSign, TrendingUp, UserPlus } from "lucide-react";
+import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp, getDoc, getDocs } from "firebase/firestore";
+import { ClipboardList, CheckCircle, Clock, DollarSign, TrendingUp, UserPlus, MapPin } from "lucide-react";
 
 export default function DriverDashboard() {
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [companyProfile, setCompanyProfile] = useState(null);
   const [stats, setStats] = useState({
     totalOrders: 0,
     activeOrders: 0,
@@ -19,6 +21,34 @@ export default function DriverDashboard() {
     });
 
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const usersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setUsers(usersData);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        setUsers([]);
+      }
+    };
+
+    const fetchCompanyProfile = async () => {
+      try {
+        const companyDocRef = doc(db, "company_profile", "main");
+        const companyDoc = await getDoc(companyDocRef);
+        if (companyDoc.exists()) {
+          setCompanyProfile(companyDoc.data());
+        }
+      } catch (error) {
+        console.error("Error fetching company profile:", error);
+      }
+    };
+
+    fetchUsers();
+    fetchCompanyProfile();
   }, []);
 
   useEffect(() => {
@@ -267,6 +297,40 @@ export default function DriverDashboard() {
         return "Siap Diambil";
       default:
         return status;
+    }
+  };
+
+  const getFullAddress = (order) => {
+    const client = users.find(u => u.id === order.uid);
+
+    switch (order.lokasiPenyerahan) {
+      case "Rumah":
+        if (client) {
+          const addressParts = [
+            client.alamat,
+            client.kelurahan,
+            client.kecamatan,
+            client.kabupaten,
+            client.provinsi
+          ].filter(part => part && part.trim() !== "");
+
+          const rtRw = [];
+          if (client.rt) rtRw.push(`RT ${client.rt}`);
+          if (client.rw) rtRw.push(`RW ${client.rw}`);
+
+          if (rtRw.length > 0) {
+            addressParts.push(rtRw.join("/"));
+          }
+
+          return addressParts.length > 0 ? addressParts.join(", ") : "Alamat client tidak lengkap";
+        }
+        return "Alamat client tidak tersedia";
+      case "Kantor":
+        return companyProfile?.alamat || "Alamat perusahaan tidak tersedia";
+      case "Titik Temu":
+        return order.titikTemuAddress || "Alamat titik temu tidak tersedia";
+      default:
+        return "Lokasi tidak ditentukan";
     }
   };
 
@@ -558,6 +622,9 @@ export default function DriverDashboard() {
                       Client
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Lokasi
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Tanggal
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -586,6 +653,17 @@ export default function DriverDashboard() {
                         <div className="text-sm text-gray-900">{order.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-start text-sm text-gray-900">
+                          <MapPin className="h-4 w-4 mr-1 mt-0.5 text-gray-500 flex-shrink-0" />
+                          <div>
+                            <div className="font-medium">{order.lokasiPenyerahan || "Belum ditentukan"}</div>
+                            <div className="text-xs text-gray-600 max-w-xs truncate" title={getFullAddress(order)}>
+                              {getFullAddress(order)}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
                           {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString() : 'N/A'}
                         </div>
@@ -600,32 +678,79 @@ export default function DriverDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex flex-col gap-2">
-                          {order.status === "approve sewa" && (
+                          {/* Office Location - Processed by Admin */}
+                          {order.lokasiPenyerahan === "Kantor" && (
+                            <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-xs font-medium">
+                              Diproses oleh Admin
+                            </span>
+                          )}
+
+                          {/* Home or Meeting Point Location - Driver can accept */}
+                          {(order.lokasiPenyerahan === "Rumah" || order.lokasiPenyerahan === "Titik Temu") && (
                             <>
-                              <button
-                                onClick={() => handleAcceptOrder(order.id)}
-                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
-                              >
-                                Terima Order
-                              </button>
-                              <button
-                                onClick={() => handleAcceptOrderWithoutProof(order.id)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
-                              >
-                                Terima Tanpa Bukti
-                              </button>
+                              {order.status === "approve sewa" && (
+                                <>
+                                  <button
+                                    onClick={() => handleAcceptOrder(order.id)}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                                  >
+                                    Terima Order
+                                  </button>
+                                  <button
+                                    onClick={() => handleAcceptOrderWithoutProof(order.id)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                                  >
+                                    Terima Tanpa Bukti
+                                  </button>
+                                </>
+                              )}
+                              {order.status === "disetujui" && (
+                                <button
+                                  onClick={() => handleAcceptOrder(order.id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                                >
+                                  Terima Order
+                                </button>
+                              )}
+                              {order.status === "pembayaran berhasil" && (
+                                <span className="text-gray-500 text-xs">Menunggu Driver</span>
+                              )}
                             </>
                           )}
-                          {order.status === "disetujui" && (
-                            <button
-                              onClick={() => handleAcceptOrder(order.id)}
-                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
-                            >
-                              Terima Order
-                            </button>
-                          )}
-                          {order.status === "pembayaran berhasil" && (
-                            <span className="text-gray-500 text-xs">Menunggu Driver</span>
+
+                          {/* Default case for other locations */}
+                          {order.lokasiPenyerahan !== "Kantor" &&
+                           order.lokasiPenyerahan !== "Rumah" &&
+                           order.lokasiPenyerahan !== "Titik Temu" && (
+                            <>
+                              {order.status === "approve sewa" && (
+                                <>
+                                  <button
+                                    onClick={() => handleAcceptOrder(order.id)}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                                  >
+                                    Terima Order
+                                  </button>
+                                  <button
+                                    onClick={() => handleAcceptOrderWithoutProof(order.id)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                                  >
+                                    Terima Tanpa Bukti
+                                  </button>
+                                </>
+                              )}
+                              {order.status === "disetujui" && (
+                                <button
+                                  onClick={() => handleAcceptOrder(order.id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                                >
+                                  Terima Order
+                                </button>
+                              )}
+                              {order.status === "pembayaran berhasil" && (
+                                <span className="text-gray-500 text-xs">Menunggu Driver</span>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>

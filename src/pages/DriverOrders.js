@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, getDocs, addDoc } from "firebase/firestore";
 import axios from "axios";
-import { CheckCircle, Clock, MapPin, Phone, Calendar, DollarSign, UserPlus, Car, FileText, Upload, CreditCard } from "lucide-react";
+import { CheckCircle, Clock, MapPin, Phone, Calendar, DollarSign, UserPlus, Car, FileText, Upload, CreditCard, Building } from "lucide-react";
 import InvoiceGenerator from "../components/InvoiceGenerator";
 
 export default function DriverOrders() {
@@ -13,6 +13,7 @@ export default function DriverOrders() {
   const [orderHistory, setOrderHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("available");
   const [users, setUsers] = useState([]);
+  const [companyProfile, setCompanyProfile] = useState(null);
   const [paymentProof, setPaymentProof] = useState({});
   const [showPaymentSection, setShowPaymentSection] = useState({});
 
@@ -38,9 +39,22 @@ export default function DriverOrders() {
       }
     };
 
+    const fetchCompanyProfile = async () => {
+      try {
+        const companyDocRef = doc(db, "company_profile", "main");
+        const companyDoc = await getDoc(companyDocRef);
+        if (companyDoc.exists()) {
+          setCompanyProfile(companyDoc.data());
+        }
+      } catch (error) {
+        console.error("Error fetching company profile:", error);
+      }
+    };
+
     // Only fetch users if we have a user and it's a driver
     if (user) {
       fetchUsers();
+      fetchCompanyProfile();
     }
   }, [user]);
 
@@ -250,6 +264,40 @@ export default function DriverOrders() {
     }
   };
 
+  const getFullAddress = (order) => {
+    const client = users.find(u => u.id === order.uid);
+
+    switch (order.lokasiPenyerahan) {
+      case "Rumah":
+        if (client) {
+          const addressParts = [
+            client.alamat,
+            client.kelurahan,
+            client.kecamatan,
+            client.kabupaten,
+            client.provinsi
+          ].filter(part => part && part.trim() !== "");
+
+          const rtRw = [];
+          if (client.rt) rtRw.push(`RT ${client.rt}`);
+          if (client.rw) rtRw.push(`RW ${client.rw}`);
+
+          if (rtRw.length > 0) {
+            addressParts.push(rtRw.join("/"));
+          }
+
+          return addressParts.length > 0 ? addressParts.join(", ") : "Alamat client tidak lengkap";
+        }
+        return "Alamat client tidak tersedia";
+      case "Kantor":
+        return companyProfile?.alamat || "Alamat perusahaan tidak tersedia";
+      case "Titik Temu":
+        return order.titikTemuAddress || "Alamat titik temu tidak tersedia";
+      default:
+        return "Lokasi tidak ditentukan";
+    }
+  };
+
   const OrderCard = ({ order, isActive = true }) => {
     // Get client data from users collection
     const client = users.find(u => u.id === order.uid);
@@ -283,12 +331,17 @@ export default function DriverOrders() {
             </span>
           </div>
           <div className="flex items-center text-sm text-gray-600">
-            <MapPin className="h-4 w-4 mr-2" />
-            <span>{order.lokasiPenjemputan || 'Lokasi tidak tersedia'}</span>
-          </div>
-          <div className="flex items-center text-sm text-gray-600">
             <Phone className="h-4 w-4 mr-2" />
             <span>{client?.nomorTelepon || order.noTelepon || 'No. telepon tidak tersedia'}</span>
+          </div>
+          <div className="flex items-start text-sm text-gray-600">
+            <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+            <div>
+              <div className="font-medium text-gray-900">{order.lokasiPenyerahan || 'Lokasi tidak ditentukan'}</div>
+              <div className="text-xs text-gray-600 max-w-xs" title={getFullAddress(order)}>
+                {getFullAddress(order)}
+              </div>
+            </div>
           </div>
           <div className="flex items-center text-sm font-semibold text-green-600">
             <DollarSign className="h-4 w-4 mr-2" />
@@ -359,47 +412,109 @@ export default function DriverOrders() {
 
         {isActive && (
           <div className="flex flex-wrap gap-2">
-            {order.status === "disetujui" && (
-              <button
-                onClick={() => updateOrderStatus(order.id, "dalam perjalanan")}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Mulai Perjalanan
-              </button>
+            {/* Office Location - Processed by Admin */}
+            {order.lokasiPenyerahan === "Kantor" && (
+              <span className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg font-medium">
+                Diproses oleh Admin
+              </span>
             )}
-            {order.status === "dalam perjalanan" && (
-              <button
-                onClick={() => updateOrderStatus(order.id, "menunggu pembayaran")}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Selesai Perjalanan
-              </button>
+
+            {/* Home or Meeting Point Location - Driver can manage */}
+            {(order.lokasiPenyerahan === "Rumah" || order.lokasiPenyerahan === "Titik Temu") && (
+              <>
+                {order.status === "disetujui" && (
+                  <button
+                    onClick={() => updateOrderStatus(order.id, "dalam perjalanan")}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Mulai Perjalanan
+                  </button>
+                )}
+                {order.status === "dalam perjalanan" && (
+                  <button
+                    onClick={() => updateOrderStatus(order.id, "menunggu pembayaran")}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Selesai Perjalanan
+                  </button>
+                )}
+                {order.status === "menunggu pembayaran" && order.paymentMethod !== "Cash" && (
+                  <button
+                    onClick={() => updateOrderStatus(order.id, "selesai")}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Konfirmasi Pembayaran
+                  </button>
+                )}
+                {order.status === "pembayaran berhasil" && (
+                  <button
+                    onClick={() => InvoiceGenerator.generateDriverInvoice(order, client)}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Cetak Invoice DP
+                  </button>
+                )}
+                {order.status === "selesai" && (
+                  <button
+                    onClick={() => InvoiceGenerator.generateFullInvoice(order, client)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Cetak Invoice Penuh
+                  </button>
+                )}
+              </>
             )}
-            {order.status === "menunggu pembayaran" && order.paymentMethod !== "Cash" && (
-              <button
-                onClick={() => updateOrderStatus(order.id, "selesai")}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                Konfirmasi Pembayaran
-              </button>
-            )}
-            {order.status === "pembayaran berhasil" && (
-              <button
-                onClick={() => InvoiceGenerator.generateDriverInvoice(order, client)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
-              >
-                <FileText className="h-4 w-4" />
-                Cetak Invoice DP
-              </button>
-            )}
-            {order.status === "selesai" && (
-              <button
-                onClick={() => InvoiceGenerator.generateFullInvoice(order, client)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-              >
-                <FileText className="h-4 w-4" />
-                Cetak Invoice Penuh
-              </button>
+
+            {/* Default case for other locations */}
+            {order.lokasiPenyerahan !== "Kantor" &&
+             order.lokasiPenyerahan !== "Rumah" &&
+             order.lokasiPenyerahan !== "Titik Temu" && (
+              <>
+                {order.status === "disetujui" && (
+                  <button
+                    onClick={() => updateOrderStatus(order.id, "dalam perjalanan")}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Mulai Perjalanan
+                  </button>
+                )}
+                {order.status === "dalam perjalanan" && (
+                  <button
+                    onClick={() => updateOrderStatus(order.id, "menunggu pembayaran")}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Selesai Perjalanan
+                  </button>
+                )}
+                {order.status === "menunggu pembayaran" && order.paymentMethod !== "Cash" && (
+                  <button
+                    onClick={() => updateOrderStatus(order.id, "selesai")}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Konfirmasi Pembayaran
+                  </button>
+                )}
+                {order.status === "pembayaran berhasil" && (
+                  <button
+                    onClick={() => InvoiceGenerator.generateDriverInvoice(order, client)}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Cetak Invoice DP
+                  </button>
+                )}
+                {order.status === "selesai" && (
+                  <button
+                    onClick={() => InvoiceGenerator.generateFullInvoice(order, client)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Cetak Invoice Penuh
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}

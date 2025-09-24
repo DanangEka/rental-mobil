@@ -360,7 +360,13 @@ export default function ManajemenPesanan() {
   const filteredPemesanan = pemesanan
     .filter(p => {
       const user = users.find(u => u.id === p.uid);
-      const matchesStatus = filterStatus === "semua" || p.status === filterStatus;
+      let matchesStatus = filterStatus === "semua" || p.status === filterStatus;
+
+      // Special handling for balance_pending filter
+      if (filterStatus === "balance_pending") {
+        matchesStatus = p.balancePaymentRequest && p.balancePaymentRequest.status === "pending";
+      }
+
       const matchesRentalType = filterRentalType === "semua" || p.rentalType === filterRentalType;
       const matchesSearch = searchPemesanan === "" ||
         p.namaMobil?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
@@ -368,7 +374,9 @@ export default function ManajemenPesanan() {
         user?.nama?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
         user?.nomorTelepon?.includes(searchPemesanan) ||
         p.status?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
-        p.rentalType?.toLowerCase().includes(searchPemesanan.toLowerCase());
+        p.rentalType?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
+        p.lokasiPenyerahan?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
+        p.titikTemuAddress?.toLowerCase().includes(searchPemesanan.toLowerCase());
       return matchesStatus && matchesRentalType && matchesSearch;
     })
     .sort((a, b) => {
@@ -561,7 +569,7 @@ export default function ManajemenPesanan() {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Cari berdasarkan mobil, email, status..."
+                  placeholder="Cari berdasarkan mobil, email, status, lokasi penyerahan..."
                   value={searchPemesanan}
                   onChange={(e) => setSearchPemesanan(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
@@ -619,6 +627,17 @@ export default function ManajemenPesanan() {
                     <div>
                       <span className="text-sm font-medium text-gray-500">Tipe Sewa</span>
                       <p className="text-gray-900">{p.rentalType || "Lepas Kunci"}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Lokasi Penyerahan Unit</span>
+                      <p className="text-gray-900">
+                        {p.lokasiPenyerahan || "Belum ditentukan"}
+                        {p.lokasiPenyerahan === "Titik Temu" && p.titikTemuAddress && (
+                          <span className="block text-sm text-gray-600 mt-1">
+                            📍 {p.titikTemuAddress}
+                          </span>
+                        )}
+                      </p>
                     </div>
                   </div>
 

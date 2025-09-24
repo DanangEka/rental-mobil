@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, getDocs, doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { Bar, Line } from "react-chartjs-2";
 import {
@@ -61,6 +61,35 @@ export default function AdminDashboard() {
   });
 
   const [loading, setLoading] = useState(true);
+
+  // Initialize company profile data
+  useEffect(() => {
+    const initializeCompanyProfile = async () => {
+      try {
+        const companyDocRef = doc(db, "company_profile", "main");
+        const companyDoc = await getDoc(companyDocRef);
+
+        if (!companyDoc.exists()) {
+          // Create company profile with the specified address
+          await setDoc(companyDocRef, {
+            nama: "Cakra Lima Tujuh",
+            alamat: "Lembah Harapan, Blok AA-57, Lidah Wetan Kec. Lakarsantri, Surabaya",
+            email: "limatujuhcakra@gmail.com",
+            telepon: "+62 812-3456-7890",
+            whatsapp: "6287859660053",
+            instagram: "cakralimatujuhtrans",
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+          console.log("Company profile initialized successfully");
+        }
+      } catch (error) {
+        console.error("Error initializing company profile:", error);
+      }
+    };
+
+    initializeCompanyProfile();
+  }, []);
 
   useEffect(() => {
     // Listener mobil
