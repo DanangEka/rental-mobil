@@ -478,159 +478,127 @@ export default function DriverDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Driver</h1>
-          <p className="text-gray-600 mt-2">Ringkasan Order dan Aktivitas Anda</p>
+    <div className="min-h-screen bg-black pt-[72px] relative overflow-hidden">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
+        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-900/20 mix-blend-screen filter blur-[100px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 md:py-12">
+        <div className="mb-10 animate-fadeInUp">
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Dashboard Driver</h1>
+          <p className="text-gray-400 text-lg">Ringkasan operasional dan order tersedia untuk Anda.</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <ClipboardList className="h-6 w-6 text-blue-600" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
+          {[
+            { label: "Total Order", value: stats.totalOrders, icon: <ClipboardList className="h-6 w-6" />, color: "bg-blue-500/20 text-blue-400 border-blue-500/20" },
+            { label: "Order Aktif", value: stats.activeOrders, icon: <Clock className="h-6 w-6" />, color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/20" },
+            { label: "Order Selesai", value: stats.completedOrders, icon: <CheckCircle className="h-6 w-6" />, color: "bg-green-500/20 text-green-400 border-green-500/20" },
+            { label: "Total Pendapatan", value: `Rp ${stats.totalEarnings.toLocaleString()}`, icon: <DollarSign className="h-6 w-6" />, color: "bg-purple-500/20 text-purple-400 border-purple-500/20" },
+          ].map((stat, idx) => (
+            <div key={idx} className="glass-card bg-gray-900/40 rounded-3xl p-6 border border-gray-800 hover:border-gray-700 transition-all group">
+              <div className="flex items-center mb-4">
+                <div className={`p-3 rounded-2xl ${stat.color} border group-hover:scale-110 transition-transform`}>
+                  {stat.icon}
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Order</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
-              </div>
+              <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">{stat.label}</p>
+              <p className="text-2xl font-black text-white mt-1">{stat.value}</p>
             </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Order Aktif</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.activeOrders}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Order Selesai</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.completedOrders}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <DollarSign className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Pendapatan</p>
-                <p className="text-2xl font-bold text-gray-900">Rp {stats.totalEarnings.toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Recent Orders */}
-        <div className="bg-white rounded-3xl shadow-card border border-gray-100 overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <h2 className="text-xl font-bold text-gray-900">Order Terbaru Tersedia</h2>
-            <div className="bg-brand-100 text-brand-800 text-xs font-bold px-3 py-1.5 rounded-full">
-              {orders.length} Order
+        {/* Recent Orders Section */}
+        <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
+              <h2 className="text-2xl font-black text-white tracking-tight uppercase tracking-widest">Order Terbaru Tersedia</h2>
+            </div>
+            <div className="bg-brand-500/10 text-brand-400 text-xs font-bold px-4 py-1.5 rounded-full border border-brand-500/20">
+              {orders.length} Tersedia
             </div>
           </div>
-          <div className="overflow-x-auto">
+
+          <div className="space-y-6">
             {orders.length === 0 ? (
-              <div className="p-12 text-center flex flex-col items-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <ClipboardList className="w-8 h-8 text-gray-400" />
+              <div className="glass-card bg-gray-900/40 rounded-3xl p-16 text-center border border-gray-800 border-dashed">
+                <div className="w-20 h-20 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <ClipboardList className="h-10 w-10 text-gray-600" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">Belum ada order</h3>
-                <p className="text-gray-500">Saat ini tidak ada order penyewaan yang tersedia untuk diambil.</p>
+                <h3 className="text-xl font-bold text-white mb-2 tracking-tight">Belum Ada Order</h3>
+                <p className="text-gray-500 max-w-xs mx-auto">Saat ini tidak ada order penyewaan yang tersedia untuk diambil.</p>
               </div>
             ) : (
-              <table className="min-w-full divide-y divide-gray-100">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mobil</th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Client</th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Lokasi</th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tanggal</th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {orders.slice(0, 10).map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50/80 transition-colors group">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-bold text-gray-900">{order.namaMobil}</div>
-                        {order.status === "approve sewa" && (
-                          <div className="text-xs text-brand-600 font-semibold mt-1">Siap diambil (Cash)</div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 mr-3">
-                            {(users.find(u => u.id === order.uid)?.nama || order.email || 'U').charAt(0).toUpperCase()}
-                          </div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {users.find(u => u.id === order.uid)?.nama || order.email}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-start text-sm text-gray-600">
-                          <MapPin className="h-4 w-4 mr-1.5 mt-0.5 text-gray-400 flex-shrink-0" />
-                          <div>
-                            <span className="font-semibold text-gray-900 block">{order.lokasiPenyerahan || "Lokasi Default"}</span>
-                            <span className="text-xs text-gray-500 line-clamp-1 break-all mt-0.5" title={getFullAddress(order)}>
-                              {getFullAddress(order)}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-md inline-block">
-                          {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-3 py-1 text-xs font-bold rounded-full ${getStatusColor(order.status)}`}>
-                          {getStatusText(order.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex flex-col gap-2">
-                          {(order.status === "approve sewa" || order.status === "pembayaran berhasil") && !order.driverId ? (
-                             <div className="flex gap-2">
-                           <button
-                             onClick={() => handleAcceptOrder(order.id)}
-                             className="w-full bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm focus:ring-2 focus:ring-brand-400 focus:ring-offset-1"
-                           >
-                             Terima Order
-                           </button>
-                             </div>
-                           ) : order.driverId ? (
-                               <span className="text-gray-400 text-xs font-medium flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 w-fit">
-                                 <CheckCircle className="w-3.5 h-3.5" /> Diambil Driver
-                               </span>
-                           ) : (
-                             <span className="text-gray-400 text-xs font-medium bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 w-fit">
-                               {order.status}
-                             </span>
-                           )}
-                        </div>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b border-gray-800">
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Mobil</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Client</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Lokasi</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Tanggal</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Aksi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800/50">
+                    {orders.slice(0, 10).map((order) => (
+                      <tr key={order.id} className="group hover:bg-white/[0.02] transition-colors">
+                        <td className="px-6 py-6 whitespace-nowrap">
+                          <div className="text-sm font-bold text-white group-hover:text-brand-400 transition-colors underline-offset-4 decoration-brand-500 decoration-2">{order.namaMobil}</div>
+                          {order.status === "approve sewa" && (
+                             <div className="text-[10px] text-brand-400 font-black uppercase tracking-tighter mt-1 bg-brand-500/10 px-1.5 py-0.5 rounded border border-brand-500/20 w-fit">Siap diambil (Cash)</div>
+                          )}
+                        </td>
+                        <td className="px-6 py-6 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="h-9 w-9 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center text-xs font-bold text-gray-400 mr-3 overflow-hidden shadow-inner">
+                              {(users.find(u => u.id === order.uid)?.nama || order.email || 'U').charAt(0).toUpperCase()}
+                            </div>
+                            <div className="text-sm font-medium text-gray-300">
+                              {users.find(u => u.id === order.uid)?.nama || order.email}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-6">
+                          <div className="flex items-start text-sm text-gray-400">
+                            <MapPin className="h-4 w-4 mr-2 mt-0.5 text-brand-500/70" />
+                            <div>
+                              <span className="font-bold text-gray-200 block text-xs">{order.lokasiPenyerahan || "Lokasi Default"}</span>
+                              <span className="text-[11px] text-gray-500 line-clamp-1 mt-0.5" title={getFullAddress(order)}>
+                                {getFullAddress(order)}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-6 whitespace-nowrap">
+                          <div className="text-xs font-bold text-gray-400 bg-gray-900/80 px-2.5 py-1 rounded-lg border border-gray-800">
+                            {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-6 whitespace-nowrap">
+                          {(order.status === "approve sewa" || order.status === "pembayaran berhasil") && !order.driverId ? (
+                            <button
+                              onClick={() => handleAcceptOrder(order.id)}
+                              className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-brand-sm hover:scale-105 active:scale-95"
+                            >
+                              Terima Order
+                            </button>
+                          ) : (
+                            <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest bg-gray-900/50 px-3 py-1.5 rounded-lg border border-gray-800">
+                              {order.driverId ? "Diambil Driver" : getStatusText(order.status)}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
