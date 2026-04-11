@@ -2,46 +2,193 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================
+   Inter Font — Google Fonts
+   ========================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ==========================================
+   Base Styles
+   ========================================== */
+* {
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f9fafb;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
+/* ==========================================
+   Custom Scrollbar
+   ========================================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+::-webkit-scrollbar-thumb {
+  background: #990000;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c00000;
+}
+
+/* ==========================================
+   Legacy Fade-In Animation
+   ========================================== */
 @keyframes fadeInUp {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  0%   { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
-
 .animate-fadeInUp {
   animation-name: fadeInUp;
-  animation-duration: 0.8s;
+  animation-duration: 0.6s;
   animation-fill-mode: both;
   animation-timing-function: ease-out;
 }
+.animate-fadeInUp.delay-100  { animation-delay: 0.1s; }
+.animate-fadeInUp.delay-200  { animation-delay: 0.2s; }
+.animate-fadeInUp.delay-300  { animation-delay: 0.3s; }
+.animate-fadeInUp.delay-400  { animation-delay: 0.4s; }
+.animate-fadeInUp.delay-500  { animation-delay: 0.5s; }
+.animate-fadeInUp.delay-600  { animation-delay: 0.6s; }
+.animate-fadeInUp.delay-700  { animation-delay: 0.7s; }
+.animate-fadeInUp.delay-800  { animation-delay: 0.8s; }
+.animate-fadeInUp.delay-900  { animation-delay: 0.9s; }
+.animate-fadeInUp.delay-1000 { animation-delay: 1.0s; }
 
-.animate-fadeInUp.delay-100 {
-  animation-delay: 0.1s;
+/* ==========================================
+   Glassmorphism card
+   ========================================== */
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.animate-fadeInUp.delay-200 {
-  animation-delay: 0.2s;
+/* ==========================================
+   Gradient text
+   ========================================== */
+.gradient-text {
+  background: linear-gradient(135deg, #ff6b6b 0%, #990000 50%, #c00000 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.animate-fadeInUp.delay-300 {
-  animation-delay: 0.3s;
+/* ==========================================
+   Shimmer skeleton loading
+   ========================================== */
+.skeleton {
+  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ==========================================
+   Toast notification container
+   ========================================== */
+#toast-container {
+  position: fixed;
+  top: 80px;
+  right: 16px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  max-width: 360px;
+  width: calc(100% - 32px);
+}
+#toast-container > * {
+  pointer-events: all;
+}
+
+/* ==========================================
+   Page-level fade transition
+   ========================================== */
+.page-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+/* ==========================================
+   Gradient border utility
+   ========================================== */
+.gradient-border {
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #990000, #ff6b6b);
+  z-index: -1;
+}
+
+/* ==========================================
+   Button base (shared style)
+   ========================================== */
+.btn-brand {
+  @apply bg-brand-800 hover:bg-brand-700 active:bg-brand-900 text-white font-semibold
+         py-3 px-6 rounded-xl transition-all duration-200 shadow-brand hover:shadow-brand-lg
+         focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+}
+.btn-outline {
+  @apply bg-transparent border-2 border-white text-white hover:bg-white hover:text-brand-800
+         font-semibold py-3 px-6 rounded-xl transition-all duration-200
+         focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2;
+}
+
+/* ==========================================
+   Input base
+   ========================================== */
+.input-base {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900
+         placeholder-gray-400 transition-all duration-200
+         focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent;
+}
+.input-dark {
+  @apply w-full px-4 py-3 border border-gray-600 rounded-xl bg-gray-800 text-white
+         placeholder-gray-500 transition-all duration-200
+         focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent;
+}
+
+/* ==========================================
+   Card hover lift
+   ========================================== */
+.card-hover {
+  @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover;
+}
+
+/* ==========================================
+   Status badge
+   ========================================== */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
 }

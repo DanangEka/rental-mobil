@@ -23,9 +23,11 @@ import AdminAddDriver from "./pages/AdminAddDriver";
 
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { ToastProvider } from "./components/Toast";
 
 function App() {
   return (
+    <ToastProvider>
     <Router>
       <Navbar />
       <Routes>
@@ -176,6 +178,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
       </Routes>
     </Router>
+    </ToastProvider>
   );
 }
 

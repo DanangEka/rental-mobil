@@ -3,7 +3,8 @@ import { auth, db } from "../services/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import { UserPlus, Mail, Phone, MapPin, Calendar, CreditCard, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Mail, Phone, MapPin, Calendar, CreditCard, Eye, EyeOff, ShieldCheck, Lock, StickyNote } from "lucide-react";
+import { useToast } from "../components/Toast";
 
 export default function AdminAddDriver() {
   const [formData, setFormData] = useState({
@@ -23,6 +24,7 @@ export default function AdminAddDriver() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const toast = useToast();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -114,7 +116,7 @@ export default function AdminAddDriver() {
         updatedAt: new Date()
       });
 
-      setSuccess("Driver berhasil ditambahkan!");
+      toast.success("Berhasil", "Driver baru telah berhasil didaftarkan ke sistem.");
       setFormData({
         name: "",
         email: "",
@@ -134,252 +136,267 @@ export default function AdminAddDriver() {
 
     } catch (err) {
       console.error("Error adding driver:", err);
+      let errorMsg = "Terjadi kesalahan saat menambahkan driver";
       if (err.code === "auth/email-already-in-use") {
-        setError("Email sudah terdaftar");
+        errorMsg = "Email sudah terdaftar";
       } else if (err.code === "auth/weak-password") {
-        setError("Password terlalu lemah");
-      } else {
-        setError("Terjadi kesalahan saat menambahkan driver");
+        errorMsg = "Password terlalu lemah";
       }
+      toast.error("Gagal", errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Tambah Driver Baru</h1>
-          <p className="text-gray-600 mt-2">Daftarkan driver baru ke dalam sistem</p>
+    <div className="min-h-screen bg-black pt-[72px] relative overflow-hidden">
+      {/* Dynamic Background Effects */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
+        <div className="absolute top-[10%] left-[-5%] w-[40vw] h-[40vw] rounded-full bg-brand-900/10 mix-blend-screen filter blur-[100px] animate-pulse"></div>
+        <div className="absolute bottom-[-5%] right-[-5%] w-[35vw] h-[35vw] rounded-full bg-red-900/5 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="relative z-10 max-w-4xl mx-auto px-4 py-8 md:py-12">
+        <div className="mb-10 animate-fadeInUp">
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Tambah Driver</h1>
+          <p className="text-gray-400 text-lg">Daftarkan driver baru untuk memperluas jangkauan layanan Anda.</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="flex items-center mb-6">
-            <div className="bg-blue-600 rounded-full p-3">
-              <UserPlus className="text-white w-6 h-6" />
+        <div className="glass-card bg-gray-900/40 rounded-[2rem] overflow-hidden border border-gray-800 shadow-2xl animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
+          {/* Header section with icon */}
+          <div className="px-8 py-10 bg-gradient-to-r from-brand-900/20 to-transparent border-b border-gray-800 flex flex-col md:flex-row items-center gap-6">
+            <div className="w-16 h-16 bg-brand-500/10 rounded-2xl flex items-center justify-center text-brand-400 shadow-brand-sm border border-brand-500/20">
+              <UserPlus size={32} />
             </div>
-            <div className="ml-4">
-              <h2 className="text-xl font-semibold text-gray-900">Formulir Pendaftaran Driver</h2>
-              <p className="text-gray-600">Isi semua informasi yang diperlukan</p>
+            <div className="text-center md:text-left">
+              <h2 className="text-2xl font-bold text-white tracking-tight">Formulir Pendaftaran</h2>
+              <p className="text-gray-500 text-sm font-medium mt-1 uppercase tracking-widest">Lengkapi seluruh data administrasi driver</p>
             </div>
           </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
-              {success}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Personal Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nama Lengkap *
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Masukkan nama lengkap"
-                    required
-                  />
-                </div>
+          <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-12">
+            {/* Section 1: Personal Info */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                 <div className="w-1.5 h-4 bg-brand-500 rounded-full"></div>
+                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Informasi Personal</h3>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email *
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="driver@email.com"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  No. Telepon *
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="08123456789"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  No. SIM *
-                </label>
-                <div className="relative">
-                  <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    name="simNumber"
-                    value={formData.simNumber}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="1234567890123456"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tanggal Lahir *
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="date"
-                    name="birthDate"
-                    value={formData.birthDate}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Alamat *
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
-                  <textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    rows={3}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Masukkan alamat lengkap"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Password Section */}
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Informasi Akun</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password *
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2 group">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block ml-1 group-focus-within:text-brand-400 transition-colors">
+                    Nama Lengkap Driver *
                   </label>
                   <div className="relative">
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="w-full bg-black/40 border border-gray-800 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-white text-sm rounded-xl px-4 py-3.5 outline-none transition-all"
+                      placeholder="Masukkan nama lengkap"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 group">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block ml-1 group-focus-within:text-brand-400 transition-colors">
+                    Email Address *
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 group-focus-within:text-brand-500 transition-colors" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="w-full bg-black/40 border border-gray-800 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-white text-sm rounded-xl pl-12 pr-4 py-3.5 outline-none transition-all uppercase tracking-tight"
+                      placeholder="driver@cakralimatuujuh.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 group">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block ml-1 group-focus-within:text-brand-400 transition-colors">
+                    Nomor Telepon *
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 group-focus-within:text-brand-500 transition-colors" />
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="w-full bg-black/40 border border-gray-800 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-white text-sm rounded-xl pl-12 pr-4 py-3.5 outline-none transition-all"
+                      placeholder="08xxxxxxxxxxxx"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 group">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block ml-1 group-focus-within:text-brand-400 transition-colors">
+                    Nomor SIM Aktif *
+                  </label>
+                  <div className="relative">
+                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 group-focus-within:text-brand-500 transition-colors" />
+                    <input
+                      type="text"
+                      name="simNumber"
+                      value={formData.simNumber}
+                      onChange={handleInputChange}
+                      className="w-full bg-black/40 border border-gray-800 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-white text-sm rounded-xl pl-12 pr-4 py-3.5 outline-none transition-all"
+                      placeholder="Masukkan No. SIM"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 group">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block ml-1 group-focus-within:text-brand-400 transition-colors">
+                    Tanggal Lahir *
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 group-focus-within:text-brand-500 transition-colors" />
+                    <input
+                      type="date"
+                      name="birthDate"
+                      value={formData.birthDate}
+                      onChange={handleInputChange}
+                      style={{ colorScheme: 'dark' }}
+                      className="w-full bg-black/40 border border-gray-800 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-white text-sm rounded-xl pl-12 pr-4 py-3.5 outline-none transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 space-y-2 group">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block ml-1 group-focus-within:text-brand-400 transition-colors">
+                    Alamat Domisili Lengkap *
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-4 h-4 w-4 text-gray-600 group-focus-within:text-brand-500 transition-colors" />
+                    <textarea
+                      name="address"
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      rows={3}
+                      className="w-full bg-black/40 border border-gray-800 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-white text-sm rounded-xl pl-12 pr-4 py-4 outline-none transition-all resize-none"
+                      placeholder="Masukkan alamat sesuai KTP/Domisili"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Account Access */}
+            <div className="space-y-6 pt-6 border-t border-gray-800/50">
+              <div className="flex items-center gap-3 mb-4">
+                 <div className="w-1.5 h-4 bg-brand-500 rounded-full"></div>
+                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Akses & Kredensial</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2 group">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block ml-1 group-focus-within:text-brand-400 transition-colors">
+                    Password Akun *
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 group-focus-within:text-brand-500 transition-colors" />
                     <input
                       type={showPassword ? "text" : "password"}
                       name="password"
                       value={formData.password}
                       onChange={handleInputChange}
-                      className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Minimal 6 karakter"
+                      className="w-full bg-black/40 border border-gray-800 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-white text-sm rounded-xl pl-12 pr-12 py-3.5 outline-none transition-all"
+                      placeholder="Min. 6 karakter"
                       required
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white transition-colors"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Konfirmasi Password *
+                <div className="space-y-2 group">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block ml-1 group-focus-within:text-brand-400 transition-colors">
+                    Ulangi Password *
                   </label>
                   <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 group-focus-within:text-brand-500 transition-colors" />
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Ulangi password"
+                      className="w-full bg-black/40 border border-gray-800 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-white text-sm rounded-xl pl-12 pr-12 py-3.5 outline-none transition-all"
+                      placeholder="Konfirmasi password"
                       required
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white transition-colors"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
-                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Notes */}
-            <div className="border-t pt-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Catatan (Opsional)
-              </label>
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleInputChange}
-                rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Tambahkan catatan khusus untuk driver ini..."
-              />
+            {/* Section 3: Additional Notes */}
+            <div className="space-y-6 pt-6 border-t border-gray-800/50">
+              <div className="space-y-2 group">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block ml-1 group-focus-within:text-brand-400 transition-colors">
+                  Catatan Tambahan (Opsional)
+                </label>
+                <div className="relative">
+                  <StickyNote className="absolute left-4 top-4 h-4 w-4 text-gray-600 group-focus-within:text-brand-500 transition-colors" />
+                  <textarea
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleInputChange}
+                    rows={3}
+                    className="w-full bg-black/40 border border-gray-800 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-white text-sm rounded-xl pl-12 pr-4 py-4 outline-none transition-all resize-none"
+                    placeholder="Contoh: Pengalaman driving 5th, Area Jakarta Timur, dsb."
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Submit Buttons */}
-            <div className="border-t pt-6 flex justify-end space-x-4">
+            {/* Form Footer / Submit Buttons */}
+            <div className="pt-10 border-t border-gray-800 flex flex-col sm:flex-row justify-end gap-4">
               <button
                 type="button"
                 onClick={() => navigate("/admin-driver-management")}
-                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-8 py-4 bg-gray-800/50 hover:bg-gray-700 text-gray-400 hover:text-white rounded-2xl font-bold transition-all border border-gray-700 order-2 sm:order-1"
                 disabled={loading}
               >
-                Batal
+                Batalkan & Kembali
               </button>
               <button
                 type="submit"
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center disabled:opacity-50"
+                className="px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black transition-all flex items-center justify-center gap-3 shadow-brand-sm disabled:opacity-50 order-1 sm:order-2"
                 disabled={loading}
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Menambahkan...
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white"></div>
+                    Mendaftarkan...
                   </>
                 ) : (
                   <>
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Tambah Driver
+                    <UserPlus size={20} />
+                    Daftarkan Driver Baru
                   </>
                 )}
               </button>

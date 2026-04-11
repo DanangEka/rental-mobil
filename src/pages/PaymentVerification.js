@@ -72,7 +72,7 @@ export default function PaymentVerification() {
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           // Filter by driverId and status client-side to completely avoid composite index
-          if (data.driverId === user.uid && ["dalam perjalanan", "menunggu pembayaran"].includes(data.status)) {
+          if (data.driverId === user.uid && ["disetujui", "dalam perjalanan", "menunggu pembayaran"].includes(data.status)) {
             ordersData.push({ id: doc.id, ...data });
           }
         });

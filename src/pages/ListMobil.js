@@ -4,11 +4,13 @@ import { db, auth, storage } from "../services/firebase";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Car, MapPin, Calendar, Users, Fuel, Settings, Search, Filter, RefreshCw, Star } from "lucide-react";
+import { Car, MapPin, Calendar, Users, Fuel, Settings, Search, Filter, RefreshCw, Star, Image as ImageIcon, Upload, CheckCircle } from "lucide-react";
 import InvoiceGenerator from "../components/InvoiceGenerator";
+import { useToast } from "../components/Toast";
 
 export default function ListMobil() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [mobil, setMobil] = useState([]);
   const [filteredMobil, setFilteredMobil] = useState([]);
   const [tanggalMulai, setTanggalMulai] = useState({});
@@ -194,13 +196,13 @@ export default function ListMobil() {
 
   const handleSewa = async (m) => {
     if (!auth.currentUser) {
-      alert("Silakan login terlebih dahulu.");
+      toast.warning("Silakan login terlebih dahulu.");
       return;
     }
 
     // Check verification status
     if (userData?.verificationStatus !== "verified") {
-      alert("Akun Anda belum diverifikasi. Silakan upload KTP di halaman profil untuk verifikasi terlebih dahulu.");
+      toast.error("Akun Anda belum diverifikasi.", "Silakan upload KTP di halaman profil untuk verifikasi terlebih dahulu.");
       return;
     }
 
@@ -211,7 +213,7 @@ export default function ListMobil() {
         existingOrder.status?.toLowerCase()
       )
     ) {
-      alert("Anda sudah memiliki pemesanan aktif untuk mobil ini.");
+      toast.warning("Anda sudah memiliki pemesanan aktif untuk mobil ini.");
       return;
     }
 
@@ -219,7 +221,7 @@ export default function ListMobil() {
     const selesai = tanggalSelesai[m.id];
 
     if (!mulai || !selesai) {
-      alert("Pilih tanggal mulai dan selesai terlebih dahulu.");
+      toast.warning("Pilih tanggal mulai dan selesai terlebih dahulu.");
       return;
     }
 
@@ -228,7 +230,7 @@ export default function ListMobil() {
     const durasiHari = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
 
     if (durasiHari <= 0) {
-      alert("Tanggal selesai harus setelah tanggal mulai.");
+      toast.error("Format Tanggal Salah", "Tanggal selesai harus setelah tanggal mulai.");
       return;
     }
 
@@ -267,19 +269,21 @@ export default function ListMobil() {
 
       await addNotification("Pemesanan berhasil! Silakan tunggu konfirmasi.");
       await addAdminNotification(`Pesanan baru dari ${auth.currentUser.email}: ${m.nama}`);
+      
+      toast.success("Pemesanan Berhasil!", "Silakan tunggu konfirmasi selanjutnya.");
     } catch (err) {
       console.error("Gagal menyewa:", err);
-      alert("Terjadi kesalahan saat menyewa. Error: " + err.message);
+      toast.error("Terjadi kesalahan saat menyewa. Error: " + err.message);
     }
   };
 
   const handlePaymentSubmit = async (order) => {
     if (!paymentMethod[order.id] && !order.paymentMethod) {
-      alert("Silakan pilih metode pembayaran.");
+      toast.warning("Silakan pilih metode pembayaran.");
       return;
     }
     if (!paymentProof[order.id]) {
-      alert("Silakan unggah bukti pembayaran.");
+      toast.warning("Silakan unggah bukti pembayaran.");
       return;
     }
 
@@ -330,9 +334,10 @@ export default function ListMobil() {
         console.error("Error generating DP invoice:", invoiceError);
         // Don't show error to user as payment was successful
       }
+      toast.success("Pembayaran Berhasil Dikirim", "Menunggu konfirmasi pembayaran oleh Admin.");
     } catch (err) {
       console.error("Gagal mengirim bukti pembayaran:", err);
-      alert("Terjadi kesalahan saat mengirim bukti pembayaran. Error: " + err.message);
+      toast.error("Terjadi kesalahan saat mengirim bukti pembayaran. Error: " + err.message);
     }
   };
 
@@ -340,12 +345,12 @@ export default function ListMobil() {
     const selectedPaymentMethod = paymentMethod[order.id] || order.paymentMethod;
 
     if (!selectedPaymentMethod) {
-      alert("Silakan pilih metode pembayaran.");
+      toast.warning("Silakan pilih metode pembayaran.");
       return;
     }
 
     if (selectedPaymentMethod !== "Cash") {
-      alert("Metode pembayaran harus Cash untuk menggunakan fitur ini.");
+      toast.warning("Metode pembayaran harus Cash untuk menggunakan fitur ini.");
       return;
     }
 
@@ -382,41 +387,54 @@ export default function ListMobil() {
         console.error("Error generating DP invoice for cash payment:", invoiceError);
         // Don't show error to user as payment request was successful
       }
+      toast.success("Permintaan Sewa Diajukan", "Menunggu persetujuan admin untuk sewa dengan Cash.");
     } catch (err) {
       console.error("Gagal mengajukan pembayaran cash:", err);
-      alert("Terjadi kesalahan saat mengajukan pembayaran cash. Error: " + err.message);
+      toast.error("Terjadi kesalahan saat mengajukan pembayaran cash. Error: " + err.message);
     }
   };
 
 
 
   return (
-    <div
-      className={`min-h-screen bg-black ${mobil.length > 0 ? "pb-20" : ""}`}
-    >
-      <div className="bg-red-900 text-white px-4 py-8 md:py-12 lg:py-16">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 tracking-tight">
-            Sewa Mobil Terbaik
-          </h1>
-          <p className="text-base md:text-lg lg:text-xl opacity-90 max-w-2xl mx-auto leading-relaxed">
-            Pilih mobil impian Anda dengan harga terjangkau dan layanan profesional
-          </p>
-        </div>
+    <div className={`min-h-screen bg-black pt-[72px] relative overflow-hidden ${mobil.length > 0 ? "pb-20" : ""}`}>
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
+        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-900/20 mix-blend-screen filter blur-[100px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-900/20 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 md:px-6 md:py-12 lg:px-8">
+      <div className="relative z-10 w-full px-4 py-8 md:py-16 text-center animate-fadeInUp">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight mb-4 group inline-block relative cursor-default">
+          <span className="relative z-10">Sewa Mobil Terbaik</span>
+          <span className="absolute bottom-1 left-0 w-full h-3 bg-brand-600/50 -z-10 group-hover:bg-brand-500 transition-colors duration-300"></span>
+        </h1>
+        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mt-2">
+          Pilih armada impian Anda dengan harga terjangkau dan layanan profesional tanpa kompromi.
+        </p>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 pb-8 md:px-6 md:pb-12 lg:px-8 relative z-10">
         {/* Search and Filter Section */}
-        <div className="mb-8 bg-gray-900 rounded-2xl p-4 sm:p-6 border border-gray-800">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-            <h2 className="text-xl font-semibold text-white mb-2 sm:mb-0">Cari & Filter Mobil</h2>
+        <div className="mb-10 glass-card bg-gray-900/60 rounded-3xl p-6 sm:p-8 border border-gray-800 shadow-2xl relative overflow-hidden animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
+          {/* Subtle top glare */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 border-b border-gray-800 pb-6">
+            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+               <div className="p-2 bg-brand-500/20 rounded-xl text-brand-400">
+                  <Filter size={20} />
+               </div>
+               Cari & Filter Armada
+            </h2>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-4 py-2 rounded-lg transition-colors"
+              className="mt-4 sm:mt-0 flex items-center gap-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 border border-gray-700 text-white px-5 py-2.5 rounded-xl transition-colors font-semibold"
             >
-              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-              {refreshing ? 'Memperbarui...' : 'Perbarui'}
+              <RefreshCw size={18} className={`text-brand-400 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Memperbarui...' : 'Perbarui Data'}
             </button>
           </div>
 
@@ -447,32 +465,33 @@ export default function ListMobil() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="sm:col-span-2 lg:col-span-2">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Cari Mobil</label>
-              <div className="relative">
+              <label className="block text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Pencarian Bebas</label>
+              <div className="relative group">
                 <input
                   type="text"
-                  placeholder="Cari berdasarkan nama, merek, tahun..."
+                  placeholder="Ketik nama, merek, atau tahun armada..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  className="w-full pl-12 pr-4 py-3 bg-black/40 border border-gray-700 hover:border-gray-600 focus:border-brand-500 transition-colors text-white rounded-xl outline-none"
                 />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={16} className="text-gray-400" />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none group-focus-within:text-brand-400 text-gray-500 transition-colors">
+                  <Search size={18} />
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Urutkan</label>
+              <label className="block text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Urutkan</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full px-4 py-3 bg-black/40 border border-gray-700 hover:border-gray-600 focus:border-brand-500 transition-colors text-white rounded-xl outline-none cursor-pointer appearance-none"
+                style={{ backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239CA3AF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem top 50%', backgroundSize: '0.65rem auto' }}
               >
-                <option value="name">Nama (A-Z)</option>
-                <option value="price-low">Harga Terendah</option>
+                <option value="name">Abjad (A-Z)</option>
+                <option value="price-low">Harga Termurah</option>
                 <option value="price-high">Harga Tertinggi</option>
                 <option value="year-new">Tahun Terbaru</option>
                 <option value="year-old">Tahun Terlama</option>
@@ -480,84 +499,83 @@ export default function ListMobil() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+              <label className="block text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Ketersediaan</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full px-4 py-3 bg-black/40 border border-gray-700 hover:border-gray-600 focus:border-brand-500 transition-colors text-white rounded-xl outline-none cursor-pointer appearance-none"
+                style={{ backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239CA3AF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem top 50%', backgroundSize: '0.65rem auto' }}
               >
                 <option value="semua">Semua Status</option>
-                <option value="tersedia">Tersedia</option>
-                <option value="disewa">Disewa</option>
-                <option value="servis">Servis</option>
+                <option value="tersedia">Tersedia Saja</option>
+                <option value="disewa">Sedang Disewa</option>
+                <option value="servis">Dalam Perawatan</option>
               </select>
             </div>
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-            <div className="bg-green-900 p-4 rounded-xl border border-green-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-green-300">Tersedia</h3>
-                  <p className="text-2xl font-bold text-green-400">
-                    {filteredMobil.filter(m => m.tersedia === true || m.status === "tersedia").length}
-                  </p>
-                </div>
-                <div className="p-2 bg-green-800 rounded-lg">
-                  <Car className="h-6 w-6 text-green-400" />
-                </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-gray-800">
+            <div className="bg-gradient-to-br from-green-900/40 to-green-800/20 p-5 rounded-2xl border border-green-800/50 flex items-center justify-between group hover:border-green-500/50 transition-colors">
+              <div>
+                <h3 className="text-sm font-bold text-green-400 uppercase tracking-wider mb-1">Tersedia</h3>
+                <p className="text-3xl font-black text-white group-hover:text-green-300 transition-colors">
+                  {filteredMobil.filter(m => m.tersedia === true || m.status === "tersedia").length}
+                </p>
+              </div>
+              <div className="p-3 bg-green-500/20 rounded-xl">
+                <CheckCircle className="h-6 w-6 text-green-400" />
               </div>
             </div>
-            <div className="bg-red-900 p-4 rounded-xl border border-red-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-red-300">Disewa</h3>
-                  <p className="text-2xl font-bold text-red-400">
-                    {filteredMobil.filter(m => m.status === "disewa" || m.tersedia === false).length}
-                  </p>
-                </div>
-                <div className="p-2 bg-red-800 rounded-lg">
-                  <Users className="h-6 w-6 text-red-400" />
-                </div>
+
+            <div className="bg-gradient-to-br from-red-900/40 to-red-800/20 p-5 rounded-2xl border border-red-800/50 flex items-center justify-between group hover:border-red-500/50 transition-colors">
+              <div>
+                <h3 className="text-sm font-bold text-red-400 uppercase tracking-wider mb-1">Disewa</h3>
+                <p className="text-3xl font-black text-white group-hover:text-red-300 transition-colors">
+                  {filteredMobil.filter(m => m.status === "disewa" || m.tersedia === false).length}
+                </p>
+              </div>
+              <div className="p-3 bg-red-500/20 rounded-xl">
+                <Users className="h-6 w-6 text-red-400" />
               </div>
             </div>
-            <div className="bg-yellow-900 p-4 rounded-xl border border-yellow-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-yellow-300">Servis</h3>
-                  <p className="text-2xl font-bold text-yellow-400">
-                    {filteredMobil.filter(m => m.status === "servis").length}
-                  </p>
-                </div>
-                <div className="p-2 bg-yellow-800 rounded-lg">
-                  <Settings className="h-6 w-6 text-yellow-400" />
-                </div>
+
+            <div className="bg-gradient-to-br from-yellow-900/40 to-yellow-800/20 p-5 rounded-2xl border border-yellow-800/50 flex items-center justify-between group hover:border-yellow-500/50 transition-colors">
+              <div>
+                <h3 className="text-sm font-bold text-yellow-400 uppercase tracking-wider mb-1">Servis</h3>
+                <p className="text-3xl font-black text-white group-hover:text-yellow-300 transition-colors">
+                  {filteredMobil.filter(m => m.status === "servis").length}
+                </p>
+              </div>
+              <div className="p-3 bg-yellow-500/20 rounded-xl">
+                <Settings className="h-6 w-6 text-yellow-400" />
               </div>
             </div>
-            <div className="bg-blue-900 p-4 rounded-xl border border-blue-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-blue-300">Total</h3>
-                  <p className="text-2xl font-bold text-blue-400">{filteredMobil.length}</p>
-                </div>
-                <div className="p-2 bg-blue-800 rounded-lg">
-                  <Car className="h-6 w-6 text-blue-400" />
-                </div>
+
+            <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 p-5 rounded-2xl border border-blue-800/50 flex items-center justify-between group hover:border-blue-500/50 transition-colors">
+              <div>
+                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-1">Total</h3>
+                <p className="text-3xl font-black text-white group-hover:text-blue-300 transition-colors">{filteredMobil.length}</p>
+              </div>
+              <div className="p-3 bg-blue-500/20 rounded-xl">
+                <Car className="h-6 w-6 text-blue-400" />
               </div>
             </div>
           </div>
         </div>
 
         {filteredMobil.length === 0 ? (
-          <div className="text-center py-16 md:py-20">
-            <div className="text-gray-300 text-xl md:text-2xl font-medium">
-              Tidak ada mobil tersedia saat ini
+          <div className="text-center py-16 md:py-24 glass-card bg-gray-900/60 rounded-3xl mt-8 animate-fadeInUp">
+            <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Car className="w-10 h-10 text-gray-500" />
             </div>
-            <p className="text-gray-400 mt-2">Silakan kembali lagi nanti</p>
+            <div className="text-white text-2xl font-bold mb-2">
+              Tidak ada armada yang cocok
+            </div>
+            <p className="text-gray-400">Silakan ubah filter pencarian Anda atau kembali lagi nanti</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-8 md:gap-10 lg:gap-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-8 mt-12">
             {filteredMobil.map((m) => {
               const statusLower = m.status?.toLowerCase();
               const order = getUserOrderForCar(m.id);
@@ -566,22 +584,24 @@ export default function ListMobil() {
               return (
                 <div
                   key={m.id}
-                  className="bg-gray-900 rounded-2xl shadow-2xl overflow-hidden hover:shadow-3xl transition-all duration-300 border border-gray-800 hover:border-red-600"
+                  className="glass-card bg-gray-900/60 rounded-3xl overflow-hidden group hover:border-brand-500/50 transition-all duration-300 flex flex-col h-full animate-fadeInUp"
                 >
-                  <div className="relative aspect-video bg-gray-800">
+                  <div className="relative aspect-video bg-black/50 overflow-hidden">
                     <img
                       src={m.gambar}
                       alt={m.nama}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover group-hover:scale-110 group-hover:opacity-90 transition-all duration-700"
                       loading="lazy"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                    
                     <div
-                      className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg ${
+                      className={`absolute top-4 right-4 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-md border ${
                         ["servis", "service", "maintenance"].includes(statusLower)
-                          ? "bg-yellow-500 text-yellow-900"
+                          ? "bg-yellow-500/80 border-yellow-400 text-white"
                           : ["disewa", "rented", "booked"].includes(statusLower)
-                          ? "bg-red-600 text-white"
-                          : "bg-green-600 text-white"
+                          ? "bg-red-600/80 border-red-500 text-white"
+                          : "bg-green-500/80 border-green-400 text-white"
                       }`}
                     >
                       {["servis", "service", "maintenance"].includes(statusLower)
@@ -592,12 +612,14 @@ export default function ListMobil() {
                     </div>
                   </div>
 
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-white mb-2 leading-tight">{m.nama}</h3>
-                    <p className="text-red-400 font-bold text-lg mb-4">
-                      Rp {m.harga.toLocaleString()}{" "}
-                      <span className="text-gray-400 text-sm font-normal">/ hari</span>
-                    </p>
+                  <div className="p-6 md:p-8 flex flex-col flex-grow">
+                    <div className="flex-grow">
+                      <h3 className="text-2xl font-bold text-white mb-2 leading-tight group-hover:text-brand-400 transition-colors">{m.nama}</h3>
+                      <div className="flex items-baseline gap-2 mb-6">
+                        <span className="text-brand-400 font-bold text-2xl">Rp {m.harga.toLocaleString()}</span>
+                        <span className="text-gray-500 text-sm font-medium">/ hari</span>
+                      </div>
+                    </div>
 
                     {/* Kondisi tampilan */}
                     {(() => {
@@ -654,17 +676,17 @@ export default function ListMobil() {
     );
   }
   return (
-    <div className="space-y-4">
-      <div className="text-center bg-gray-800 rounded-lg p-4 border border-gray-700">
-        <div className="text-green-400 text-base font-semibold">
-          Pesanan Disetujui
+    <div className="space-y-4 pt-4 border-t border-gray-800">
+      <div className="text-center bg-green-900/20 rounded-xl p-4 border border-green-800/50">
+        <div className="text-green-400 text-base font-bold flex items-center justify-center gap-2">
+          <CheckCircle size={18} /> Pesanan Disetujui
         </div>
-        <div className="text-gray-300 text-sm mt-1">
-          Silakan lakukan pembayaran DP untuk melanjutkan
+        <div className="text-gray-400 text-sm mt-1">
+          Silakan upload bukti DP
         </div>
       </div>
       <div>
-        <label className="text-sm text-gray-300 font-medium block mb-2">
+        <label className="text-sm text-gray-400 font-semibold uppercase tracking-wider block mb-2">
           Metode Pembayaran
         </label>
         <select
@@ -682,35 +704,45 @@ export default function ListMobil() {
               setShowPaymentPopup(true);
             }
           }}
-          className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+          className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3.5 focus:border-brand-500 transition-colors outline-none cursor-pointer appearance-none"
         >
           <option value="">Pilih Metode</option>
           <option value="Transfer Bank">Transfer Bank</option>
           <option value="E-Wallet">E-Wallet</option>
-          <option value="Cash">Cash</option>
+          <option value="Cash">Cash (Di Tempat)</option>
         </select>
       </div>
       {/* Hide upload field for cash payments */}
       {((paymentMethod[order.id] || order.paymentMethod) !== "Cash") && (
         <div>
-          <label className="text-sm text-gray-300 font-medium block mb-2">
-            Bukti Pembayaran
+          <label className="text-sm text-gray-400 font-semibold uppercase tracking-wider block mb-2">
+            Bukti Pembayaran DP
           </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) =>
-              setPaymentProof((prev) => ({
-                ...prev,
-                [order.id]: e.target.files[0],
-              }))
-            }
-            className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg p-3 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors"
-          />
+          <div className="relative group">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) =>
+                setPaymentProof((prev) => ({
+                  ...prev,
+                  [order.id]: e.target.files[0],
+                }))
+              }
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <div className="w-full bg-black/50 border border-gray-700 group-hover:border-brand-500 text-gray-300 text-sm rounded-xl p-3.5 flex items-center gap-3 transition-colors">
+              <div className="bg-gray-800 p-2 rounded-lg text-brand-400">
+                 <Upload size={16} />
+              </div>
+              <span className="truncate flex-1 font-medium">
+                {paymentProof[order.id] ? paymentProof[order.id].name : "Pilih file gambar..."}
+              </span>
+            </div>
+          </div>
         </div>
       )}
       <button
-        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-sm shadow-md hover:shadow-lg"
+        className="w-full pt-2"
         onClick={() => {
           if ((paymentMethod[order.id] || order.paymentMethod) === "Cash") {
             handleCashPayment(order);
@@ -719,7 +751,9 @@ export default function ListMobil() {
           }
         }}
       >
-        {(paymentMethod[order.id] || order.paymentMethod) === "Cash" ? "Ajukan Sewa" : "Kirim Bukti Pembayaran"}
+        <div className="w-full py-3.5 px-4 rounded-xl font-bold text-center transition-all bg-brand-600 hover:bg-brand-500 text-white shadow-brand-sm">
+           {(paymentMethod[order.id] || order.paymentMethod) === "Cash" ? "Ajukan Sewa Cash" : "Kirim Bukti Pembayaran"}
+        </div>
       </button>
     </div>
   );
@@ -764,11 +798,11 @@ export default function ListMobil() {
                         m.tersedia === true
                       ) {
                         return (
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 gap-3">
+                          <div className="space-y-5 pt-4 border-t border-gray-800">
+                            <div className="grid grid-cols-1 gap-4">
                               <div>
-                                  <label className="text-sm text-red-400 font-medium block mb-2">
-                                    Tanggal Mulai
+                                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">
+                                    Mulai Sewa
                                   </label>
                                   <input
                                     type="datetime-local"
@@ -776,12 +810,13 @@ export default function ListMobil() {
                                     onChange={(e) =>
                                       handleTanggalChange(m.id, "mulai", e.target.value)
                                     }
-                                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                    style={{ colorScheme: "dark" }}
+                                    className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 transition-colors outline-none"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-sm text-red-400 font-medium block mb-2">
-                                    Tanggal Selesai
+                                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">
+                                    Selesai Sewa
                                   </label>
                                   <input
                                     type="datetime-local"
@@ -789,30 +824,31 @@ export default function ListMobil() {
                                     onChange={(e) =>
                                       handleTanggalChange(m.id, "selesai", e.target.value)
                                     }
-                                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                    style={{ colorScheme: "dark" }}
+                                    className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 transition-colors outline-none"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-sm text-red-400 font-medium block mb-2">
-                                    Lokasi Penyerahan Unit
+                                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">
+                                    Lokasi Penyerahan
                                   </label>
                                   <select
                                     value={lokasiPenyerahan[m.id] || ""}
                                     onChange={(e) =>
                                       handleTanggalChange(m.id, "lokasi", e.target.value)
                                     }
-                                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                    className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 transition-colors outline-none cursor-pointer appearance-none text-center"
                                   >
-                                    <option value="">Pilih Lokasi Penyerahan</option>
-                                    <option value="Rumah">Rumah</option>
-                                    <option value="Kantor">Kantor</option>
-                                    <option value="Titik Temu">Titik Temu</option>
+                                    <option value="">-- Pilih --</option>
+                                    <option value="Rumah">Diantar ke Rumah / Hotel</option>
+                                    <option value="Kantor">Ambil di Garasi</option>
+                                    <option value="Titik Temu">Titik Temu Lain</option>
                                   </select>
                                 </div>
                                 {lokasiPenyerahan[m.id] === "Titik Temu" && (
                                   <div>
-                                    <label className="text-sm text-red-400 font-medium block mb-2">
-                                      Alamat Titik Temu
+                                    <label className="text-xs text-brand-400 font-bold uppercase tracking-wider block mb-2">
+                                      Detail Titik Temu
                                     </label>
                                     <input
                                       type="text"
@@ -820,16 +856,16 @@ export default function ListMobil() {
                                       onChange={(e) =>
                                         handleTanggalChange(m.id, "titikTemu", e.target.value)
                                       }
-                                      placeholder="Masukkan alamat titik temu"
-                                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                      placeholder="Contoh: Bandara Juanda T1"
+                                      className="w-full bg-brand-900/30 border border-brand-500/50 text-white text-sm rounded-xl p-3 focus:border-brand-500 transition-colors outline-none placeholder-gray-500 focus:bg-black/50"
                                     />
                                   </div>
                                 )}
                                 <div>
-                                  <label className="text-sm text-red-400 font-medium block mb-2">
-                                    Tipe Sewa
+                                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">
+                                    Opsi Layanan
                                   </label>
-                                  <div className="flex bg-gray-100 rounded-lg p-1">
+                                  <div className="flex bg-black/50 border border-gray-800 rounded-xl p-1.5 w-full">
                                     <button
                                       type="button"
                                       onClick={() =>
@@ -838,10 +874,10 @@ export default function ListMobil() {
                                           [m.id]: "Lepas Kunci",
                                         }))
                                       }
-                                      className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                                      className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-200 ${
                                         rentalType[m.id] === "Lepas Kunci" || !rentalType[m.id]
-                                          ? "bg-red-600 text-white shadow-md"
-                                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"
+                                          ? "bg-brand-600 text-white shadow-lg"
+                                          : "text-gray-400 hover:text-white hover:bg-gray-800"
                                       }`}
                                     >
                                       Lepas Kunci
@@ -854,22 +890,22 @@ export default function ListMobil() {
                                           [m.id]: "Driver",
                                         }))
                                       }
-                                      className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                                      className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-200 ${
                                         rentalType[m.id] === "Driver"
-                                          ? "bg-red-600 text-white shadow-md"
-                                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"
+                                          ? "bg-brand-600 text-white shadow-lg"
+                                          : "text-gray-400 hover:text-white hover:bg-gray-800"
                                       }`}
                                     >
-                                      Driver
+                                      Driver (250k)
                                     </button>
                                   </div>
                                 </div>
                             </div>
 
-                            {tanggalMulai[m.id] && tanggalSelesai[m.id] && (
-                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                <p className="text-sm text-gray-600 mb-2 font-medium">Estimasi Biaya</p>
-                                <p className="text-green-600 font-bold text-lg">
+                            {tanggalMulai[m.id] && tanggalSelesai[m.id] ? (
+                              <div className="bg-brand-900/20 border border-brand-500/30 rounded-xl p-4 mt-2">
+                                <p className="text-xs tracking-wider text-brand-400 mb-1 font-bold uppercase">Estimasi Total</p>
+                                <p className="text-white font-black text-xl mb-1">
                                   Rp{" "}
                                   {(() => {
                                     const durasi = Math.ceil(
@@ -885,19 +921,25 @@ export default function ListMobil() {
                                     return total.toLocaleString();
                                   })()}
                                 </p>
-                                {(rentalType[m.id] || "Lepas Kunci") === "Driver" && (
-                                  <p className="text-sm text-gray-500 mt-1">
-                                    Termasuk biaya driver: Rp 250.000
+                                {(rentalType[m.id] || "Lepas Kunci") === "Driver" ? (
+                                  <p className="text-xs text-gray-400 font-medium">
+                                    Termasuk jasa supir Rp 250rb
                                   </p>
+                                ) : (
+                                  <p className="text-xs text-gray-500">&nbsp;</p>
                                 )}
                               </div>
+                            ) : (
+                               <div className="h-[84px] flex items-center justify-center bg-gray-900/50 rounded-xl border border-gray-800 border-dashed mt-2">
+                                  <p className="text-sm text-gray-600 font-medium">Isi tanggal untuk estimasi harga</p>
+                               </div>
                             )}
 
                             <button
-                              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-sm shadow-md hover:shadow-lg"
+                              className="w-full btn-brand py-3.5 mt-2 rounded-xl text-center flex items-center justify-center gap-2"
                               onClick={() => handleSewa(m)}
                             >
-                              Sewa Sekarang
+                              <Car size={18} /> Ajukan Sewa
                             </button>
                           </div>
                         );
@@ -951,29 +993,41 @@ export default function ListMobil() {
 
       {/* Payment Method Popups */}
       {showPaymentPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 relative">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] px-4">
+          <div className="glass-card bg-gray-900 border border-gray-800 rounded-3xl p-8 w-full max-w-sm relative animate-popIn shadow-2xl">
             <button
               onClick={() => setShowPaymentPopup(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+              className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 hover:text-white hover:bg-brand-600 transition-colors"
             >
               ×
             </button>
-            <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
-              {selectedPaymentMethod === "Transfer Bank" ? "Transfer Bank" : "E-Wallet"}
+            <h3 className="text-xl font-bold text-white mb-6 text-center border-b border-gray-800 pb-4">
+              Instruksi {selectedPaymentMethod === "Transfer Bank" ? "Transfer Bank" : "E-Wallet"}
             </h3>
             <div className="text-center">
-              <img
-                src={selectedPaymentMethod === "Transfer Bank" ? "/src/assets/tfbank.png" : "/src/assets/qris.png"}
-                alt={selectedPaymentMethod === "Transfer Bank" ? "Transfer Bank" : "QRIS"}
-                className="w-full max-w-xs mx-auto rounded-lg shadow-md"
-              />
-              <p className="text-gray-600 mt-4 text-sm">
+              <div className="bg-white p-2 rounded-2xl inline-block shadow-lg mb-6">
+                 <img
+                   src={selectedPaymentMethod === "Transfer Bank" ? "/src/assets/tfbank.png" : "/src/assets/qris.png"}
+                   alt={selectedPaymentMethod === "Transfer Bank" ? "Transfer Bank" : "QRIS"}
+                   className="w-full max-w-[200px] h-auto object-contain mx-auto rounded-xl"
+                   onError={(e) => {
+                     e.target.onerror = null; 
+                     e.target.src = "https://via.placeholder.com/200?text=Gambar+Tidak+Tersedia"
+                   }}
+                 />
+              </div>
+              <p className="text-gray-300 font-medium">
                 {selectedPaymentMethod === "Transfer Bank"
-                  ? "Silakan transfer ke rekening yang tertera di gambar"
-                  : "Scan QRIS untuk melakukan pembayaran"
+                  ? "Silakan lakukan transfer sesuai nominal ke rekening yang tertera di layar."
+                  : "Silakan scan kode QRIS ini menggunakan aplikasi E-Wallet Anda."
                 }
               </p>
+              <button 
+                onClick={() => setShowPaymentPopup(false)}
+                className="w-full mt-6 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-bold transition-colors"
+              >
+                Saya Sudah Membayar
+              </button>
             </div>
           </div>
         </div>

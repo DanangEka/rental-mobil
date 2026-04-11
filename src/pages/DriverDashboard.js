@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp, getDoc, getDocs } from "firebase/firestore";
-import { ClipboardList, CheckCircle, Clock, DollarSign, TrendingUp, UserPlus, MapPin } from "lucide-react";
+import { ClipboardList, CheckCircle, Clock, DollarSign, TrendingUp, UserPlus, MapPin, Search } from "lucide-react";
+import { useToast } from "../components/Toast";
 
 export default function DriverDashboard() {
+  const toast = useToast();
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
@@ -205,12 +207,23 @@ export default function DriverDashboard() {
         const order = { id: doc.id, ...doc.data() };
         console.log("📋 Order:", order.id, "Status:", order.status, "Payment Method:", order.paymentMethod, "Driver ID:", order.driverId);
 
-        // Show latest orders that need driver assignment
-        // Include orders that are approved and don't have a driver assigned yet
-        const needsDriver = !order.driverId &&
-          (order.status === "approve sewa" ||
-           order.status === "disetujui" ||
-           order.status === "pembayaran berhasil");
+        // Show orders that drivers can accept based on status and location
+        // Orders with "approve sewa" (cash approved) or "pembayaran berhasil" (payment successful)
+        // Exclude orders with location "Kantor" as they are handled by admin
+        let needsDriver = false;
+
+        // Skip orders that are already completed or rejected
+        if (order.status === "lunas" || order.status === "selesai" ||
+            order.status === "ditolak" || order.status === "tolak") {
+          needsDriver = false;
+        } else {
+          // Show orders that are ready for driver assignment
+          // 1. Orders with "approve sewa" (cash rental approved) OR "pembayaran berhasil" (payment successful)
+          // 2. Location is not "Kantor" (admin handled)
+          needsDriver = !order.driverId &&
+            (order.status === "approve sewa" || order.status === "pembayaran berhasil") &&
+            order.lokasiPenyerahan !== "Kantor";
+        }
 
         if (needsDriver) {
           console.log("✅ Order available for driver:", order.id, "Status:", order.status, "Payment:", order.paymentMethod);
@@ -352,14 +365,32 @@ export default function DriverDashboard() {
       // First, try to update the order to assign it to the current driver
       console.log("Updating order with driverId:", user.uid);
       try {
-        await updateDoc(doc(db, "pemesanan", orderId), {
+        // Check payment method to determine status
+        const orderDoc = await getDoc(doc(db, "pemesanan", orderId));
+        const orderData = orderDoc.data();
+        const paymentMethod = orderData?.paymentMethod;
+
+        // Set status to "disetujui" so order appears in "Order Aktif" and "Verifikasi Mobil"
+        const newStatus = "disetujui";
+        const now = new Date();
+
+        // Prepare update data with only allowed fields
+        const updateData = {
           driverId: user.uid,
-          status: "disetujui",
-          assignedAt: new Date().toISOString()
-        });
-        console.log("✅ Order updated successfully");
+          status: newStatus,
+          assignedAt: now.toISOString(),
+          updatedAt: now.toISOString()
+        };
+
+        console.log("Update data:", updateData);
+        console.log("Order data before update:", orderData);
+
+        await updateDoc(doc(db, "pemesanan", orderId), updateData);
+        console.log("✅ Order updated successfully with status:", newStatus);
       } catch (updateError) {
         console.error("❌ Error updating order:", updateError);
+        console.error("❌ Error code:", updateError.code);
+        console.error("❌ Error message:", updateError.message);
 
         // If it's a permission error, try a different approach
         if (updateError.code === 'permission-denied') {
@@ -381,8 +412,14 @@ export default function DriverDashboard() {
             alert("Gagal menerima order. Firestore rules belum diupdate. Silakan hubungi admin.");
             return;
           }
+        } else if (updateError.code === 'not-found') {
+          alert("Order tidak ditemukan. Order mungkin sudah dihapus atau tidak valid.");
+          return;
+        } else if (updateError.code === 'failed-precondition') {
+          alert("Data order tidak valid. Silakan coba lagi atau hubungi admin.");
+          return;
         } else {
-          alert(`Gagal menerima order. Error: ${updateError.message}`);
+          alert(`Gagal menerima order. Error: ${updateError.message} (Code: ${updateError.code})`);
           return;
         }
       }
@@ -390,9 +427,11 @@ export default function DriverDashboard() {
       // Send notification to admin
       console.log("Sending admin notification");
       try {
+        const orderDocForAdmin = await getDoc(doc(db, "pemesanan", orderId));
+        const orderDataForAdmin = orderDocForAdmin.data();
         await addDoc(collection(db, "notifications"), {
           userId: "admin",
-          message: `Driver ${user.email} telah menerima order dari Driver Dashboard`,
+          message: `Driver ${user.email} telah menerima order ${orderDataForAdmin.namaMobil}. Order sekarang aktif dan siap untuk verifikasi mobil.`,
           read: false,
           timestamp: serverTimestamp()
         });
@@ -413,7 +452,8 @@ export default function DriverDashboard() {
           console.log("Sending client notification to:", orderData.uid);
           await addDoc(collection(db, "notifications"), {
             userId: orderData.uid,
-            message: `Driver telah menerima order Anda. Mobil ${orderData.namaMobil} akan segera diantar.`,
+            orderId: orderId,
+            message: `Driver telah menerima order Anda. Mobil ${orderData.namaMobil} siap untuk diverifikasi dan diantar.`,
             read: false,
             timestamp: serverTimestamp()
           });
@@ -424,121 +464,16 @@ export default function DriverDashboard() {
         // Don't fail the whole process for notification errors
       }
 
-      alert("Order berhasil diterima! Silakan cek email untuk detail lebih lanjut.");
+      toast.success("Order berhasil diterima!", "Order sekarang muncul di menu 'Order Aktif'.");
     } catch (error) {
-      console.error("❌ Error accepting order:", error);
+      console.error("❌ Catch block hit:", error);
       console.error("❌ Error details:", {
         code: error.code,
         message: error.message,
         orderId: orderId,
         user: user
       });
-      alert(`Gagal menerima order. Error: ${error.message}`);
-    }
-  };
-
-  const handleAcceptOrderWithoutProof = async (orderId) => {
-    try {
-      console.log("handleAcceptOrderWithoutProof called with orderId:", orderId);
-      console.log("Current user:", user);
-
-      if (!user || !user.uid) {
-        alert("User tidak ditemukan. Silakan login kembali.");
-        return;
-      }
-
-      if (!orderId) {
-        alert("Order ID tidak valid.");
-        return;
-      }
-
-      // Update order to assign driver and mark as ready for pickup (no payment proof needed)
-      console.log("Updating order with driverId (no proof required):", user.uid);
-      try {
-        await updateDoc(doc(db, "pemesanan", orderId), {
-          driverId: user.uid,
-          status: "siap diambil",
-          assignedAt: new Date().toISOString(),
-          acceptedWithoutProof: true,
-          acceptedAt: new Date().toISOString()
-        });
-        console.log("✅ Order updated successfully (no proof required)");
-      } catch (updateError) {
-        console.error("❌ Error updating order:", updateError);
-
-        // If it's a permission error, try a different approach
-        if (updateError.code === 'permission-denied') {
-          console.log("🔄 Permission denied - trying alternative approach...");
-
-          // Try to create a driver assignment record instead
-          try {
-            await addDoc(collection(db, "driver_assignments"), {
-              orderId: orderId,
-              driverId: user.uid,
-              driverEmail: user.email,
-              status: "accepted_without_proof",
-              assignedAt: new Date().toISOString(),
-              createdAt: serverTimestamp()
-            });
-            console.log("✅ Driver assignment record created (no proof required)");
-          } catch (assignmentError) {
-            console.error("❌ Error creating driver assignment:", assignmentError);
-            alert("Gagal menerima order. Firestore rules belum diupdate. Silakan hubungi admin.");
-            return;
-          }
-        } else {
-          alert(`Gagal menerima order. Error: ${updateError.message}`);
-          return;
-        }
-      }
-
-      // Send notification to admin
-      console.log("Sending admin notification");
-      try {
-        await addDoc(collection(db, "notifications"), {
-          userId: "admin",
-          message: `Driver ${user.email} telah menerima order tanpa bukti pembayaran dari Driver Dashboard`,
-          read: false,
-          timestamp: serverTimestamp()
-        });
-        console.log("✅ Admin notification sent");
-      } catch (notifError) {
-        console.error("❌ Error sending admin notification:", notifError);
-        // Don't fail the whole process for notification errors
-      }
-
-      // Send notification to client
-      console.log("Getting order data for client notification");
-      try {
-        const orderDoc = await getDoc(doc(db, "pemesanan", orderId));
-        const orderData = orderDoc.data();
-        console.log("Order data retrieved:", orderData);
-
-        if (orderData && orderData.uid) {
-          console.log("Sending client notification to:", orderData.uid);
-          await addDoc(collection(db, "notifications"), {
-            userId: orderData.uid,
-            message: `Driver telah menerima order Anda tanpa bukti pembayaran. Mobil ${orderData.namaMobil} siap untuk diambil.`,
-            read: false,
-            timestamp: serverTimestamp()
-          });
-          console.log("✅ Client notification sent");
-        }
-      } catch (clientNotifError) {
-        console.error("❌ Error sending client notification:", clientNotifError);
-        // Don't fail the whole process for notification errors
-      }
-
-      alert("Order berhasil diterima tanpa bukti pembayaran! Mobil siap untuk diambil.");
-    } catch (error) {
-      console.error("❌ Error accepting order without proof:", error);
-      console.error("❌ Error details:", {
-        code: error.code,
-        message: error.message,
-        orderId: orderId,
-        user: user
-      });
-      alert(`Gagal menerima order. Error: ${error.message}`);
+      toast.error(`Gagal menerima order. Error: ${error.message}`);
     }
   };
 
@@ -602,156 +537,94 @@ export default function DriverDashboard() {
         </div>
 
         {/* Recent Orders */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Order Terbaru</h2>
+        <div className="bg-white rounded-3xl shadow-card border border-gray-100 overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h2 className="text-xl font-bold text-gray-900">Order Terbaru Tersedia</h2>
+            <div className="bg-brand-100 text-brand-800 text-xs font-bold px-3 py-1.5 rounded-full">
+              {orders.length} Order
+            </div>
           </div>
           <div className="overflow-x-auto">
             {orders.length === 0 ? (
-              <div className="p-6 text-center">
-                <p className="text-gray-500">Belum ada order</p>
+              <div className="p-12 text-center flex flex-col items-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <ClipboardList className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Belum ada order</h3>
+                <p className="text-gray-500">Saat ini tidak ada order penyewaan yang tersedia untuk diambil.</p>
               </div>
             ) : (
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-gray-100">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Mobil
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Client
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Lokasi
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tanggal
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Harga
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Aksi
-                    </th>
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mobil</th>
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Client</th>
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Lokasi</th>
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tanggal</th>
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {orders.slice(0, 5).map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50">
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {orders.slice(0, 10).map((order) => (
+                    <tr key={order.id} className="hover:bg-gray-50/80 transition-colors group">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {order.namaMobil}
-                        </div>
+                        <div className="text-sm font-bold text-gray-900">{order.namaMobil}</div>
                         {order.status === "approve sewa" && (
-                          <div className="text-xs text-blue-600 font-medium">Tersedia untuk diambil</div>
+                          <div className="text-xs text-brand-600 font-semibold mt-1">Siap diambil (Cash)</div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{order.email}</div>
+                        <div className="flex items-center">
+                          <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 mr-3">
+                            {(users.find(u => u.id === order.uid)?.nama || order.email || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {users.find(u => u.id === order.uid)?.nama || order.email}
+                          </div>
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-start text-sm text-gray-900">
-                          <MapPin className="h-4 w-4 mr-1 mt-0.5 text-gray-500 flex-shrink-0" />
+                      <td className="px-6 py-4">
+                        <div className="flex items-start text-sm text-gray-600">
+                          <MapPin className="h-4 w-4 mr-1.5 mt-0.5 text-gray-400 flex-shrink-0" />
                           <div>
-                            <div className="font-medium">{order.lokasiPenyerahan || "Belum ditentukan"}</div>
-                            <div className="text-xs text-gray-600 max-w-xs truncate" title={getFullAddress(order)}>
+                            <span className="font-semibold text-gray-900 block">{order.lokasiPenyerahan || "Lokasi Default"}</span>
+                            <span className="text-xs text-gray-500 line-clamp-1 break-all mt-0.5" title={getFullAddress(order)}>
                               {getFullAddress(order)}
-                            </div>
+                            </span>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString() : 'N/A'}
+                        <div className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-md inline-block">
+                          {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
+                        <span className={`inline-flex px-3 py-1 text-xs font-bold rounded-full ${getStatusColor(order.status)}`}>
                           {getStatusText(order.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        Rp {order.perkiraanHarga?.toLocaleString()}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex flex-col gap-2">
-                          {/* Office Location - Processed by Admin */}
-                          {order.lokasiPenyerahan === "Kantor" && (
-                            <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-xs font-medium">
-                              Diproses oleh Admin
-                            </span>
-                          )}
-
-                          {/* Home or Meeting Point Location - Driver can accept */}
-                          {(order.lokasiPenyerahan === "Rumah" || order.lokasiPenyerahan === "Titik Temu") && (
-                            <>
-                              {order.status === "approve sewa" && (
-                                <>
-                                  <button
-                                    onClick={() => handleAcceptOrder(order.id)}
-                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
-                                  >
-                                    Terima Order
-                                  </button>
-                                  <button
-                                    onClick={() => handleAcceptOrderWithoutProof(order.id)}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
-                                  >
-                                    Terima Tanpa Bukti
-                                  </button>
-                                </>
-                              )}
-                              {order.status === "disetujui" && (
-                                <button
-                                  onClick={() => handleAcceptOrder(order.id)}
-                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
-                                >
-                                  Terima Order
-                                </button>
-                              )}
-                              {order.status === "pembayaran berhasil" && (
-                                <span className="text-gray-500 text-xs">Menunggu Driver</span>
-                              )}
-                            </>
-                          )}
-
-                          {/* Default case for other locations */}
-                          {order.lokasiPenyerahan !== "Kantor" &&
-                           order.lokasiPenyerahan !== "Rumah" &&
-                           order.lokasiPenyerahan !== "Titik Temu" && (
-                            <>
-                              {order.status === "approve sewa" && (
-                                <>
-                                  <button
-                                    onClick={() => handleAcceptOrder(order.id)}
-                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
-                                  >
-                                    Terima Order
-                                  </button>
-                                  <button
-                                    onClick={() => handleAcceptOrderWithoutProof(order.id)}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
-                                  >
-                                    Terima Tanpa Bukti
-                                  </button>
-                                </>
-                              )}
-                              {order.status === "disetujui" && (
-                                <button
-                                  onClick={() => handleAcceptOrder(order.id)}
-                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
-                                >
-                                  Terima Order
-                                </button>
-                              )}
-                              {order.status === "pembayaran berhasil" && (
-                                <span className="text-gray-500 text-xs">Menunggu Driver</span>
-                              )}
-                            </>
-                          )}
+                          {(order.status === "approve sewa" || order.status === "pembayaran berhasil") && !order.driverId ? (
+                             <div className="flex gap-2">
+                           <button
+                             onClick={() => handleAcceptOrder(order.id)}
+                             className="w-full bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm focus:ring-2 focus:ring-brand-400 focus:ring-offset-1"
+                           >
+                             Terima Order
+                           </button>
+                             </div>
+                           ) : order.driverId ? (
+                               <span className="text-gray-400 text-xs font-medium flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 w-fit">
+                                 <CheckCircle className="w-3.5 h-3.5" /> Diambil Driver
+                               </span>
+                           ) : (
+                             <span className="text-gray-400 text-xs font-medium bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 w-fit">
+                               {order.status}
+                             </span>
+                           )}
                         </div>
                       </td>
                     </tr>
