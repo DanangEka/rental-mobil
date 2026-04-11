@@ -33,67 +33,99 @@ export default function AdminDriverManagement() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
+    <div className="min-h-screen bg-black pt-[72px] pb-12 relative overflow-hidden">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
+        <div className="absolute top-[5%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-900/10 mix-blend-screen filter blur-[100px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] left-[5%] w-[45vw] h-[45vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="mb-12 pt-8 animate-fadeInUp">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Management Driver</h1>
-              <p className="text-gray-600 mt-2">Kelola verifikasi dan profil driver</p>
+              <h1 className="text-4xl font-black text-white tracking-tight mb-2">Management Driver</h1>
+              <p className="text-gray-400 text-lg">Kelola verifikasi, kinerja, dan database mitra pengemudi.</p>
             </div>
             <Link
               to="/admin-add-driver"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center transition-colors"
+              className="group bg-brand-600 hover:bg-brand-500 text-white px-8 py-4 rounded-2xl font-black transition-all flex items-center shadow-brand-sm hover:shadow-brand-md"
             >
-              <Plus className="h-5 w-5 mr-2" />
-              Tambah Driver
+              <Plus className="h-5 w-5 mr-3 group-hover:rotate-90 transition-transform" />
+              Tambah Driver Baru
             </Link>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {menuItems.map((item) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+          {menuItems.map((item, idx) => (
             <Link
               key={item.id}
               to={item.path}
-              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-6 border border-gray-200 hover:border-gray-300"
+              className="glass-card bg-gray-900/40 rounded-[2.5rem] p-10 border border-gray-800 hover:border-brand-500/50 transition-all group relative overflow-hidden"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className={`inline-flex p-3 rounded-lg ${item.color} text-white mb-4`}>
-                    {item.icon}
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-4">
-                    {item.description}
-                  </p>
-                  <div className="flex items-center text-blue-600 hover:text-blue-700 font-medium">
-                    <span>Lihat Detail</span>
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </div>
+              <div className="absolute -right-6 -top-6 w-32 h-32 bg-brand-500/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+              <div className="relative z-10 focus:outline-none">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white mb-8 shadow-2xl ${item.color.replace('bg-', 'bg-')}/20 border border-${item.color.replace('bg-', '')}/30`}>
+                  {item.icon}
+                </div>
+                <h3 className="text-2xl font-black text-white mb-4 tracking-tight group-hover:text-brand-400 transition-colors">
+                  {item.title}
+                </h3>
+                <p className="text-gray-500 text-sm leading-relaxed mb-8">
+                  {item.description}
+                </p>
+                <div className="flex items-center text-brand-400 font-black text-[10px] uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
+                  <span>Telusuri Detail</span>
+                  <ArrowRight className="h-4 w-4 ml-3" />
                 </div>
               </div>
             </Link>
           ))}
         </div>
 
-        {/* Quick Stats */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Ringkasan</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">0</div>
-              <div className="text-gray-600">Verifikasi Mobil Hari Ini</div>
+        {/* Quick Stats Section */}
+        <div className="animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
+          <div className="glass-card bg-gray-900/40 rounded-[2.5rem] p-10 border border-gray-800">
+            <div className="flex items-center gap-4 mb-10">
+               <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
+               <h2 className="text-xl font-bold text-white tracking-tight">Ringkasan Operasional</h2>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">0</div>
-              <div className="text-gray-600">Pembayaran Terverifikasi</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">0</div>
-              <div className="text-gray-600">Driver Aktif</div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              <div className="space-y-2 group">
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover:text-blue-400 transition-colors">Verifikasi Mobil Hari Ini</p>
+                <div className="flex items-end gap-3">
+                   <p className="text-5xl font-black text-white">0</p>
+                   <span className="text-blue-500 text-xs font-bold mb-2">Pemeriksaan</span>
+                </div>
+                <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
+                   <div className="bg-blue-500 h-full w-0"></div>
+                </div>
+              </div>
+
+              <div className="space-y-2 group">
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover:text-green-400 transition-colors">Pembayaran Terverifikasi</p>
+                <div className="flex items-end gap-3">
+                   <p className="text-5xl font-black text-white">0</p>
+                   <span className="text-green-500 text-xs font-bold mb-2">Berhasil</span>
+                </div>
+                <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
+                   <div className="bg-green-500 h-full w-0"></div>
+                </div>
+              </div>
+
+              <div className="space-y-2 group">
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover:text-purple-400 transition-colors">Total Driver Aktif</p>
+                <div className="flex items-end gap-3">
+                   <p className="text-5xl font-black text-white">0</p>
+                   <span className="text-purple-500 text-xs font-bold mb-2">Mitra</span>
+                </div>
+                <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
+                   <div className="bg-purple-500 h-full w-0"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

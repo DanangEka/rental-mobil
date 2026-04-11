@@ -8,7 +8,7 @@ import {
   deleteDoc
 } from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
-import DataTable from 'react-data-table-component';
+import { Search, UserCheck, UserX, Clock, Mail, Phone, MapPin, Key, Trash2, Eye } from "lucide-react";
 
 export default function ClientManagement() {
   const [clients, setClients] = useState([]);
@@ -49,180 +49,7 @@ export default function ClientManagement() {
     return matchesSearch && matchesStatus;
   });
 
-  const columns = [
-    {
-      name: 'KTP',
-      cell: row => (
-        <div className="flex flex-col items-center space-y-2">
-          <div className="relative">
-            <img
-              src={row.ktpURL}
-              alt="KTP"
-              className="w-12 h-12 object-cover rounded border-2 border-gray-200"
-              onError={(e) => {
-                e.target.src = 'https://via.placeholder.com/48x48?text=KTP';
-              }}
-            />
-            {row.ktpURL && (
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs">✓</span>
-              </div>
-            )}
-          </div>
-          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-            row.verificationStatus === "verified"
-              ? "bg-green-100 text-green-800"
-              : row.verificationStatus === "pending"
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-red-100 text-red-800"
-          }`}>
-            {row.verificationStatus === "verified" ? "Terverifikasi" :
-             row.verificationStatus === "pending" ? "Menunggu" : "Belum"}
-          </span>
-        </div>
-      ),
-      width: '100px'
-    },
-    {
-      name: 'Nama Lengkap',
-      selector: row => row.nama || 'N/A',
-      sortable: true,
-      cell: row => (
-        <div className="font-medium text-gray-900">
-          {row.nama || 'N/A'}
-        </div>
-      )
-    },
-    {
-      name: 'Email',
-      selector: row => row.email || 'N/A',
-      sortable: true,
-      cell: row => (
-        <div className="text-gray-700">
-          {row.email || 'N/A'}
-        </div>
-      )
-    },
-    {
-      name: 'Alamat',
-      selector: row => row.alamat || 'N/A',
-      sortable: true,
-      cell: row => (
-        <div className="text-gray-700 max-w-xs truncate" title={row.alamat}>
-          {row.alamat || 'N/A'}
-        </div>
-      )
-    },
-    {
-      name: 'Nomor Telepon',
-      selector: row => row.nomorTelepon || 'N/A',
-      sortable: true,
-      cell: row => (
-        <div className="text-gray-700">
-          {row.nomorTelepon || 'N/A'}
-        </div>
-      )
-    },
-    {
-      name: 'Role',
-      selector: row => row.role,
-      sortable: true
-    },
-    {
-      name: 'Status Verifikasi',
-      cell: row => (
-        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-          row.verificationStatus === "verified"
-            ? "bg-green-100 text-green-800"
-            : row.verificationStatus === "pending"
-            ? "bg-yellow-100 text-yellow-800"
-            : "bg-red-100 text-red-800"
-        }`}>
-          {row.verificationStatus === "verified" ? "Terverifikasi" :
-           row.verificationStatus === "pending" ? "Menunggu Verifikasi" : "Belum Terverifikasi"}
-        </span>
-      ),
-      sortable: true
-    },
-    {
-      name: 'Terdaftar',
-      selector: row => row.createdAt ? new Date(row.createdAt.seconds * 1000).toLocaleDateString() : 'N/A',
-      sortable: true,
-      cell: row => (
-        <div className="text-sm text-gray-600">
-          {row.createdAt ? new Date(row.createdAt.seconds * 1000).toLocaleDateString('id-ID') : 'N/A'}
-        </div>
-      )
-    },
-    {
-      name: 'Terakhir Login',
-      selector: row => row.lastLogin ? new Date(row.lastLogin.seconds * 1000).toLocaleDateString() : 'N/A',
-      sortable: true,
-      cell: row => (
-        <div className="text-sm text-gray-600">
-          {row.lastLogin ? new Date(row.lastLogin.seconds * 1000).toLocaleDateString('id-ID') : 'N/A'}
-        </div>
-      )
-    },
-    {
-      name: 'Aksi',
-      cell: row => (
-        <div className="flex gap-2 flex-wrap">
-          {row.verificationStatus === "unverified" && (
-            <button
-              onClick={() => handleVerifyClient(row.id, "verified")}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
-              title="Verifikasi akun client"
-            >
-              Verifikasi
-            </button>
-          )}
-          {row.verificationStatus === "pending" && (
-            <button
-              onClick={() => handleVerifyClient(row.id, "verified")}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
-              title="Setujui verifikasi"
-            >
-              Setujui
-            </button>
-          )}
-          {row.verificationStatus === "pending" && (
-            <button
-              onClick={() => handleVerifyClient(row.id, "unverified")}
-              className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm"
-              title="Tolak verifikasi"
-            >
-              Tolak
-            </button>
-          )}
-          {row.verificationStatus === "verified" && (
-            <button
-              onClick={() => handleVerifyClient(row.id, "unverified")}
-              className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm"
-              title="Batalkan verifikasi"
-            >
-              Batalkan
-            </button>
-          )}
-          <button
-            onClick={() => handleResetPassword(row.email)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
-            title="Reset password client"
-          >
-            Reset Password
-          </button>
-          <button
-            onClick={() => handleDeleteClient(row.id)}
-            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
-            title="Hapus client"
-          >
-            Hapus
-          </button>
-        </div>
-      ),
-      width: '320px'
-    }
-  ];
+  // Removed columns definition for DataTable as we are switching to card grid
 
   const checkAdmin = async () => {
     const user = auth.currentUser;
@@ -298,106 +125,261 @@ export default function ClientManagement() {
     }
   };
 
-  if (loading) return <p className="p-4">Memuat data...</p>;
-  if (!isAdmin) return <p className="p-4 text-red-600 font-semibold">Anda tidak memiliki akses ke halaman ini.</p>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black pt-[72px] pb-12 relative overflow-hidden">
+        {/* Dynamic Background */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="animate-pulse space-y-8 mt-10">
+            <div className="h-12 bg-gray-800 rounded-2xl w-1/3"></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-40 bg-gray-900/40 rounded-3xl border border-gray-800"></div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-80 bg-gray-900/40 rounded-3xl border border-gray-800"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) return (
+    <div className="min-h-screen bg-black flex items-center justify-center p-6 text-center">
+       <div className="glass-card bg-gray-900/40 p-10 rounded-[2.5rem] border border-red-500/20 max-w-md w-full">
+          <p className="text-red-500 font-black text-xl mb-4 uppercase tracking-tighter">Akses Ditolak</p>
+          <p className="text-gray-400 font-bold mb-8 italic">Identitas Anda tidak terdaftar sebagai administrator sistem.</p>
+          <div className="h-1 w-20 bg-red-500/50 mx-auto rounded-full"></div>
+       </div>
+    </div>
+  );
 
   return (
-    <div className="p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Manajemen Client</h1>
-          <p className="text-gray-600">Kelola data pengguna dan informasi klien</p>
+    <div className="min-h-screen bg-black pt-[72px] pb-12 relative overflow-hidden">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
+        <div className="absolute top-[5%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-900/10 mix-blend-screen filter blur-[100px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] left-[5%] w-[45vw] h-[45vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="mb-10 pt-8 animate-fadeInUp">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <h1 className="text-4xl font-black text-white tracking-tight mb-2">Manajemen Client</h1>
+              <p className="text-gray-400 text-lg">Kelola verifikasi identitas dan database pelanggan sistem.</p>
+            </div>
+          </div>
         </div>
 
-        {/* Search and Filter Section */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Cari Client</label>
-              <input
-                type="text"
-                placeholder="Cari berdasarkan nama, email, alamat, telepon..."
-                value={searchClients}
-                onChange={(e) => setSearchClients(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-              />
+        {/* Status Dashboard Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
+          <div className="glass-card bg-gray-900/40 p-8 rounded-3xl border border-gray-800 group hover:border-red-500/50 transition-all">
+            <div className="flex items-center justify-between mb-4">
+               <div className="p-3 bg-red-500/10 rounded-2xl text-red-500">
+                  <UserX size={24} />
+               </div>
+               <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Belum Terverifikasi</span>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Filter Status Verifikasi</label>
+            <p className="text-4xl font-black text-white mb-2">{clients.filter(c => c.verificationStatus === "unverified").length}</p>
+            <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
+               <div className="bg-red-500 h-full w-[20%]"></div>
+            </div>
+          </div>
+
+          <div className="glass-card bg-gray-900/40 p-8 rounded-3xl border border-gray-800 group hover:border-yellow-500/50 transition-all">
+            <div className="flex items-center justify-between mb-4">
+               <div className="p-3 bg-yellow-500/10 rounded-2xl text-yellow-500">
+                  <Clock size={24} />
+               </div>
+               <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Menunggu Validasi</span>
+            </div>
+            <p className="text-4xl font-black text-white mb-2">{clients.filter(c => c.verificationStatus === "pending").length}</p>
+            <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
+               <div className="bg-yellow-500 h-full w-[15%]"></div>
+            </div>
+          </div>
+
+          <div className="glass-card bg-gray-900/40 p-8 rounded-3xl border border-gray-800 group hover:border-green-500/50 transition-all">
+            <div className="flex items-center justify-between mb-4">
+               <div className="p-3 bg-green-500/10 rounded-2xl text-green-500">
+                  <UserCheck size={24} />
+               </div>
+               <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Client Terakomodasi</span>
+            </div>
+            <p className="text-4xl font-black text-white mb-2">{clients.filter(c => c.verificationStatus === "verified").length}</p>
+            <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
+               <div className="bg-green-500 h-full w-[65%]"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="glass-card bg-gray-900/40 p-8 rounded-[2.5rem] border border-gray-800 mb-12 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Cari Database Client</label>
+              <div className="relative group">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-500 transition-colors" size={20} />
+                <input
+                  type="text"
+                  placeholder="Nama, Email, Alamat, atau Telepon..."
+                  value={searchClients}
+                  onChange={(e) => setSearchClients(e.target.value)}
+                  className="w-full bg-gray-800/50 border border-gray-700 text-white rounded-2xl pl-14 pr-6 py-4 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-bold placeholder:text-gray-600"
+                />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Status Verifikasi</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                className="w-full bg-gray-800/50 border border-gray-700 text-white rounded-2xl px-6 py-4 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-bold appearance-none cursor-pointer"
               >
-                <option value="">Semua Status</option>
-                <option value="unverified">Belum Terverifikasi</option>
-                <option value="pending">Menunggu Verifikasi</option>
-                <option value="verified">Terverifikasi</option>
+                <option value="">SEMUA STATUS CLIENT</option>
+                <option value="unverified">BELUM TERVERIFIKASI</option>
+                <option value="pending">MENUNGGU VERIFIKASI</option>
+                <option value="verified">TERVERIFIKASI</option>
               </select>
             </div>
           </div>
-
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-              <h3 className="text-sm font-semibold text-red-900">Belum Terverifikasi</h3>
-              <p className="text-2xl font-bold text-red-600">
-                {clients.filter(c => c.verificationStatus === "unverified").length}
-              </p>
-            </div>
-            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              <h3 className="text-sm font-semibold text-yellow-900">Menunggu Verifikasi</h3>
-              <p className="text-2xl font-bold text-yellow-600">
-                {clients.filter(c => c.verificationStatus === "pending").length}
-              </p>
-            </div>
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <h3 className="text-sm font-semibold text-green-900">Terverifikasi</h3>
-              <p className="text-2xl font-bold text-green-600">
-                {clients.filter(c => c.verificationStatus === "verified").length}
-              </p>
-            </div>
-          </div>
         </div>
-        {/* Clients DataTable */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
-          {filteredClients.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-lg">Tidak ada client yang ditemukan</div>
-            </div>
-          ) : (
-            <DataTable
-              columns={columns}
-              data={filteredClients}
-              pagination
-              paginationPerPage={10}
-              paginationRowsPerPageOptions={[5, 10, 15, 20]}
-              highlightOnHover
-              striped
-              responsive
-              customStyles={{
-                headCells: {
-                  style: {
-                    backgroundColor: '#dc2626',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    fontSize: '14px'
-                  }
-                },
-                rows: {
-                  style: {
-                    minHeight: '60px',
-                    fontSize: '13px'
-                  }
-                },
-                cells: {
-                  style: {
-                    padding: '8px 12px'
-                  }
-                }
-              }}
-            />
-          )}
+
+        {/* Client Grid List */}
+        <div className="animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
+          <div className="flex items-center gap-4 mb-8">
+             <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
+             <h2 className="text-2xl font-black text-white tracking-tight">Daftar Client Terdaftar ({filteredClients.length})</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredClients.length === 0 ? (
+              <div className="col-span-full glass-card bg-gray-900/40 p-20 rounded-[3rem] border border-gray-800 text-center">
+                 <Search size={48} className="text-gray-800 mx-auto mb-6" />
+                 <p className="text-gray-500 font-bold uppercase tracking-widest text-xs italic">Tidak ada data client yang sesuai dengan kriteria.</p>
+              </div>
+            ) : (
+              filteredClients.map((c) => (
+                <div key={c.id} className="glass-card bg-gray-900/40 rounded-[2.5rem] border border-gray-800 overflow-hidden hover:border-brand-500/30 transition-all group flex flex-col">
+                   <div className="p-8 pb-4">
+                      <div className="flex items-start justify-between mb-8">
+                         <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center text-brand-400 border border-gray-700 shadow-xl overflow-hidden">
+                               <img 
+                                 src={c.ktpURL || 'https://via.placeholder.com/48x48?text=KTP'} 
+                                 className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" 
+                                 alt="KTP" 
+                               />
+                            </div>
+                            <div>
+                               <h4 className="text-lg font-black text-white tracking-tight">{c.nama || 'N/A'}</h4>
+                               <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest italic">{c.role || 'Client'}</p>
+                            </div>
+                         </div>
+                         <span className={`px-3 py-1 text-[8px] font-black uppercase tracking-tighter rounded-full border ${
+                            c.verificationStatus === "verified" ? "bg-green-500/10 border-green-500/30 text-green-400" :
+                            c.verificationStatus === "pending" ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-500" :
+                            "bg-red-500/10 border-red-500/30 text-red-500"
+                         }`}>
+                            {c.verificationStatus === "verified" ? "VERIFIED" :
+                             c.verificationStatus === "pending" ? "PENDING" : "UNVERIFIED"}
+                         </span>
+                      </div>
+
+                      <div className="space-y-4 mb-8">
+                         <div className="flex items-center gap-3">
+                            <Mail size={14} className="text-gray-600" />
+                            <p className="text-xs text-gray-400 font-bold truncate">{c.email}</p>
+                         </div>
+                         <div className="flex items-center gap-3">
+                            <Phone size={14} className="text-gray-600" />
+                            <p className="text-xs text-gray-400 font-bold">{c.nomorTelepon || 'No Phone'}</p>
+                         </div>
+                         <div className="flex items-start gap-3">
+                            <MapPin size={14} className="text-gray-600 flex-shrink-0 mt-0.5" />
+                            <p className="text-[10px] text-gray-500 font-semibold leading-relaxed line-clamp-2 italic">{c.alamat || 'Alamat tidak tersedia.'}</p>
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mb-6 pt-6 border-t border-gray-800/50">
+                         <div>
+                            <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">Terdaftar</p>
+                            <div className="flex items-center gap-1.5 opacity-60">
+                               <Clock size={10} className="text-gray-600" />
+                               <span className="text-[10px] text-white font-bold">{c.createdAt ? new Date(c.createdAt.seconds * 1000).toLocaleDateString('id-ID') : 'N/A'}</span>
+                            </div>
+                         </div>
+                         <div>
+                            <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">Login Terakhir</p>
+                            <div className="flex items-center gap-1.5 opacity-60">
+                               <Clock size={10} className="text-gray-600" />
+                               <span className="text-[10px] text-white font-bold">{c.lastLogin ? new Date(c.lastLogin.seconds * 1000).toLocaleDateString('id-ID') : 'N/A'}</span>
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="mt-auto p-4 bg-gray-900/60 flex flex-wrap gap-2">
+                      {c.verificationStatus === "unverified" && (
+                        <button
+                          onClick={() => handleVerifyClient(c.id, "verified")}
+                          className="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                          Verifikasi
+                        </button>
+                      )}
+                      {c.verificationStatus === "pending" && (
+                        <>
+                          <button
+                            onClick={() => handleVerifyClient(c.id, "verified")}
+                            className="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                          >
+                            Setujui
+                          </button>
+                          <button
+                            onClick={() => handleVerifyClient(c.id, "unverified")}
+                            className="flex-1 bg-yellow-600/10 border border-yellow-500/30 text-yellow-500 hover:bg-yellow-600 hover:text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                          >
+                            Tolak
+                          </button>
+                        </>
+                      )}
+                      {c.verificationStatus === "verified" && (
+                        <button
+                          onClick={() => handleVerifyClient(c.id, "unverified")}
+                          className="flex-1 bg-yellow-600/10 border border-yellow-500/30 text-yellow-500 hover:bg-yellow-600 hover:text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                          Batalkan
+                        </button>
+                      )}
+                      <div className="w-full flex gap-2">
+                        <button
+                          onClick={() => handleResetPassword(c.email)}
+                          className="flex-1 bg-blue-600/10 border border-blue-500/20 text-blue-400 hover:bg-blue-600 hover:text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                          Reset Pass
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClient(c.id)}
+                          className="flex-1 bg-red-600/10 border border-red-500/30 text-red-500 hover:bg-red-600 hover:text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                   </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

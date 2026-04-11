@@ -43,10 +43,11 @@ export default function AdminDashboard() {
       datasets: [{
         label: 'Pendapatan Harian',
         data: [],
-        backgroundColor: 'rgba(220, 38, 38, 0.8)',
-        borderColor: 'rgba(185, 28, 28, 1)',
-        borderWidth: 1,
-        borderRadius: 4,
+        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+        borderColor: '#ef4444',
+        borderWidth: 2,
+        borderRadius: 8,
+        hoverBackgroundColor: '#ef4444',
       }],
     },
     monthly: {
@@ -54,11 +55,15 @@ export default function AdminDashboard() {
       datasets: [{
         label: 'Pendapatan Bulanan',
         data: [],
-        borderColor: 'rgba(239, 68, 68, 1)',
-        backgroundColor: 'rgba(239, 68, 68, 0.15)',
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
         fill: true,
         tension: 0.4,
-        pointBackgroundColor: 'rgba(185, 28, 28, 1)',
+        pointBackgroundColor: '#3b82f6',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
       }],
     },
   });
@@ -229,13 +234,50 @@ export default function AdminDashboard() {
   const chartOptions = {
     responsive: true,
     plugins: {
-      legend: { position: 'top' },
+      legend: { 
+        position: 'top',
+        labels: {
+          color: '#9ca3af',
+          font: { weight: 'bold', family: 'Inter' },
+          padding: 20,
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(17, 24, 39, 0.95)',
+        titleColor: '#fff',
+        bodyColor: '#9ca3af',
+        borderColor: 'rgba(75, 85, 99, 0.3)',
+        borderWidth: 1,
+        padding: 16,
+        cornerRadius: 16,
+        displayColors: true,
+        boxPadding: 8,
+        titleFont: { size: 14, weight: 'bold' },
+        bodyFont: { size: 13 }
+      }
     },
     scales: {
+      x: {
+        grid: { display: false },
+        ticks: { 
+          color: '#6b7280', 
+          font: { weight: 'bold', size: 11 },
+          padding: 10
+        }
+      },
       y: {
         beginAtZero: true,
+        grid: { 
+          color: 'rgba(75, 85, 99, 0.1)',
+          drawBorder: false
+        },
         ticks: {
-          callback: (value) => 'Rp ' + value.toLocaleString(),
+          color: '#6b7280',
+          font: { weight: 'bold', size: 11 },
+          padding: 10,
+          callback: (value) => 'Rp ' + (value >= 1000000 ? (value / 1000000).toFixed(1) + 'jt' : value.toLocaleString()),
         },
       },
     },
@@ -243,22 +285,24 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-        <div className="w-full max-w-7xl space-y-8 animate-pulse">
-          <div className="h-10 bg-gray-200 rounded-lg w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 bg-gray-200 rounded-2xl"></div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-28 bg-gray-200 rounded-2xl"></div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="h-80 bg-gray-200 rounded-2xl"></div>
-            <div className="h-80 bg-gray-200 rounded-2xl"></div>
+      <div className="min-h-screen bg-black pt-[72px] pb-12 relative overflow-hidden">
+        {/* Dynamic Background */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="animate-pulse space-y-8 mt-10">
+            <div className="h-12 bg-gray-800 rounded-2xl w-1/3"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-40 bg-gray-900/40 rounded-3xl border border-gray-800"></div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-900/40 rounded-3xl border border-gray-800"></div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -266,158 +310,155 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8 animate-fadeInUp">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Admin Dashboard</h1>
-            <p className="text-gray-500 mt-1">Ringkasan performa penyewaan armada mobil.</p>
+    <div className="min-h-screen bg-black pt-[72px] pb-12 relative overflow-hidden">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
+        <div className="absolute top-[5%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-900/10 mix-blend-screen filter blur-[100px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[5%] w-[45vw] h-[45vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="mb-10 pt-8 animate-fadeInUp">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <h1 className="text-4xl font-black text-white tracking-tight mb-2">Admin Dashboard</h1>
+              <p className="text-gray-400 text-lg">Ringkasan performa dan metrik ekosistem armada.</p>
+            </div>
           </div>
         </div>
 
         {/* Stats Cards Mobil */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
-          <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-6 flex flex-col justify-between relative overflow-hidden group hover:shadow-card-hover transition-all">
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-green-50 rounded-full group-hover:scale-150 transition-transform duration-500 ease-in-out"></div>
-            <div className="flex items-start justify-between relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+          <div className="glass-card bg-gray-900/40 rounded-3xl border border-gray-800 p-6 flex flex-col justify-between group hover:border-green-500/50 transition-all">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Mobil Tersedia</p>
-                <p className="text-3xl font-black text-gray-900">{stats.availableCars}</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Mobil Tersedia</p>
+                <p className="text-4xl font-black text-white">{stats.availableCars}</p>
               </div>
-              <div className="p-3 bg-green-100 text-green-600 rounded-xl">
-                <Car className="h-6 w-6" />
+              <div className="p-3 bg-green-500/20 text-green-400 rounded-2xl">
+                <Car size={24} />
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-100 relative z-10">
-              <span className="text-sm text-green-600 font-medium">Siap disewakan</span>
+            <div className="mt-6 pt-4 border-t border-gray-800/50">
+              <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">Siap Disewakan</span>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-6 flex flex-col justify-between relative overflow-hidden group hover:shadow-card-hover transition-all">
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 rounded-full group-hover:scale-150 transition-transform duration-500 ease-in-out"></div>
-            <div className="flex items-start justify-between relative z-10">
+          <div className="glass-card bg-gray-900/40 rounded-3xl border border-gray-800 p-6 flex flex-col justify-between group hover:border-blue-500/50 transition-all">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Mobil Disewa</p>
-                <p className="text-3xl font-black text-gray-900">{stats.rentedCars}</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Mobil Disewa</p>
+                <p className="text-4xl font-black text-white">{stats.rentedCars}</p>
               </div>
-              <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
-                <Car className="h-6 w-6" />
+              <div className="p-3 bg-blue-500/20 text-blue-400 rounded-2xl">
+                <Car size={24} />
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-100 relative z-10">
-              <span className="text-sm text-blue-600 font-medium">Sedang berjalan</span>
+            <div className="mt-6 pt-4 border-t border-gray-800/50">
+              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Sedang Berjalan</span>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-6 flex flex-col justify-between relative overflow-hidden group hover:shadow-card-hover transition-all">
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-red-50 rounded-full group-hover:scale-150 transition-transform duration-500 ease-in-out"></div>
-            <div className="flex items-start justify-between relative z-10">
+          <div className="glass-card bg-gray-900/40 rounded-3xl border border-gray-800 p-6 flex flex-col justify-between group hover:border-red-500/50 transition-all">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Mobil Diservis</p>
-                <p className="text-3xl font-black text-gray-900">{stats.serviceCars}</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Mobil Diservis</p>
+                <p className="text-4xl font-black text-white">{stats.serviceCars}</p>
               </div>
-              <div className="p-3 bg-red-100 text-red-600 rounded-xl">
-                <Car className="h-6 w-6" />
+              <div className="p-3 bg-red-500/20 text-red-400 rounded-2xl">
+                <Car size={24} />
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-100 relative z-10">
-              <span className="text-sm text-red-600 font-medium">Sedang perbaikan</span>
+            <div className="mt-6 pt-4 border-t border-gray-800/50">
+              <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">Sedang Perbaikan</span>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-brand border border-gray-700 p-6 flex flex-col justify-between relative overflow-hidden group hover:shadow-xl transition-all">
-            <div className="flex items-start justify-between relative z-10">
+          <div className="glass-card bg-gray-900/40 rounded-3xl border border-gray-800 p-6 flex flex-col justify-between group hover:border-brand-500/50 transition-all">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Total Armada</p>
-                <p className="text-3xl font-black text-white">{stats.totalCars}</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Armada</p>
+                <p className="text-4xl font-black text-white">{stats.totalCars}</p>
               </div>
-              <div className="p-3 bg-gray-700/50 text-white rounded-xl backdrop-blur-sm">
-                <Car className="h-6 w-6" />
+              <div className="p-3 bg-brand-500/20 text-brand-400 rounded-2xl">
+                <Car size={24} />
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-700 relative z-10 space-y-1">
-              <div className="w-full bg-gray-700 rounded-full h-1.5">
-                <div className="bg-white h-1.5 rounded-full" style={{ width: `${(stats.availableCars / stats.totalCars) * 100}%` }}></div>
+            <div className="mt-6 pt-4 border-t border-gray-800/50 space-y-2">
+              <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                <div className="bg-brand-500 h-1.5 rounded-full transition-all duration-1000" style={{ width: `${(stats.availableCars / stats.totalCars) * 100}%` }}></div>
               </div>
-              <p className="text-xs text-gray-400 text-right">{Math.round((stats.availableCars / stats.totalCars) * 100)}% Ketersediaan</p>
+              <p className="text-[10px] text-gray-400 text-right font-black uppercase tracking-widest italic">{Math.round((stats.availableCars / stats.totalCars) * 100)}% Ketersediaan</p>
             </div>
           </div>
         </div>
 
         {/* Customers & Revenue */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-card p-6 text-white relative overflow-hidden group hover:shadow-card-hover transition-all">
-            <div className="absolute right-[-10%] top-[-10%] w-32 h-32 bg-white/10 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-md">
-                <Users className="h-8 w-8 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-purple-100 mb-1">Total Pelanggan</p>
-                <p className="text-3xl font-bold">{stats.totalCustomers}</p>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
+          <div className="bg-gradient-to-br from-indigo-600/20 to-purple-800/20 glass-card rounded-3xl border border-indigo-500/20 p-8 flex items-center gap-6 group hover:border-indigo-500/40 transition-all">
+            <div className="p-4 bg-indigo-500/20 rounded-2xl text-indigo-400 shadow-lg shadow-indigo-500/10">
+              <Users size={32} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1">Total Pelanggan</p>
+              <p className="text-4xl font-black text-white">{stats.totalCustomers}</p>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-card p-6 text-white relative overflow-hidden group hover:shadow-card-hover transition-all">
-            <div className="absolute right-[-10%] top-[-10%] w-32 h-32 bg-white/10 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-md">
-                <DollarSign className="h-8 w-8 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-emerald-100 mb-1">Pendapatan Hari Ini</p>
-                <p className="text-2xl lg:text-3xl font-bold">Rp {stats.todayRevenue.toLocaleString()}</p>
-              </div>
+          <div className="bg-gradient-to-br from-emerald-600/20 to-teal-800/20 glass-card rounded-3xl border border-emerald-500/20 p-8 flex items-center gap-6 group hover:border-emerald-500/40 transition-all">
+            <div className="p-4 bg-emerald-500/20 rounded-2xl text-emerald-400 shadow-lg shadow-emerald-500/10">
+              <DollarSign size={32} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-emerald-300 uppercase tracking-widest mb-1">Pendapatan Hari Ini</p>
+              <p className="text-3xl font-black text-white tracking-tighter">Rp {stats.todayRevenue.toLocaleString()}</p>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl shadow-brand-lg p-6 text-white relative overflow-hidden group hover:-translate-y-1 transition-all md:col-span-2 lg:col-span-1">
-            <div className="absolute right-[-10%] top-[-10%] w-32 h-32 bg-white/10 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-md">
-                <TrendingUp className="h-8 w-8 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-brand-100 mb-1">Pendapatan Bulan Ini</p>
-                <p className="text-2xl lg:text-3xl font-bold">Rp {stats.monthlyRevenue.toLocaleString()}</p>
-              </div>
+          <div className="bg-gradient-to-br from-brand-600/20 to-red-800/20 glass-card rounded-3xl border border-brand-500/20 p-8 flex items-center gap-6 group hover:border-brand-500/40 transition-all md:col-span-2 lg:col-span-1">
+            <div className="p-4 bg-brand-500/20 rounded-2xl text-brand-400 shadow-lg shadow-brand-500/10">
+              <TrendingUp size={32} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-brand-300 uppercase tracking-widest mb-1">Pendapatan Bulan Ini</p>
+              <p className="text-3xl font-black text-white tracking-tighter">Rp {stats.monthlyRevenue.toLocaleString()}</p>
             </div>
           </div>
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-3xl shadow-card border border-gray-100 p-6 md:p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Grafik Harian</h2>
-              <span className="text-xs font-semibold px-3 py-1 bg-gray-100 text-gray-600 rounded-full">7 Hari Terakhir</span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fadeInUp" style={{ animationDelay: "0.4s" }}>
+          <div className="glass-card bg-gray-900/40 rounded-[2.5rem] border border-gray-800 p-8">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-black text-white tracking-tight uppercase">Grafik Harian</h2>
+              <span className="text-[10px] font-black px-4 py-1.5 bg-gray-800/50 text-brand-400 border border-brand-500/20 rounded-full uppercase tracking-widest">7 Hari Terakhir</span>
             </div>
             {revenueData.daily.labels.length > 0 ? (
-              <div className="h-72">
+              <div className="h-80">
                 <Bar data={revenueData.daily} options={{...chartOptions, maintainAspectRatio: false}} />
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-72 text-gray-400 space-y-3">
-                <div className="w-12 h-12 border-4 border-gray-200 border-t-brand-500 rounded-full animate-spin"></div>
-                <p className="text-sm font-medium">Memuat data...</p>
+              <div className="flex flex-col items-center justify-center h-80 text-gray-600 space-y-4">
+                <div className="w-12 h-12 border-4 border-gray-800 border-t-brand-500 rounded-full animate-spin"></div>
+                <p className="text-xs font-black uppercase tracking-widest">Sinkronisasi Data...</p>
               </div>
             )}
           </div>
 
-          <div className="bg-white rounded-3xl shadow-card border border-gray-100 p-6 md:p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Grafik Bulanan</h2>
-              <span className="text-xs font-semibold px-3 py-1 bg-gray-100 text-gray-600 rounded-full">6 Bulan Terakhir</span>
+          <div className="glass-card bg-gray-900/40 rounded-[2.5rem] border border-gray-800 p-8">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-black text-white tracking-tight uppercase">Grafik Bulanan</h2>
+              <span className="text-[10px] font-black px-4 py-1.5 bg-gray-800/50 text-blue-400 border border-blue-500/20 rounded-full uppercase tracking-widest">6 Bulan Terakhir</span>
             </div>
             {revenueData.monthly.labels.length > 0 ? (
-              <div className="h-72">
+              <div className="h-80">
                 <Line data={revenueData.monthly} options={{...chartOptions, maintainAspectRatio: false}} />
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-72 text-gray-400 space-y-3">
-                <div className="w-12 h-12 border-4 border-gray-200 border-t-brand-500 rounded-full animate-spin"></div>
-                <p className="text-sm font-medium">Memuat data...</p>
+              <div className="flex flex-col items-center justify-center h-80 text-gray-600 space-y-4">
+                <div className="w-12 h-12 border-4 border-gray-800 border-t-blue-500 rounded-full animate-spin"></div>
+                <p className="text-xs font-black uppercase tracking-widest">Sinkronisasi Data...</p>
               </div>
             )}
           </div>

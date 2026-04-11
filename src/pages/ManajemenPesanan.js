@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import axios from "axios";
 import jsPDF from "jspdf";
-import { Search, Filter, RefreshCw, Download, Eye, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign } from "lucide-react";
+import { Search, Filter, RefreshCw, Download, Eye, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, Car } from "lucide-react";
 import { Edit } from "lucide-react";
 import InvoiceGenerator from "../components/InvoiceGenerator";
 
@@ -609,84 +609,171 @@ export default function ManajemenPesanan() {
             </div>
           ) : (
             <>
-                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Tolak
-                        </button>
-                      </>
-                    )}
-                    {p.status === "pembayaran berhasil" && (
-                      <>
-                        <button
-                          onClick={() => generateInvoicePDF(p, user, "dp")}
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Invoice DP (50%)
-                        </button>
-                        <button
-                          onClick={() => handleStatus(p.id, "selesai", p.mobilId)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Selesai
-                        </button>
-                      </>
-                    )}
-                    {p.status === "selesai" && (
-                      <>
+              {filteredPemesanan.map((p, idx) => {
+                const user = users.find(u => u.id === p.uid);
+                return (
+                  <div key={p.id} className="glass-card bg-gray-900/40 rounded-[2rem] border border-gray-800 overflow-hidden hover:border-brand-500/30 transition-all group">
+                    <div className="p-8">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 pb-6 border-b border-gray-800/50">
+                         <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 bg-brand-500/10 rounded-2xl flex items-center justify-center text-brand-400 border border-brand-500/20 shadow-brand-sm">
+                               <Car size={30} />
+                            </div>
+                            <div>
+                               <h4 className="text-2xl font-black text-white tracking-tight">{p.namaMobil}</h4>
+                               <p className="text-gray-500 text-sm font-semibold">{user?.nama || p.email} • {p.rentalType || "Lepas Kunci"}</p>
+                            </div>
+                         </div>
+                         <div className="flex flex-wrap gap-3">
+                            <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full border ${
+                              p.status === 'diproses' ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' :
+                              p.status === 'disetujui' || p.status === 'pembayaran berhasil' ? 'bg-green-500/10 border-green-500/30 text-green-400' :
+                              p.status === 'selesai' || p.status === 'lunas' ? 'bg-brand-500/10 border-brand-500/30 text-brand-400' :
+                              'bg-gray-800/50 border-gray-700 text-gray-400'
+                            }`}>
+                               {p.status}
+                            </span>
+                            <span className="px-4 py-1.5 text-[10px] font-black uppercase tracking-widest bg-gray-800/50 border border-gray-700 text-gray-400 rounded-full">
+                               {new Date(p.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                            </span>
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+                         <div className="space-y-4">
+                            <div>
+                               <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Durasi Sewa</p>
+                               <div className="text-gray-300 text-sm leading-relaxed">
+                                  <p className="font-bold text-white">{p.tanggalMulai ? new Date(p.tanggalMulai).toLocaleDateString() : 'N/A'}</p>
+                                  <p className="text-gray-500">sampai</p>
+                                  <p className="font-bold text-white">{p.tanggalSelesai ? new Date(p.tanggalSelesai).toLocaleDateString() : 'N/A'}</p>
+                               </div>
+                            </div>
+                         </div>
+
+                         <div className="space-y-4">
+                            <div>
+                               <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Kontak Client</p>
+                               <p className="text-white font-bold">{user?.nomorTelepon || 'No Phone'}</p>
+                               <p className="text-gray-500 text-xs truncate">{p.email}</p>
+                            </div>
+                         </div>
+
+                         <div className="space-y-4">
+                            <div>
+                               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Lokasi Penyerahan</p>
+                               <p className="text-white font-bold flex items-center gap-2">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+                                  {p.lokasiPenyerahan || "Default"}
+                               </p>
+                               {p.titikTemuAddress && (
+                                  <p className="text-gray-500 text-[10px] mt-1 line-clamp-2">📍 {p.titikTemuAddress}</p>
+                               )}
+                            </div>
+                         </div>
+
+                         <div className="space-y-4 text-right">
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Estimasi Total</p>
+                            <p className="text-3xl font-black text-brand-400 tracking-tighter">Rp {p.perkiraanHarga?.toLocaleString()}</p>
+                            {p.dpAmount && (
+                               <p className="text-xs font-bold text-gray-400">DP: <span className="text-blue-400">Rp {p.dpAmount.toLocaleString()}</span></p>
+                            )}
+                         </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="mt-8 flex flex-wrap gap-3 pt-6 border-t border-gray-800/50">
+                        {p.status === "diproses" && (
+                          <>
+                            <button
+                              onClick={() => handleStatus(p.id, "disetujui", p.mobilId)}
+                              className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-brand-sm"
+                            >
+                              Setujui Order
+                            </button>
+                            <button
+                              onClick={() => handleStatus(p.id, "ditolak", p.mobilId)}
+                              className="bg-gray-800 hover:bg-red-500 text-white px-6 py-2.5 rounded-xl font-bold border border-gray-700 transition-all"
+                            >
+                              Tolak
+                            </button>
+                          </>
+                        )}
+
+                        {p.status === "menunggu konfirmasi lunas" && (
+                          <button
+                            onClick={() => handleMarkAsLunas(p.id, p.mobilId)}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-900/20"
+                          >
+                            Konfirmasi Pelunasan
+                          </button>
+                        )}
+
+                        {p.balancePaymentRequest?.status === "pending" && (
+                           <div className="flex gap-2">
+                              <button
+                                onClick={() => handleBalancePaymentApproval(p.id, "approved")}
+                                className="bg-green-600 hover:bg-green-500 text-white px-6 py-2.5 rounded-xl font-bold"
+                              >
+                                Setujui Pelunasan
+                              </button>
+                              <button
+                                onClick={() => handleBalancePaymentApproval(p.id, "rejected")}
+                                className="bg-red-600 hover:bg-red-500 text-white px-6 py-2.5 rounded-xl font-bold"
+                              >
+                                Tolak Pelunasan
+                              </button>
+                           </div>
+                        )}
+
+                        {p.paymentStatus === "pending" && p.paymentProof && p.status === "menunggu pembayaran" && (
+                          <button
+                            onClick={() => handlePaymentApproval(p.id, "pembayaran berhasil")}
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-bold"
+                          >
+                            Konfirmasi Pembayaran
+                          </button>
+                        )}
+
+                        {p.rentalType === "Driver" && p.status === "pembayaran berhasil" && (
+                           <button
+                             onClick={() => handleCashRentalApproval(p.id, "approved")}
+                             className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-xl font-bold"
+                           >
+                             Approve Sewa (Cash/Driver)
+                           </button>
+                        )}
+
+                        {p.editRequest?.status === "pending" && (
+                            <div className="flex gap-2">
+                               <button
+                                onClick={() => handleEditRequestApproval(p.id, "approved")}
+                                className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-xl font-bold"
+                               >
+                                Setujui Edit Tanggal
+                               </button>
+                               <button
+                                onClick={() => handleEditRequestApproval(p.id, "rejected")}
+                                className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-bold"
+                               >
+                                Tolak Edit
+                               </button>
+                            </div>
+                        )}
+
                         <button
                           onClick={() => generateInvoicePDF(p, user, "full")}
-                          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+                          className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-6 py-2.5 rounded-xl font-bold border border-gray-700 transition-all"
                         >
-                          Invoice Pembayaran Penuh
+                          <Download size={16} className="text-brand-400" /> Invoice
                         </button>
-                        <button
-                          onClick={() => handleMarkAsLunas(p.id, p.mobilId)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-                        >
-                          <DollarSign size={16} />
-                          Tandai Lunas
-                        </button>
-                      </>
-                    )}
-                    {p.status === "disetujui" && (
-                      <>
-                        <button
-                          onClick={() => handleStatus(p.id, "selesai", p.mobilId)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Selesai
-                        </button>
-                      </>
-                    )}
-                    {p.status === "approve sewa" && (
-                      <>
-                        <button
-                          onClick={() => handlePaymentApproval(p.id, "pembayaran berhasil")}
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Konfirmasi Pembayaran
-                        </button>
-                        <button
-                          onClick={() => handleStatus(p.id, "ditolak", p.mobilId)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Tolak
-                        </button>
-                        <button
-                          onClick={() => handleStatus(p.id, "selesai", p.mobilId)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Selesai
-                        </button>
-                      </>
-                    )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
             </>
           )}
-        </div>
         </div>
       </div>
     </div>
