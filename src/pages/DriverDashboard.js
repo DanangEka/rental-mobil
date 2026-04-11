@@ -453,7 +453,7 @@ export default function DriverDashboard() {
           await addDoc(collection(db, "notifications"), {
             userId: orderData.uid,
             orderId: orderId,
-            message: `Driver telah menerima order Anda. Mobil ${orderData.namaMobil} siap untuk diverifikasi dan diantar.`,
+            message: `Driver telah menerima order Anda. Mobil ${orderData.namaMobil} akan diantar ke ${orderData.lokasiPenyerahan || 'lokasi Anda'}. Silakan tunggu kedatangan driver.`,
             read: false,
             timestamp: serverTimestamp()
           });

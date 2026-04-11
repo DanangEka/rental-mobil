@@ -430,101 +430,116 @@ export default function ManajemenPesanan() {
   }
 
   return (
-    <div className="p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
-      <section className="bg-white p-4 sm:p-8 rounded-2xl shadow-xl border border-gray-100">
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+    <div className="min-h-screen bg-black pt-[72px] pb-12 relative overflow-hidden">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
+        <div className="absolute top-[5%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-900/10 mix-blend-screen filter blur-[100px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[5%] w-[45vw] h-[45vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="mb-10 pt-8 animate-fadeInUp">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Manajemen Pesanan</h1>
-              <p className="text-gray-600 text-sm sm:text-base">Kelola pemesanan dan status pembayaran</p>
+              <h1 className="text-4xl font-black text-white tracking-tight mb-2">Manajemen Pesanan</h1>
+              <p className="text-gray-400 text-lg">Kelola ekosistem penyewaan dan monitor transaksi harian.</p>
             </div>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="mt-4 sm:mt-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 border border-gray-700 text-white px-6 py-3 rounded-2xl transition-all font-bold shadow-lg"
             >
-              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-              {refreshing ? 'Memperbarui...' : 'Perbarui'}
+              <RefreshCw size={18} className={`text-brand-400 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Memperbarui...' : 'Perbarui Data'}
             </button>
           </div>
+        </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
-            <div className="bg-blue-50 p-4 sm:p-6 rounded-xl border border-blue-200 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm sm:text-lg font-semibold text-blue-900">Total Pesanan</h3>
-                  <p className="text-2xl sm:text-3xl font-bold text-blue-600">{filteredPemesanan.length}</p>
-                </div>
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Clock className="h-6 w-6 text-blue-600" />
-                </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-blue-500/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Pesanan</p>
+                <p className="text-3xl font-black text-white">{filteredPemesanan.length}</p>
+              </div>
+              <div className="p-3 bg-blue-500/20 rounded-2xl text-blue-400">
+                <Clock size={24} />
               </div>
             </div>
-            <div className="bg-green-50 p-4 sm:p-6 rounded-xl border border-green-200 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm sm:text-lg font-semibold text-green-900">Disetujui</h3>
-                  <p className="text-2xl sm:text-3xl font-bold text-green-600">
-                    {filteredPemesanan.filter(p => p.status === "disetujui" || p.status === "pembayaran berhasil").length}
-                  </p>
-                </div>
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                </div>
+          </div>
+          
+          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-green-500/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Disetujui</p>
+                <p className="text-3xl font-black text-white">
+                  {filteredPemesanan.filter(p => p.status === "disetujui" || p.status === "pembayaran berhasil").length}
+                </p>
+              </div>
+              <div className="p-3 bg-green-500/20 rounded-2xl text-green-400">
+                <CheckCircle size={24} />
               </div>
             </div>
-            <div className="bg-yellow-50 p-4 sm:p-6 rounded-xl border border-yellow-200 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm sm:text-lg font-semibold text-yellow-900">Diproses</h3>
-                  <p className="text-2xl sm:text-3xl font-bold text-yellow-600">
-                    {filteredPemesanan.filter(p => p.status === "diproses").length}
-                  </p>
-                </div>
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <Clock className="h-6 w-6 text-yellow-600" />
-                </div>
+          </div>
+
+          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-yellow-500/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Diproses</p>
+                <p className="text-3xl font-black text-white">
+                  {filteredPemesanan.filter(p => p.status === "diproses").length}
+                </p>
+              </div>
+              <div className="p-3 bg-yellow-500/20 rounded-2xl text-yellow-400">
+                <Clock size={24} />
               </div>
             </div>
-            <div className="bg-red-50 p-4 sm:p-6 rounded-xl border border-red-200 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm sm:text-lg font-semibold text-red-900">Ditolak</h3>
-                  <p className="text-2xl sm:text-3xl font-bold text-red-600">
-                    {filteredPemesanan.filter(p => p.status === "ditolak").length}
-                  </p>
-                </div>
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <XCircle className="h-6 w-6 text-red-600" />
-                </div>
+          </div>
+
+          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-red-500/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Ditolak</p>
+                <p className="text-3xl font-black text-white">
+                   {filteredPemesanan.filter(p => p.status === "ditolak").length}
+                </p>
+              </div>
+              <div className="p-3 bg-red-500/20 rounded-2xl text-red-400">
+                <XCircle size={24} />
               </div>
             </div>
-            <div className="bg-emerald-50 p-4 sm:p-6 rounded-xl border border-emerald-200 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm sm:text-lg font-semibold text-emerald-900">Lunas</h3>
-                  <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
-                    {filteredPemesanan.filter(p => p.status === "lunas").length}
-                  </p>
-                </div>
-                <div className="p-2 bg-emerald-100 rounded-lg">
-                  <DollarSign className="h-6 w-6 text-emerald-600" />
-                </div>
+          </div>
+
+          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-emerald-500/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Lunas</p>
+                <p className="text-3xl font-black text-white">
+                   {filteredPemesanan.filter(p => p.status === "lunas").length}
+                </p>
+              </div>
+              <div className="p-3 bg-emerald-500/20 rounded-2xl text-emerald-400">
+                <DollarSign size={24} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Filter */}
-        <div className="bg-gray-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2 sm:mb-0">Filter & Pencarian</h3>
-            <div className="flex items-center gap-2">
+        {/* Filter Section */}
+        <div className="mb-10 glass-card bg-gray-900/40 rounded-3xl p-8 border border-gray-800 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+            <h3 className="text-xl font-bold text-white flex items-center gap-3">
+              <Filter size={20} className="text-brand-400" />
+              Filter Dinamis
+            </h3>
+            <div className="flex items-center gap-3">
+              <span className="text-gray-500 text-xs font-black uppercase tracking-widest">Urutkan</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
+                className="bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
               >
                 <option value="newest">Terbaru</option>
                 <option value="oldest">Terlama</option>
@@ -533,13 +548,14 @@ export default function ManajemenPesanan() {
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Filter Status</label>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Status Transaksi</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full bg-gray-950/50 text-gray-300 border border-gray-800 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-brand-500 outline-none transition-all"
               >
                 <option value="semua">Semua Status</option>
                 <option value="diproses">Diproses</option>
@@ -552,323 +568,47 @@ export default function ManajemenPesanan() {
                 <option value="balance_pending">Menunggu Pelunasan</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Filter Tipe Sewa</label>
+            
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Kategori Sewa</label>
               <select
                 value={filterRentalType}
                 onChange={(e) => setFilterRentalType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full bg-gray-950/50 text-gray-300 border border-gray-800 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-brand-500 outline-none transition-all"
               >
                 <option value="semua">Semua Tipe</option>
                 <option value="Lepas Kunci">Lepas Kunci</option>
                 <option value="Driver">Driver</option>
               </select>
             </div>
-            <div className="sm:col-span-2 lg:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Cari Pesanan</label>
+
+            <div className="md:col-span-1 lg:col-span-2 space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Cari Data</label>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Cari berdasarkan mobil, email, status, lokasi penyerahan..."
+                  placeholder="Cari mobil, email, lokasi, atau ID..."
                   value={searchPemesanan}
                   onChange={(e) => setSearchPemesanan(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  className="w-full bg-gray-950/50 text-white border border-gray-800 rounded-2xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-brand-500 outline-none transition-all placeholder:text-gray-700"
                 />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={16} className="text-gray-400" />
-                </div>
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={20} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* List Pesanan */}
-        <div className="space-y-4 sm:space-y-6">
+        {/* List Content */}
+        <div className="space-y-6 animate-fadeInUp" style={{ animationDelay: "0.4s" }}>
           {filteredPemesanan.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-lg">
-                {pemesanan.length === 0 ? "Belum ada pemesanan" : "Tidak ada pemesanan yang sesuai filter"}
-              </div>
-              <p className="text-gray-400 text-sm mt-2">
-                {pemesanan.length === 0 ? "Pemesanan akan muncul di sini" : "Coba ubah filter atau pencarian"}
-              </p>
+            <div className="glass-card bg-gray-900/40 rounded-3xl p-20 text-center border border-gray-800">
+               <div className="w-16 h-16 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search size={28} className="text-gray-600" />
+               </div>
+               <p className="text-gray-400 font-medium">Tidak ada data pesanan yang ditemukan</p>
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">
-                  Menampilkan {filteredPemesanan.length} dari {pemesanan.length} pemesanan
-                </p>
-              </div>
-              {filteredPemesanan.map((p) => {
-              const user = users.find(u => u.id === p.uid);
-              return (
-                <div key={p.id} className="border border-gray-200 rounded-xl p-6 bg-white shadow-md">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Mobil</span>
-                      <p className="text-lg font-semibold text-gray-900">{p.namaMobil}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Nama Client</span>
-                      <p className="text-gray-900">{user?.nama || p.email}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Tanggal Pesan</span>
-                      <p className="text-gray-900">
-                        Dari {p.tanggalMulai ? new Date(p.tanggalMulai).toLocaleString() : 'N/A'}<br />
-                        Sampai {p.tanggalSelesai ? new Date(p.tanggalSelesai).toLocaleString() : 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Nomor Telepon</span>
-                      <p className="text-gray-900">{user?.nomorTelepon || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Tipe Sewa</span>
-                      <p className="text-gray-900">{p.rentalType || "Lepas Kunci"}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Lokasi Penyerahan Unit</span>
-                      <p className="text-gray-900">
-                        {p.lokasiPenyerahan || "Belum ditentukan"}
-                        {p.lokasiPenyerahan === "Titik Temu" && p.titikTemuAddress && (
-                          <span className="block text-sm text-gray-600 mt-1">
-                            📍 {p.titikTemuAddress}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Tanggal Pemesanan</span>
-                      <p className="text-gray-900">{new Date(p.tanggal).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Total Biaya</span>
-                      <p className="text-xl font-bold text-green-600">Rp {p.perkiraanHarga?.toLocaleString()}</p>
-                    </div>
-                    {p.dpAmount && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">DP 50%</span>
-                        <p className="text-lg font-semibold text-blue-600">Rp {p.dpAmount.toLocaleString()}</p>
-                      </div>
-                    )}
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Status</span>
-                      <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
-                        p.status === 'diproses' ? 'bg-yellow-100 text-yellow-800' :
-                        p.status === 'disetujui' ? 'bg-green-100 text-green-800' :
-                        p.status === 'approve sewa' ? 'bg-purple-100 text-purple-800' :
-                        p.status === 'menunggu pembayaran' ? 'bg-orange-100 text-orange-800' :
-                        p.status === 'pembayaran berhasil' ? 'bg-blue-100 text-blue-800' :
-                        p.status === 'selesai' ? 'bg-purple-100 text-purple-800' :
-                        p.status === 'lunas' ? 'bg-emerald-100 text-emerald-800' :
-                        p.status === 'ditolak' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {p.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  {p.paymentMethod && (
-                    <div className="mb-4">
-                      <span className="text-sm font-medium text-gray-500">Metode Pembayaran</span>
-                      <p className="text-gray-900">{p.paymentMethod}</p>
-                    </div>
-                  )}
-
-                  {/* Edit Request */}
-                  {p.editRequest && (
-                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Edit size={16} className="text-blue-600" />
-                        <span className="text-sm font-medium text-blue-900">Permintaan Edit Tanggal</span>
-                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                          p.editRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          p.editRequest.status === 'approved' ? 'bg-green-100 text-green-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {p.editRequest.status}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-700">Tanggal Baru:</span>
-                          <p className="text-gray-900">
-                            {new Date(p.editRequest.tanggalMulai).toLocaleDateString()} - {new Date(p.editRequest.tanggalSelesai).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Harga Baru:</span>
-                          <p className="text-gray-900">Rp {p.editRequest.perkiraanHarga?.toLocaleString()}</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Diminta pada: {new Date(p.editRequest.requestedAt).toLocaleString()}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Bukti Pembayaran */}
-                  <div className="mb-4">
-                    <span className="text-sm font-medium text-gray-500">Bukti Pembayaran</span>
-                    {p.paymentProof ? (
-                      <div className="mt-2">
-                        <a
-                          href={p.paymentProof}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 underline block mb-2"
-                        >
-                          Lihat Bukti (klik untuk membuka di tab baru)
-                        </a>
-                        <img
-                          src={p.paymentProof}
-                          alt="Bukti Pembayaran"
-                          className="w-48 rounded-lg shadow-md border"
-                        />
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 italic">Belum ada bukti pembayaran</p>
-                    )}
-                  </div>
-
-                  {/* Balance Payment Request */}
-                  {p.balancePaymentRequest && (
-                    <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <DollarSign size={16} className="text-orange-600" />
-                        <span className="text-sm font-medium text-orange-900">Permintaan Pembayaran Pelunasan</span>
-                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                          p.balancePaymentRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          p.balancePaymentRequest.status === 'approved' ? 'bg-green-100 text-green-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {p.balancePaymentRequest.status}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-700">Metode Pembayaran:</span>
-                          <p className="text-gray-900">{p.balancePaymentRequest.paymentMethod}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Jumlah:</span>
-                          <p className="text-gray-900">Rp {p.balancePaymentRequest.amount?.toLocaleString()}</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Diminta pada: {new Date(p.balancePaymentRequest.requestedAt).toLocaleString()}
-                      </p>
-
-                      {/* Balance Payment Proof */}
-                      {p.balancePaymentRequest.paymentProof && (
-                        <div className="mt-3">
-                          <span className="text-sm font-medium text-gray-700">Bukti Pembayaran Pelunasan:</span>
-                          <a
-                            href={p.balancePaymentRequest.paymentProof}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline block mb-2"
-                          >
-                            Lihat Bukti (klik untuk membuka di tab baru)
-                          </a>
-                          <img
-                            src={p.balancePaymentRequest.paymentProof}
-                            alt="Bukti Pembayaran Pelunasan"
-                            className="w-48 rounded-lg shadow-md border"
-                          />
-                        </div>
-                      )}
-
-                      {/* Approval Buttons for Pending Balance Payments */}
-                      {p.balancePaymentRequest.status === "pending" && (
-                        <div className="flex gap-2 mt-3">
-                          <button
-                            onClick={() => handleBalancePaymentApproval(p.id, "approved")}
-                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
-                          >
-                            Setujui Pelunasan
-                          </button>
-                          <button
-                            onClick={() => handleBalancePaymentApproval(p.id, "rejected")}
-                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
-                          >
-                            Tolak Pelunasan
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-3">
-                    {/* Edit Request Approval */}
-                    {p.editRequest && p.editRequest.status === "pending" && (
-                      <>
-                        <button
-                          onClick={() => handleEditRequestApproval(p.id, "approved")}
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Setujui Edit
-                        </button>
-                        <button
-                          onClick={() => handleEditRequestApproval(p.id, "rejected")}
-                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Tolak Edit
-                        </button>
-                      </>
-                    )}
-
-                    {/* Cash Rental Approval */}
-                    {p.paymentStatus === "pending_approval" && p.paymentMethod === "Cash" && (
-                      <>
-                        <button
-                          onClick={() => handleCashRentalApproval(p.id, "approved")}
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Approve Sewa
-                        </button>
-                        <button
-                          onClick={() => handleCashRentalApproval(p.id, "rejected")}
-                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Tolak Sewa
-                        </button>
-                      </>
-                    )}
-
-                    {/* Regular Order Actions */}
-                    {p.status === "diproses" && (
-                      <>
-                        <button
-                          onClick={() => handleStatus(p.id, "disetujui", p.mobilId)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Setujui
-                        </button>
-                        <button
-                          onClick={() => handleStatus(p.id, "ditolak", p.mobilId)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Tolak
-                        </button>
-                      </>
-                    )}
-                    {p.status === "menunggu pembayaran" && (
-                      <>
-                        <button
-                          onClick={() => handlePaymentApproval(p.id, "pembayaran berhasil")}
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Konfirmasi Pembayaran
-                        </button>
-                        <button
-                          onClick={() => handleStatus(p.id, "ditolak", p.mobilId)}
                           className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
                         >
                           Tolak
@@ -947,7 +687,8 @@ export default function ManajemenPesanan() {
             </>
           )}
         </div>
-      </section>
+        </div>
+      </div>
     </div>
   );
 }

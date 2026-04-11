@@ -212,7 +212,7 @@ export default function DriverOrders() {
           await addDoc(collection(db, "notifications"), {
             userId: orderData.uid,
             orderId: orderId,
-            message: `Driver telah menerima order Anda untuk mobil ${orderData.namaMobil}.`,
+            message: `Driver telah menerima order Anda untuk mobil ${orderData.namaMobil}. Mobil akan diantar ke ${orderData.lokasiPenyerahan || 'lokasi Anda'}.`,
             read: false,
             timestamp: serverTimestamp()
           });
