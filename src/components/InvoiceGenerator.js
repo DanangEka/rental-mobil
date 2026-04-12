@@ -228,35 +228,52 @@ const InvoiceGenerator = {
   },
 
   // Generate Full Payment Invoice
-  generateFullInvoice: (order, user) => {
+  generateFullInvoice: (order, user, penaltyAmount = 0, overtimeHours = 0) => {
     const doc = new jsPDF();
     const invNo = `INV-FULL-${order.id.slice(-8).toUpperCase()}`;
+    const totalWithPenalty = (order.perkiraanHarga || 0) + penaltyAmount;
 
     addHeader(doc, "INVOICE PELUNASAN", COLORS.SUCCESS);
-    let y = addInfoGrid(doc, order, user, invNo, "LUNAS / FULLY PAID", 70);
+    let statusText = "LUNAS / FULLY PAID";
+    if (penaltyAmount > 0) {
+      statusText = "LUNAS (INC. PENALTY)";
+    }
+    
+    let y = addInfoGrid(doc, order, user, invNo, statusText, 70);
     y = addItemsTable(doc, order, y);
     
     // Summary for Full Payment
     const summaryX = 130;
     doc.setFontSize(10);
+    doc.setTextColor(...COLORS.TEXT_GRAY);
+    doc.setFont("helvetica", "normal");
     doc.text("Rincian Pembayaran:", summaryX, y);
+    
     doc.text("Total Biaya Sewa:", summaryX, y + 7);
     doc.text(formatIDR(order.perkiraanHarga), 195, y + 7, { align: "right" });
     
+    let currentY = y + 7;
+    if (penaltyAmount > 0) {
+      currentY += 7;
+      doc.setTextColor(...COLORS.PRIMARY);
+      doc.text(`Denda Keterlambatan (${overtimeHours}j):`, summaryX, currentY);
+      doc.text(formatIDR(penaltyAmount), 195, currentY, { align: "right" });
+    }
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...COLORS.SUCCESS);
     doc.setFillColor(...COLORS.LIGHT_GRAY);
-    doc.rect(summaryX - 5, y + 12, 75, 12, 'F');
-    doc.text("TOTAL LUNAS:", summaryX, y + 20);
-    doc.text(formatIDR(order.perkiraanHarga), 195, y + 20, { align: "right" });
+    doc.rect(summaryX - 5, currentY + 5, 75, 12, 'F');
+    doc.text("TOTAL AKHIR:", summaryX, currentY + 13);
+    doc.text(formatIDR(totalWithPenalty), 195, currentY + 13, { align: "right" });
 
     // Paid Stamp Effect
     doc.setDrawColor(...COLORS.SUCCESS);
     doc.setLineWidth(1);
-    doc.rect(140, y + 35, 40, 15);
+    doc.rect(140, currentY + 25, 40, 15);
     doc.setFontSize(14);
-    doc.text("LUNAS", 160, y + 45, { align: "center" });
+    doc.text("LUNAS", 160, currentY + 35, { align: "center" });
 
     addFooter(doc);
     openPdfInNewTab(doc, `${invNo}.pdf`);

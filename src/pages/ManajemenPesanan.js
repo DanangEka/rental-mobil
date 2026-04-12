@@ -11,9 +11,7 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 import axios from "axios";
-import jsPDF from "jspdf";
-import { Search, Filter, RefreshCw, Download, Eye, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, Car, ExternalLink } from "lucide-react";
-import { Edit } from "lucide-react";
+import { Search, Filter, RefreshCw, Download, Eye, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, Car } from "lucide-react";
 import InvoiceGenerator from "../components/InvoiceGenerator";
 
 export default function ManajemenPesanan() {
@@ -26,7 +24,6 @@ export default function ManajemenPesanan() {
   const [refreshing, setRefreshing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
-  const [showEditRequests, setShowEditRequests] = useState(true);
 
   const fetchUsers = async () => {
     try {
@@ -62,7 +59,25 @@ export default function ManajemenPesanan() {
   };
 
   useEffect(() => {
-    checkAdmin();
+    const checkAdminStatus = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const idTokenResult = await user.getIdTokenResult();
+        if (idTokenResult.claims.admin === true) {
+          setIsAdmin(true);
+          fetchUsers();
+        }
+      } catch (error) {
+        console.error("Error verifikasi admin:", error.message);
+      }
+      setLoading(false);
+    };
+    checkAdminStatus();
   }, []);
 
   useEffect(() => {
@@ -348,11 +363,34 @@ export default function ManajemenPesanan() {
     }
   };
 
+  const calculatePenalty = (order) => {
+    if (!order.tanggalSelesai || !order.perkiraanHarga || !order.durasiHari) return { amount: 0, hours: 0 };
+    
+    // Only calculate for active/in-progress orders
+    const activeStatuses = ["pembayaran berhasil", "disewa", "approve sewa"];
+    if (!activeStatuses.includes(order.status)) return { amount: 0, hours: 0 };
+
+    const end = new Date(order.tanggalSelesai);
+    const now = new Date();
+
+    if (now <= end) return { amount: 0, hours: 0 };
+
+    const diffMs = now - end;
+    const diffHours = Math.ceil(diffMs / (1000 * 60 * 60)); // Round up to nearest hour
+    
+    const dailyRate = Math.ceil(order.perkiraanHarga / order.durasiHari);
+    const penaltyPerHour = Math.ceil(dailyRate * 0.1);
+    const totalPenalty = penaltyPerHour * diffHours;
+
+    return { amount: totalPenalty, hours: diffHours };
+  };
+
   const generateInvoicePDF = (order, user, type = "full") => {
     if (type === "dp") {
       InvoiceGenerator.generateDPInvoice(order, user);
     } else {
-      InvoiceGenerator.generateFullInvoice(order, user);
+      const { amount, hours } = calculatePenalty(order);
+      InvoiceGenerator.generateFullInvoice(order, user, amount, hours);
     }
   };
 
@@ -625,6 +663,11 @@ export default function ManajemenPesanan() {
                             </div>
                          </div>
                          <div className="flex flex-wrap gap-3">
+                            {calculatePenalty(p).amount > 0 && (
+                               <span className="px-4 py-1.5 text-[10px] font-black uppercase tracking-widest bg-red-600 text-white rounded-full animate-pulse flex items-center gap-1">
+                                  <AlertTriangle size={12} /> Lewat Waktu {calculatePenalty(p).hours}j
+                               </span>
+                            )}
                             <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full border ${
                               p.status === 'diproses' ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' :
                               p.status === 'disetujui' || p.status === 'pembayaran berhasil' ? 'bg-green-500/10 border-green-500/30 text-green-400' :
@@ -677,6 +720,9 @@ export default function ManajemenPesanan() {
                             <p className="text-2xl md:text-3xl font-black text-brand-400 tracking-tighter">Rp {p.perkiraanHarga?.toLocaleString()}</p>
                             {p.dpAmount && (
                                <p className="text-xs font-bold text-gray-400">DP: <span className="text-blue-400">Rp {p.dpAmount.toLocaleString()}</span></p>
+                            )}
+                            {calculatePenalty(p).amount > 0 && (
+                               <p className="text-xs font-bold text-red-400 mt-1">Denda: Rp {calculatePenalty(p).amount.toLocaleString()}</p>
                             )}
                          </div>
                       </div>
