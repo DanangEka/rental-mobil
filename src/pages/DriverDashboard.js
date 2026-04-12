@@ -486,21 +486,21 @@ export default function DriverDashboard() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 md:py-12">
-        <div className="mb-10 animate-fadeInUp">
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Dashboard Driver</h1>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-4 md:py-8 md:py-12">
+        <div className="mb-6 md:mb-10 animate-fadeInUp">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Dashboard Driver</h1>
           <p className="text-gray-400 text-lg">Ringkasan operasional dan order tersedia untuk Anda.</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
           {[
             { label: "Total Order", value: stats.totalOrders, icon: <ClipboardList className="h-6 w-6" />, color: "bg-blue-500/20 text-blue-400 border-blue-500/20" },
             { label: "Order Aktif", value: stats.activeOrders, icon: <Clock className="h-6 w-6" />, color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/20" },
             { label: "Order Selesai", value: stats.completedOrders, icon: <CheckCircle className="h-6 w-6" />, color: "bg-green-500/20 text-green-400 border-green-500/20" },
             { label: "Total Pendapatan", value: `Rp ${stats.totalEarnings.toLocaleString()}`, icon: <DollarSign className="h-6 w-6" />, color: "bg-purple-500/20 text-purple-400 border-purple-500/20" },
           ].map((stat, idx) => (
-            <div key={idx} className="glass-card bg-gray-900/40 rounded-3xl p-6 border border-gray-800 hover:border-gray-700 transition-all group">
+            <div key={idx} className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-4 md:p-6 border border-gray-800 hover:border-gray-700 transition-all group">
               <div className="flex items-center mb-4">
                 <div className={`p-3 rounded-2xl ${stat.color} border group-hover:scale-110 transition-transform`}>
                   {stat.icon}
@@ -514,7 +514,7 @@ export default function DriverDashboard() {
 
         {/* Recent Orders Section */}
         <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6 md:mb-8">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
               <h2 className="text-2xl font-black text-white tracking-tight uppercase tracking-widest">Order Terbaru Tersedia</h2>
@@ -526,7 +526,7 @@ export default function DriverDashboard() {
 
           <div className="space-y-6">
             {orders.length === 0 ? (
-              <div className="glass-card bg-gray-900/40 rounded-3xl p-16 text-center border border-gray-800 border-dashed">
+              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-16 text-center border border-gray-800 border-dashed">
                 <div className="w-20 h-20 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
                   <ClipboardList className="h-10 w-10 text-gray-600" />
                 </div>
@@ -538,23 +538,23 @@ export default function DriverDashboard() {
                 <table className="min-w-full">
                   <thead>
                     <tr className="border-b border-gray-800">
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Mobil</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Client</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Lokasi</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Tanggal</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Aksi</th>
+                      <th className="px-4 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Mobil</th>
+                      <th className="px-4 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Client</th>
+                      <th className="px-4 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Lokasi</th>
+                      <th className="px-4 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Tanggal</th>
+                      <th className="px-4 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800/50">
                     {orders.slice(0, 10).map((order) => (
                       <tr key={order.id} className="group hover:bg-white/[0.02] transition-colors">
-                        <td className="px-6 py-6 whitespace-nowrap">
+                        <td className="px-4 md:px-6 py-4 md:py-6 whitespace-nowrap">
                           <div className="text-sm font-bold text-white group-hover:text-brand-400 transition-colors underline-offset-4 decoration-brand-500 decoration-2">{order.namaMobil}</div>
                           {order.status === "approve sewa" && (
                              <div className="text-[10px] text-brand-400 font-black uppercase tracking-tighter mt-1 bg-brand-500/10 px-1.5 py-0.5 rounded border border-brand-500/20 w-fit">Siap diambil (Cash)</div>
                           )}
                         </td>
-                        <td className="px-6 py-6 whitespace-nowrap">
+                        <td className="px-4 md:px-6 py-4 md:py-6 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-9 w-9 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center text-xs font-bold text-gray-400 mr-3 overflow-hidden shadow-inner">
                               {(users.find(u => u.id === order.uid)?.nama || order.email || 'U').charAt(0).toUpperCase()}
@@ -564,7 +564,7 @@ export default function DriverDashboard() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-6">
+                        <td className="px-4 md:px-6 py-4 md:py-6">
                           <div className="flex items-start text-sm text-gray-400">
                             <MapPin className="h-4 w-4 mr-2 mt-0.5 text-brand-500/70" />
                             <div>
@@ -575,12 +575,12 @@ export default function DriverDashboard() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-6 whitespace-nowrap">
+                        <td className="px-4 md:px-6 py-4 md:py-6 whitespace-nowrap">
                           <div className="text-xs font-bold text-gray-400 bg-gray-900/80 px-2.5 py-1 rounded-lg border border-gray-800">
                             {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                           </div>
                         </td>
-                        <td className="px-6 py-6 whitespace-nowrap">
+                        <td className="px-4 md:px-6 py-4 md:py-6 whitespace-nowrap">
                           {(order.status === "approve sewa" || order.status === "pembayaran berhasil") && !order.driverId ? (
                             <button
                               onClick={() => handleAcceptOrder(order.id)}

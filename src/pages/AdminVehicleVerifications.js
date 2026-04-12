@@ -94,13 +94,13 @@ export default function AdminVehicleVerifications() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="mb-10 pt-8 animate-fadeInUp">
-          <h1 className="text-4xl font-black text-white tracking-tight mb-2">Verifikasi Mobil</h1>
+        <div className="mb-6 md:mb-10 pt-8 animate-fadeInUp">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight mb-2">Verifikasi Mobil</h1>
           <p className="text-gray-400 text-lg">Pantau kondisi armada sebelum dan sesudah durasi sewa secara real-time.</p>
         </div>
 
         {/* Filter Section */}
-        <div className="mb-8 glass-card bg-gray-900/40 rounded-3xl p-6 border border-gray-800 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
+        <div className="mb-6 md:mb-8 glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-4 md:p-6 border border-gray-800 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
           <div className="flex flex-wrap items-center gap-3">
              <div className="p-2 bg-brand-500/20 rounded-xl text-brand-400 mr-2">
                 <Car size={20} />
@@ -109,7 +109,7 @@ export default function AdminVehicleVerifications() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-6 py-2.5 rounded-xl font-bold transition-all ${
+                className={`px-4 md:px-6 py-2.5 rounded-xl font-bold transition-all ${
                   filter === f
                     ? "bg-brand-600 text-white shadow-brand-sm"
                     : "bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-white border border-gray-700"
@@ -122,12 +122,12 @@ export default function AdminVehicleVerifications() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-brand-500/50 transition-colors">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-brand-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Total</p>
-                <p className="text-3xl font-black text-white">{verifications.length}</p>
+                <p className="text-2xl md:text-3xl font-black text-white">{verifications.length}</p>
               </div>
               <div className="p-3 bg-brand-500/20 rounded-2xl text-brand-400">
                 <Camera size={24} />
@@ -135,11 +135,11 @@ export default function AdminVehicleVerifications() {
             </div>
           </div>
           
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-blue-500/50 transition-colors">
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-blue-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Sebelum</p>
-                <p className="text-3xl font-black text-white">
+                <p className="text-2xl md:text-3xl font-black text-white">
                   {verifications.filter(v => v.status === "sebelum").length}
                 </p>
               </div>
@@ -149,11 +149,11 @@ export default function AdminVehicleVerifications() {
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-green-500/50 transition-colors">
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-green-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Sesudah</p>
-                <p className="text-3xl font-black text-white">
+                <p className="text-2xl md:text-3xl font-black text-white">
                   {verifications.filter(v => v.status === "sesudah").length}
                 </p>
               </div>
@@ -163,11 +163,11 @@ export default function AdminVehicleVerifications() {
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-purple-500/50 transition-colors">
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-purple-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Hari Ini</p>
-                <p className="text-3xl font-black text-white">
+                <p className="text-2xl md:text-3xl font-black text-white">
                   {verifications.filter(v => {
                     const today = new Date().toDateString();
                     const verificationDate = new Date(v.timestamp?.toDate()).toDateString();
@@ -183,8 +183,8 @@ export default function AdminVehicleVerifications() {
         </div>
 
         {/* List Content */}
-        <div className="glass-card bg-gray-900/40 rounded-3xl border border-gray-800 overflow-hidden animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
-          <div className="px-8 py-6 border-b border-gray-800 bg-gray-900/20 flex items-center justify-between">
+        <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800 overflow-hidden animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
+          <div className="px-4 md:px-8 py-4 md:py-6 border-b border-gray-800 bg-gray-900/20 flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-3">
               <Eye size={20} className="text-brand-400" />
               Riwayat Verifikasi ({filteredVerifications.length})
@@ -203,10 +203,10 @@ export default function AdminVehicleVerifications() {
               filteredVerifications.map((verification, idx) => (
                 <div
                   key={verification.id}
-                  className="p-8 hover:bg-gray-800/20 transition-all group"
+                  className="p-4 sm:p-6 md:p-8 hover:bg-gray-800/20 transition-all group"
                   style={{ animationDelay: `${0.1 * idx}s` }}
                 >
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6 md:gap-8">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-4">
                         <span className={`px-3 py-1 text-xs font-black uppercase tracking-widest rounded-full border ${
@@ -221,7 +221,7 @@ export default function AdminVehicleVerifications() {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                         <div className="space-y-1">
                           <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Armada</p>
                           <p className="text-white font-bold text-lg group-hover:text-brand-400 transition-colors">{verification.namaMobil}</p>
@@ -251,7 +251,7 @@ export default function AdminVehicleVerifications() {
                     <div className="flex items-center gap-3">
                        <button
                         onClick={() => setSelectedVerification(verification)}
-                        className="flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-2xl transition-all shadow-brand-sm group-hover:scale-105 active:scale-95"
+                        className="flex items-center gap-2 px-4 md:px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-2xl transition-all shadow-brand-sm group-hover:scale-105 active:scale-95"
                       >
                         <Eye size={18} />
                         Lihat Foto
@@ -272,8 +272,8 @@ export default function AdminVehicleVerifications() {
               onClick={() => setSelectedVerification(null)}
             ></div>
             
-            <div className="relative bg-gray-900 border border-gray-800 w-full max-w-5xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-zoomIn max-h-[90vh] flex flex-col">
-              <div className="p-8 border-b border-gray-800 flex justify-between items-center bg-gray-900/50 backdrop-blur-xl">
+            <div className="relative bg-gray-900 border border-gray-800 w-full max-w-5xl rounded-2xl md:rounded-[2.5rem] shadow-2xl overflow-hidden animate-zoomIn max-h-[90vh] flex flex-col">
+              <div className="p-4 sm:p-6 md:p-8 border-b border-gray-800 flex justify-between items-center bg-gray-900/50 backdrop-blur-xl">
                 <div>
                   <h3 className="text-2xl font-black text-white tracking-tight">Detail Verifikasi</h3>
                   <p className="text-gray-400 text-sm mt-1">{selectedVerification.namaMobil} • {getStatusText(selectedVerification.status)}</p>
@@ -286,10 +286,10 @@ export default function AdminVehicleVerifications() {
                 </button>
               </div>
 
-              <div className="p-8 overflow-y-auto flex-grow bg-black/20">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="p-4 sm:p-6 md:p-8 overflow-y-auto flex-grow bg-black/20">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                   <div className="lg:col-span-1 space-y-6">
-                     <div className="bg-gray-800/30 p-6 rounded-3xl border border-gray-800">
+                     <div className="bg-gray-800/30 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800">
                         <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4">Metadata Perjalanan</h4>
                         <div className="space-y-4">
                            <div className="flex justify-between items-center">
@@ -314,7 +314,7 @@ export default function AdminVehicleVerifications() {
                      </div>
 
                      {selectedVerification.notes && (
-                        <div className="bg-gray-800/30 p-6 rounded-3xl border border-gray-800">
+                        <div className="bg-gray-800/30 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800">
                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Catatan Driver</h4>
                            <p className="text-gray-300 text-sm italic leading-relaxed">"{selectedVerification.notes}"</p>
                         </div>
@@ -326,7 +326,7 @@ export default function AdminVehicleVerifications() {
                     {selectedVerification.photos && selectedVerification.photos.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {selectedVerification.photos.map((photo, index) => (
-                          <div key={index} className="group relative bg-gray-950 border border-gray-800 rounded-3xl overflow-hidden aspect-video">
+                          <div key={index} className="group relative bg-gray-950 border border-gray-800 rounded-2xl md:rounded-3xl overflow-hidden aspect-video">
                             {photo.url ? (
                               <img 
                                 src={photo.url} 
@@ -334,7 +334,7 @@ export default function AdminVehicleVerifications() {
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                               />
                             ) : (
-                              <div className="w-full h-full flex flex-col items-center justify-center p-8 bg-gray-900/50">
+                              <div className="w-full h-full flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 bg-gray-900/50">
                                 <Camera size={48} className="text-gray-700 mb-4" />
                                 <p className="text-gray-500 text-sm font-medium">Foto ID: {photo.name || index + 1}</p>
                                 <p className="text-gray-600 text-xs mt-1">{(photo.size / 1024 / 1024).toFixed(2)} MB</p>
@@ -347,7 +347,7 @@ export default function AdminVehicleVerifications() {
                         ))}
                       </div>
                     ) : (
-                      <div className="bg-gray-950/50 border border-dashed border-gray-800 rounded-3xl p-12 text-center">
+                      <div className="bg-gray-950/50 border border-dashed border-gray-800 rounded-2xl md:rounded-3xl p-6 sm:p-10 md:p-12 text-center">
                         <Camera size={48} className="text-gray-800 mx-auto mb-4" />
                         <p className="text-gray-500">Tidak ada foto visual yang diunggah</p>
                       </div>

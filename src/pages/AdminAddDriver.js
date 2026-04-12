@@ -157,15 +157,15 @@ export default function AdminAddDriver() {
         <div className="absolute bottom-[-5%] right-[-5%] w-[35vw] h-[35vw] rounded-full bg-red-900/5 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      <div className="relative z-10 max-w-4xl mx-auto px-4 py-8 md:py-12">
-        <div className="mb-10 animate-fadeInUp">
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Tambah Driver</h1>
+      <div className="relative z-10 max-w-4xl mx-auto px-4 py-4 md:py-8 md:py-12">
+        <div className="mb-6 md:mb-10 animate-fadeInUp">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Tambah Driver</h1>
           <p className="text-gray-400 text-lg">Daftarkan driver baru untuk memperluas jangkauan layanan Anda.</p>
         </div>
 
         <div className="glass-card bg-gray-900/40 rounded-[2rem] overflow-hidden border border-gray-800 shadow-2xl animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
           {/* Header section with icon */}
-          <div className="px-8 py-10 bg-gradient-to-r from-brand-900/20 to-transparent border-b border-gray-800 flex flex-col md:flex-row items-center gap-6">
+          <div className="px-4 md:px-8 py-6 md:py-10 bg-gradient-to-r from-brand-900/20 to-transparent border-b border-gray-800 flex flex-col md:flex-row items-center gap-4 md:gap-6">
             <div className="w-16 h-16 bg-brand-500/10 rounded-2xl flex items-center justify-center text-brand-400 shadow-brand-sm border border-brand-500/20">
               <UserPlus size={32} />
             </div>
@@ -175,7 +175,7 @@ export default function AdminAddDriver() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-12">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 md:p-8 md:p-12 space-y-12">
             {/* Section 1: Personal Info */}
             <div className="space-y-6">
               <div className="flex items-center gap-3 mb-4">
@@ -183,7 +183,7 @@ export default function AdminAddDriver() {
                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Informasi Personal</h3>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                 <div className="space-y-2 group">
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block ml-1 group-focus-within:text-brand-400 transition-colors">
                     Nama Lengkap Driver *
@@ -300,7 +300,7 @@ export default function AdminAddDriver() {
                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Akses & Kredensial</h3>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                 <div className="space-y-2 group">
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block ml-1 group-focus-within:text-brand-400 transition-colors">
                     Password Akun *
@@ -378,14 +378,14 @@ export default function AdminAddDriver() {
               <button
                 type="button"
                 onClick={() => navigate("/admin-driver-management")}
-                className="px-8 py-4 bg-gray-800/50 hover:bg-gray-700 text-gray-400 hover:text-white rounded-2xl font-bold transition-all border border-gray-700 order-2 sm:order-1"
+                className="px-4 md:px-8 py-4 bg-gray-800/50 hover:bg-gray-700 text-gray-400 hover:text-white rounded-2xl font-bold transition-all border border-gray-700 order-2 sm:order-1"
                 disabled={loading}
               >
                 Batalkan & Kembali
               </button>
               <button
                 type="submit"
-                className="px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black transition-all flex items-center justify-center gap-3 shadow-brand-sm disabled:opacity-50 order-1 sm:order-2"
+                className="px-4 md:px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black transition-all flex items-center justify-center gap-3 shadow-brand-sm disabled:opacity-50 order-1 sm:order-2"
                 disabled={loading}
               >
                 {loading ? (

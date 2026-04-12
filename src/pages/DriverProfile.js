@@ -114,17 +114,17 @@ export default function DriverProfile() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-900/5 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 md:py-12">
-        <div className="mb-10 animate-fadeInUp">
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Profil Driver</h1>
+      <div className="relative z-10 max-w-5xl mx-auto px-4 py-4 md:py-8 md:py-12">
+        <div className="mb-6 md:mb-10 animate-fadeInUp">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Profil Driver</h1>
           <p className="text-gray-400 text-lg">Pantau aktivitas, statistik, dan kelola data pribadi Anda.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
           {/* Profile Information */}
           <div className="lg:col-span-2 space-y-8">
-            <div className="glass-card bg-gray-900/60 rounded-3xl overflow-hidden border border-gray-800 animate-fadeInUp shadow-2xl" style={{ animationDelay: "0.1s" }}>
-              <div className="px-8 py-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
+            <div className="glass-card bg-gray-900/60 rounded-2xl md:rounded-3xl overflow-hidden border border-gray-800 animate-fadeInUp shadow-2xl" style={{ animationDelay: "0.1s" }}>
+              <div className="px-4 md:px-8 py-4 md:py-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
                 <div className="flex items-center gap-3">
                    <div className="p-2 bg-brand-500/10 rounded-xl text-brand-400">
                       <User size={20} />
@@ -159,8 +159,8 @@ export default function DriverProfile() {
                 )}
               </div>
 
-              <div className="p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="p-4 sm:p-6 md:p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block ml-1">
                       Nama Lengkap
@@ -273,8 +273,8 @@ export default function DriverProfile() {
           {/* Statistics Section */}
           <div className="space-y-6">
             {/* Main Stats Card */}
-            <div className="glass-card bg-brand-950/20 rounded-3xl p-8 border border-brand-500/20 shadow-brand-sm animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-              <h3 className="text-sm font-black text-brand-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+            <div className="glass-card bg-brand-950/20 rounded-2xl md:rounded-3xl p-4 sm:p-6 md:p-8 border border-brand-500/20 shadow-brand-sm animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+              <h3 className="text-sm font-black text-brand-400 uppercase tracking-[0.2em] mb-6 md:mb-8 flex items-center gap-2">
                  <Star className="h-4 w-4" fill="currentColor" /> Statistik Driver
               </h3>
               
@@ -317,7 +317,7 @@ export default function DriverProfile() {
             </div>
 
             {/* Account Info Card */}
-            <div className="glass-card bg-gray-900/40 rounded-3xl p-8 border border-gray-800 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
+            <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-4 sm:p-6 md:p-8 border border-gray-800 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
               <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-6 border-b border-gray-800 pb-4">Info Akun</h3>
               <div className="space-y-5">
                 <div className="flex justify-between items-center">

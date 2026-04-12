@@ -373,7 +373,7 @@ export default function DriverOrders() {
     const isDigitalPayment = order.paymentMethod === "Transfer Bank" || order.paymentMethod === "E-Wallet";
 
     return (
-      <div className="glass-card bg-gray-900/40 rounded-3xl overflow-hidden border border-gray-800 hover:border-brand-500/30 transition-all duration-300 p-6 md:p-8 mb-6 animate-fadeInUp">
+      <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl overflow-hidden border border-gray-800 hover:border-brand-500/30 transition-all duration-300 p-4 md:p-6 md:p-8 mb-6 animate-fadeInUp">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-brand-500/10 rounded-2xl flex items-center justify-center text-brand-400 shadow-brand-sm">
@@ -395,7 +395,7 @@ export default function DriverOrders() {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 pt-6 border-t border-gray-800/50">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8 pt-6 border-t border-gray-800/50">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-gray-800/50 rounded-lg text-gray-400 border border-gray-700">
               <Calendar size={16} />
@@ -443,7 +443,7 @@ export default function DriverOrders() {
         </div>
 
         {order.catatan && (
-          <div className="mb-8 p-4 bg-brand-500/5 rounded-2xl border border-brand-500/10 italic">
+          <div className="mb-6 md:mb-8 p-4 bg-brand-500/5 rounded-2xl border border-brand-500/10 italic">
             <p className="text-sm text-gray-400">
               <span className="text-brand-400 font-bold not-italic mr-2">Catatan:</span> {order.catatan}
             </p>
@@ -452,7 +452,7 @@ export default function DriverOrders() {
 
         {/* Payment Proof Section - Only show for cash payments */}
         {order.paymentMethod === "Cash" && order.status === "menunggu pembayaran" && (
-          <div className="mb-8 p-6 bg-yellow-500/5 border border-yellow-500/10 rounded-3xl">
+          <div className="mb-6 md:mb-8 p-4 md:p-6 bg-yellow-500/5 border border-yellow-500/10 rounded-2xl md:rounded-3xl">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-3">
                  <div className="p-2 bg-yellow-500/20 rounded-lg text-yellow-400">
@@ -499,7 +499,7 @@ export default function DriverOrders() {
 
         {/* Digital Payment Info - Hide upload for digital payments */}
         {isDigitalPayment && order.status === "menunggu pembayaran" && (
-          <div className="mb-8 p-6 bg-blue-500/5 border border-blue-500/10 rounded-3xl">
+          <div className="mb-6 md:mb-8 p-4 md:p-6 bg-blue-500/5 border border-blue-500/10 rounded-2xl md:rounded-3xl">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-500/20 rounded-2xl text-blue-400">
                 <CreditCard className="h-6 w-6" />
@@ -639,14 +639,14 @@ export default function DriverOrders() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 md:py-12">
-        <div className="mb-10 animate-fadeInUp">
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Order Management</h1>
+      <div className="relative z-10 max-w-5xl mx-auto px-4 py-4 md:py-8 md:py-12">
+        <div className="mb-6 md:mb-10 animate-fadeInUp">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Order Management</h1>
           <p className="text-gray-400 text-lg">Kelola tugas aktif dan pantau riwayat perjalanan Anda.</p>
         </div>
 
         {/* Tabs */}
-        <div className="mb-12 glass-card bg-gray-900/60 p-2 rounded-2xl border border-gray-800 animate-fadeInUp shadow-2xl overflow-x-auto" style={{ animationDelay: "0.1s" }}>
+        <div className="mb-8 md:mb-12 glass-card bg-gray-900/60 p-2 rounded-2xl border border-gray-800 animate-fadeInUp shadow-2xl overflow-x-auto" style={{ animationDelay: "0.1s" }}>
           <nav className="flex space-x-2">
             {[
               { id: "available", label: "Order Baru", count: availableOrders.length, icon: <Car size={16} /> },
@@ -657,7 +657,7 @@ export default function DriverOrders() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-3 px-6 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
+                className={`flex items-center gap-2 py-3 px-4 md:px-6 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? "bg-brand-600 text-white shadow-brand-sm"
                     : "text-gray-400 hover:text-white hover:bg-gray-800/50"
@@ -677,12 +677,12 @@ export default function DriverOrders() {
         {/* Available Orders */}
         {activeTab === "available" && (
           <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-3 mb-6 md:mb-8">
                <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
                <h2 className="text-2xl font-black text-white tracking-tight uppercase tracking-widest">Order Baru Tersedia</h2>
             </div>
             {availableOrders.length === 0 ? (
-              <div className="glass-card bg-gray-900/40 rounded-3xl p-16 text-center border border-gray-800 border-dashed">
+              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-16 text-center border border-gray-800 border-dashed">
                 <div className="w-20 h-20 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Car className="h-10 w-10 text-gray-600" />
                 </div>
@@ -701,12 +701,12 @@ export default function DriverOrders() {
         {/* All Orders */}
         {activeTab === "all" && (
           <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-3 mb-6 md:mb-8">
                <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
                <h2 className="text-2xl font-black text-white tracking-tight uppercase tracking-widest">Semua Order</h2>
             </div>
             {allOrders.length === 0 ? (
-              <div className="glass-card bg-gray-900/40 rounded-3xl p-16 text-center border border-gray-800">
+              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-16 text-center border border-gray-800">
                 <Car className="h-12 w-12 text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-400">Belum ada data order sama sekali.</p>
               </div>
@@ -721,12 +721,12 @@ export default function DriverOrders() {
         {/* Active Orders */}
         {activeTab === "active" && (
           <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-3 mb-6 md:mb-8">
                <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
                <h2 className="text-2xl font-black text-white tracking-tight uppercase tracking-widest">Tugas Aktif</h2>
             </div>
             {activeOrders.length === 0 ? (
-              <div className="glass-card bg-gray-900/40 rounded-3xl p-16 text-center border border-gray-800">
+              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-16 text-center border border-gray-800">
                 <Clock className="h-12 w-12 text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-400 font-medium">Tidak ada tugas aktif yang sedang Anda kerjakan.</p>
               </div>
@@ -741,12 +741,12 @@ export default function DriverOrders() {
         {/* Order History */}
         {activeTab === "history" && (
           <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-3 mb-6 md:mb-8">
                <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
                <h2 className="text-2xl font-black text-white tracking-tight uppercase tracking-widest">Riwayat Perjalanan</h2>
             </div>
             {orderHistory.length === 0 ? (
-              <div className="glass-card bg-gray-900/40 rounded-3xl p-16 text-center border border-gray-800">
+              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-16 text-center border border-gray-800">
                 <CheckCircle className="h-12 w-12 text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-400">Anda belum memiliki riwayat order yang selesai.</p>
               </div>

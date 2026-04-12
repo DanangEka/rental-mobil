@@ -106,16 +106,16 @@ export default function SignUp() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-900/20 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      <div className="w-full max-w-4xl z-10 animate-fadeInUp mt-8">
-        <div className="text-center mb-10">
+      <div className="w-full max-w-4xl z-10 animate-fadeInUp mt-6 md:mt-8">
+        <div className="text-center mb-6 md:mb-10">
           <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-brand-900/40 border border-brand-500/30 shadow-brand mb-6 backdrop-blur-sm">
             <UserPlus className="text-brand-300 w-8 h-8" />
           </div>
-          <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-3">Mulai Perjalanan Anda</h2>
+          <h2 className="text-2xl md:text-3xl md:text-5xl font-black text-white tracking-tight mb-3">Mulai Perjalanan Anda</h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">Bergabung dengan ribuan pelanggan puas kami dan rasakan kemudahan sewa mobil dengan layanan premium.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="glass-card bg-gray-900/70 p-6 sm:p-10 md:p-12 rounded-3xl shadow-2xl border border-gray-800 relative overflow-hidden">
+        <form onSubmit={handleSubmit} className="glass-card bg-gray-900/70 p-4 md:p-6 sm:p-10 md:p-12 rounded-2xl md:rounded-3xl shadow-2xl border border-gray-800 relative overflow-hidden">
           {/* Subtle top glare */}
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
 
@@ -127,7 +127,7 @@ export default function SignUp() {
                 <h3 className="text-xl font-bold text-white">Informasi Akun</h3>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Nama Lengkap*</label>
                   <div className="relative group">
@@ -185,7 +185,7 @@ export default function SignUp() {
                 <h3 className="text-xl font-bold text-white">Domisili Sesuai KTP</h3>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <div className="md:col-span-2 lg:col-span-4">
                   <label className="block text-sm font-medium text-gray-300 mb-2">Provinsi*</label>
                   <input type="text" name="provinsi" value={form.provinsi} onChange={handleChange} onBlur={() => {
@@ -229,7 +229,7 @@ export default function SignUp() {
 
             {/* Section 3: Penanggung Jawab (Luar Jawa) */}
             {showPenanggungJawab && (
-              <div className="space-y-6 bg-brand-900/10 border border-brand-800/50 p-6 sm:p-8 rounded-2xl animate-fadeInUp">
+              <div className="space-y-6 bg-brand-900/10 border border-brand-800/50 p-4 md:p-6 sm:p-8 rounded-2xl animate-fadeInUp">
                 <div className="flex items-start gap-3 border-b border-brand-800/30 pb-4 mb-2">
                   <div className="bg-brand-500/20 p-2 rounded-xl text-brand-400 mt-1">
                     <UserPlus size={20} />
@@ -240,7 +240,7 @@ export default function SignUp() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">Nama Penanggung Jawab*</label>
                     <input type="text" name="penanggungJawab" value={form.penanggungJawab} onChange={handleChange} className="input-dark bg-black/70 border-brand-900/50 focus:border-brand-500" required />
@@ -260,7 +260,7 @@ export default function SignUp() {
             )}
           </div>
 
-          <div className="mt-12 pt-8 border-t border-gray-800">
+          <div className="mt-8 md:mt-12 pt-8 border-t border-gray-800">
             <button
               type="submit"
               disabled={loading}
@@ -280,7 +280,7 @@ export default function SignUp() {
               )}
             </button>
 
-            <div className="mt-8 text-center">
+            <div className="mt-6 md:mt-8 text-center">
               <p className="text-gray-400">
                 Sudah memiliki akun?{" "}
                 <Link to="/login" className="text-brand-400 font-bold hover:text-brand-300 transition-colors hover:underline">

@@ -507,7 +507,7 @@ export default function HistoryPesanan() {
 
   if (loading) {
     return (
-      <div className="p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
+      <div className="p-4 md:p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
         <div className="flex flex-col justify-center items-center h-64 space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
           <p className="text-lg text-gray-600">Memuat data pesanan...</p>
@@ -517,7 +517,7 @@ export default function HistoryPesanan() {
   }
 
   return (
-    <div className="p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
       <section className="bg-white p-4 sm:p-8 rounded-2xl shadow-xl border border-gray-100">
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -665,7 +665,7 @@ export default function HistoryPesanan() {
         {/* Orders List */}
         <div className="space-y-4 sm:space-y-6">
           {filteredPemesanan.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-8 md:py-12">
               <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <div className="text-gray-500 text-lg">
                 {pemesanan.length === 0 ? "Belum ada pesanan" : "Tidak ada pesanan yang sesuai filter"}
@@ -682,7 +682,7 @@ export default function HistoryPesanan() {
                 </p>
               </div>
               {filteredPemesanan.map((p) => (
-              <div key={p.id} className="border border-gray-200 rounded-xl p-6 bg-white shadow-md">
+              <div key={p.id} className="border border-gray-200 rounded-xl p-4 md:p-6 bg-white shadow-md">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                   <div>
                     <span className="text-sm font-medium text-gray-500">Mobil</span>
@@ -947,7 +947,7 @@ export default function HistoryPesanan() {
       {/* Edit Modal */}
       {editModal && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+          <div className="bg-white rounded-xl p-4 md:p-6 w-full max-w-md mx-4">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Ajukan Edit Tanggal Sewa</h3>
             <div className="space-y-4">
               <div>
@@ -996,7 +996,7 @@ export default function HistoryPesanan() {
       {/* Cancel Modal */}
       {cancelModal && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+          <div className="bg-white rounded-xl p-4 md:p-6 w-full max-w-md mx-4">
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="h-6 w-6 text-red-500" />
               <h3 className="text-xl font-bold text-gray-900">Batalkan Pesanan</h3>
@@ -1026,7 +1026,7 @@ export default function HistoryPesanan() {
       {/* Balance Payment Modal */}
       {showBalancePaymentModal && selectedOrderForBalance && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+          <div className="bg-white rounded-xl p-4 md:p-6 w-full max-w-md mx-4">
             <div className="flex items-center gap-3 mb-4">
               <CreditCard className="h-6 w-6 text-orange-500" />
               <h3 className="text-xl font-bold text-gray-900">Bayar Pelunasan</h3>

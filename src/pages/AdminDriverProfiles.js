@@ -91,21 +91,21 @@ export default function AdminDriverProfiles() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="mb-10 pt-8 animate-fadeInUp">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="mb-6 md:mb-10 pt-8 animate-fadeInUp">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
             <div>
-              <h1 className="text-4xl font-black text-white tracking-tight mb-2">Profil Driver</h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight mb-2">Profil Driver</h1>
               <p className="text-gray-400 text-lg">Kelola database mitra pengemudi dan monitor statistik performa mereka.</p>
             </div>
           </div>
         </div>
 
         {/* Filter Section */}
-        <div className="mb-10 glass-card bg-gray-900/40 rounded-3xl p-6 border border-gray-800 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
+        <div className="mb-6 md:mb-10 glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-4 md:p-6 border border-gray-800 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setFilter("all")}
-              className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
+              className={`px-4 md:px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
                 filter === "all"
                   ? "bg-brand-600 text-white shadow-brand-sm"
                   : "bg-gray-800/50 text-gray-400 hover:bg-gray-800 border border-gray-700"
@@ -115,7 +115,7 @@ export default function AdminDriverProfiles() {
             </button>
             <button
               onClick={() => setFilter("active")}
-              className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
+              className={`px-4 md:px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
                 filter === "active"
                   ? "bg-green-600 text-white shadow-lg shadow-green-900/20"
                   : "bg-gray-800/50 text-gray-400 hover:bg-gray-800 border border-gray-700"
@@ -125,7 +125,7 @@ export default function AdminDriverProfiles() {
             </button>
             <button
               onClick={() => setFilter("inactive")}
-              className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
+              className={`px-4 md:px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
                 filter === "inactive"
                   ? "bg-red-600 text-white shadow-lg shadow-red-900/20"
                   : "bg-gray-800/50 text-gray-400 hover:bg-gray-800 border border-gray-700"
@@ -137,12 +137,12 @@ export default function AdminDriverProfiles() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-purple-500/50 transition-colors">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-purple-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Driver</p>
-                <p className="text-3xl font-black text-white">{drivers.length}</p>
+                <p className="text-2xl md:text-3xl font-black text-white">{drivers.length}</p>
               </div>
               <div className="p-3 bg-purple-500/20 rounded-2xl text-purple-400">
                 <User size={24} />
@@ -150,11 +150,11 @@ export default function AdminDriverProfiles() {
             </div>
           </div>
           
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-green-500/50 transition-colors">
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-green-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Driver Aktif</p>
-                <p className="text-3xl font-black text-white">
+                <p className="text-2xl md:text-3xl font-black text-white">
                   {drivers.filter(d => d.status === "active").length}
                 </p>
               </div>
@@ -164,11 +164,11 @@ export default function AdminDriverProfiles() {
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-blue-500/50 transition-colors">
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-blue-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Order</p>
-                <p className="text-3xl font-black text-white">
+                <p className="text-2xl md:text-3xl font-black text-white">
                   {drivers.reduce((total, driver) => total + (driver.totalOrders || 0), 0)}
                 </p>
               </div>
@@ -178,7 +178,7 @@ export default function AdminDriverProfiles() {
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-emerald-500/50 transition-colors">
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-emerald-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Pendapatan</p>
@@ -195,14 +195,14 @@ export default function AdminDriverProfiles() {
 
         {/* Drivers Grid */}
         <div className="animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
-          <div className="flex items-center gap-4 mb-8">
+          <div className="flex items-center gap-4 mb-6 md:mb-8">
             <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
             <h2 className="text-2xl font-black text-white tracking-tight">Daftar Driver ({filteredDrivers.length})</h2>
           </div>
 
           <div className="space-y-6">
             {filteredDrivers.length === 0 ? (
-              <div className="glass-card bg-gray-900/40 rounded-[2.5rem] p-20 text-center border border-gray-800">
+              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-[2.5rem] p-20 text-center border border-gray-800">
                 <User className="h-16 w-16 text-gray-800 mx-auto mb-6" />
                 <p className="text-gray-500 font-bold">Belum ada mitra pengemudi terdaftar dalam sistem.</p>
               </div>
@@ -212,8 +212,8 @@ export default function AdminDriverProfiles() {
                   key={driver.id}
                   className="glass-card bg-gray-900/40 rounded-[2rem] border border-gray-800 overflow-hidden hover:border-brand-500/30 transition-all group"
                 >
-                  <div className="p-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 pb-6 border-b border-gray-800/50">
+                  <div className="p-4 sm:p-6 md:p-8">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 md:gap-6 mb-6 md:mb-8 pb-6 border-b border-gray-800/50">
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-brand-500/10 rounded-2xl flex items-center justify-center text-brand-400 border border-brand-500/20 shadow-brand-sm">
                           <User size={30} />
@@ -241,7 +241,7 @@ export default function AdminDriverProfiles() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-6 md:mb-8">
                       <div className="space-y-4">
                          <div className="flex items-center gap-3">
                             <Phone size={16} className="text-brand-400" />
@@ -310,13 +310,13 @@ export default function AdminDriverProfiles() {
                 <span className="text-2xl font-black">×</span>
               </button>
 
-              <div className="p-12">
-                <div className="flex items-center gap-8 mb-12">
-                   <div className="w-24 h-24 bg-brand-500 rounded-3xl flex items-center justify-center text-white shadow-brand-lg">
+              <div className="p-6 sm:p-10 md:p-12">
+                <div className="flex items-center gap-4 sm:gap-6 md:gap-8 mb-8 md:mb-12">
+                   <div className="w-24 h-24 bg-brand-500 rounded-2xl md:rounded-3xl flex items-center justify-center text-white shadow-brand-lg">
                       <User size={48} />
                    </div>
                    <div>
-                      <h3 className="text-4xl font-black text-white tracking-tighter mb-2">{selectedDriver.displayName || selectedDriver.name}</h3>
+                      <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tighter mb-2">{selectedDriver.displayName || selectedDriver.name}</h3>
                       <p className="text-brand-400 font-black uppercase tracking-widest text-sm">Mitra Pengemudi Pro</p>
                    </div>
                 </div>
@@ -328,7 +328,7 @@ export default function AdminDriverProfiles() {
                           <div className="w-1.5 h-4 bg-brand-500 rounded-full"></div>
                           <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Informasi Identitas</h4>
                        </div>
-                       <div className="space-y-4 bg-gray-900/40 p-6 rounded-[2rem] border border-gray-800">
+                       <div className="space-y-4 bg-gray-900/40 p-4 md:p-6 rounded-[2rem] border border-gray-800">
                           <div className="flex justify-between border-b border-gray-800 pb-3">
                             <span className="text-gray-500 font-bold">Email Utama</span>
                             <span className="text-white font-black">{selectedDriver.email}</span>
@@ -360,22 +360,22 @@ export default function AdminDriverProfiles() {
                            <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Metrik Performa</h4>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                           <div className="bg-gray-900/40 p-6 rounded-[2rem] border border-gray-800 text-center">
+                           <div className="bg-gray-900/40 p-4 md:p-6 rounded-[2rem] border border-gray-800 text-center">
                               <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Total Order</p>
-                              <p className="text-3xl font-black text-white">{selectedDriver.totalOrders || 0}</p>
+                              <p className="text-2xl md:text-3xl font-black text-white">{selectedDriver.totalOrders || 0}</p>
                            </div>
-                           <div className="bg-gray-900/40 p-6 rounded-[2rem] border border-gray-800 text-center">
+                           <div className="bg-gray-900/40 p-4 md:p-6 rounded-[2rem] border border-gray-800 text-center">
                               <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Kualitas (1-5)</p>
-                              <p className="text-3xl font-black text-yellow-400">{selectedDriver.rating || 0}</p>
+                              <p className="text-2xl md:text-3xl font-black text-yellow-400">{selectedDriver.rating || 0}</p>
                            </div>
-                           <div className="bg-gray-900/40 p-6 rounded-[2rem] border border-gray-800 text-center col-span-2">
+                           <div className="bg-gray-900/40 p-4 md:p-6 rounded-[2rem] border border-gray-800 text-center col-span-2">
                               <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Akumulasi Pendapatan</p>
-                              <p className="text-4xl font-black text-emerald-400 tracking-tighter">Rp {(selectedDriver.totalEarnings || 0).toLocaleString()}</p>
+                              <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-emerald-400 tracking-tighter">Rp {(selectedDriver.totalEarnings || 0).toLocaleString()}</p>
                            </div>
                         </div>
                      </div>
 
-                     <div className="bg-brand-500/5 p-6 rounded-[2rem] border border-brand-500/10">
+                     <div className="bg-brand-500/5 p-4 md:p-6 rounded-[2rem] border border-brand-500/10">
                         <div className="flex items-center gap-2 mb-3">
                            <Edit size={14} className="text-brand-400" />
                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Catatan Administrasi</span>

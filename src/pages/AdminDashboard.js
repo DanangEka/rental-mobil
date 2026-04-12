@@ -291,16 +291,16 @@ export default function AdminDashboard() {
           <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="animate-pulse space-y-8 mt-10">
+          <div className="animate-pulse space-y-8 mt-6 md:mt-10">
             <div className="h-12 bg-gray-800 rounded-2xl w-1/3"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-40 bg-gray-900/40 rounded-3xl border border-gray-800"></div>
+                <div key={i} className="h-40 bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800"></div>
               ))}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-900/40 rounded-3xl border border-gray-800"></div>
+                <div key={i} className="h-32 bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800"></div>
               ))}
             </div>
           </div>
@@ -319,22 +319,22 @@ export default function AdminDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="mb-10 pt-8 animate-fadeInUp">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="mb-6 md:mb-10 pt-8 animate-fadeInUp">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
             <div>
-              <h1 className="text-4xl font-black text-white tracking-tight mb-2">Admin Dashboard</h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight mb-2">Admin Dashboard</h1>
               <p className="text-gray-400 text-lg">Ringkasan performa dan metrik ekosistem armada.</p>
             </div>
           </div>
         </div>
 
         {/* Stats Cards Mobil */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          <div className="glass-card bg-gray-900/40 rounded-3xl border border-gray-800 p-6 flex flex-col justify-between group hover:border-green-500/50 transition-all">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800 p-4 md:p-6 flex flex-col justify-between group hover:border-green-500/50 transition-all">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Mobil Tersedia</p>
-                <p className="text-4xl font-black text-white">{stats.availableCars}</p>
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">{stats.availableCars}</p>
               </div>
               <div className="p-3 bg-green-500/20 text-green-400 rounded-2xl">
                 <Car size={24} />
@@ -345,11 +345,11 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 rounded-3xl border border-gray-800 p-6 flex flex-col justify-between group hover:border-blue-500/50 transition-all">
+          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800 p-4 md:p-6 flex flex-col justify-between group hover:border-blue-500/50 transition-all">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Mobil Disewa</p>
-                <p className="text-4xl font-black text-white">{stats.rentedCars}</p>
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">{stats.rentedCars}</p>
               </div>
               <div className="p-3 bg-blue-500/20 text-blue-400 rounded-2xl">
                 <Car size={24} />
@@ -360,11 +360,11 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 rounded-3xl border border-gray-800 p-6 flex flex-col justify-between group hover:border-red-500/50 transition-all">
+          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800 p-4 md:p-6 flex flex-col justify-between group hover:border-red-500/50 transition-all">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Mobil Diservis</p>
-                <p className="text-4xl font-black text-white">{stats.serviceCars}</p>
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">{stats.serviceCars}</p>
               </div>
               <div className="p-3 bg-red-500/20 text-red-400 rounded-2xl">
                 <Car size={24} />
@@ -375,11 +375,11 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 rounded-3xl border border-gray-800 p-6 flex flex-col justify-between group hover:border-brand-500/50 transition-all">
+          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800 p-4 md:p-6 flex flex-col justify-between group hover:border-brand-500/50 transition-all">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Armada</p>
-                <p className="text-4xl font-black text-white">{stats.totalCars}</p>
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">{stats.totalCars}</p>
               </div>
               <div className="p-3 bg-brand-500/20 text-brand-400 rounded-2xl">
                 <Car size={24} />
@@ -395,42 +395,42 @@ export default function AdminDashboard() {
         </div>
 
         {/* Customers & Revenue */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
-          <div className="bg-gradient-to-br from-indigo-600/20 to-purple-800/20 glass-card rounded-3xl border border-indigo-500/20 p-8 flex items-center gap-6 group hover:border-indigo-500/40 transition-all">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-10 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
+          <div className="bg-gradient-to-br from-indigo-600/20 to-purple-800/20 glass-card rounded-2xl md:rounded-3xl border border-indigo-500/20 p-4 sm:p-6 md:p-8 flex items-center gap-4 md:gap-6 group hover:border-indigo-500/40 transition-all">
             <div className="p-4 bg-indigo-500/20 rounded-2xl text-indigo-400 shadow-lg shadow-indigo-500/10">
               <Users size={32} />
             </div>
             <div>
               <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1">Total Pelanggan</p>
-              <p className="text-4xl font-black text-white">{stats.totalCustomers}</p>
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">{stats.totalCustomers}</p>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-emerald-600/20 to-teal-800/20 glass-card rounded-3xl border border-emerald-500/20 p-8 flex items-center gap-6 group hover:border-emerald-500/40 transition-all">
+          <div className="bg-gradient-to-br from-emerald-600/20 to-teal-800/20 glass-card rounded-2xl md:rounded-3xl border border-emerald-500/20 p-4 sm:p-6 md:p-8 flex items-center gap-4 md:gap-6 group hover:border-emerald-500/40 transition-all">
             <div className="p-4 bg-emerald-500/20 rounded-2xl text-emerald-400 shadow-lg shadow-emerald-500/10">
               <DollarSign size={32} />
             </div>
             <div>
               <p className="text-[10px] font-black text-emerald-300 uppercase tracking-widest mb-1">Pendapatan Hari Ini</p>
-              <p className="text-3xl font-black text-white tracking-tighter">Rp {stats.todayRevenue.toLocaleString()}</p>
+              <p className="text-2xl md:text-3xl font-black text-white tracking-tighter">Rp {stats.todayRevenue.toLocaleString()}</p>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-brand-600/20 to-red-800/20 glass-card rounded-3xl border border-brand-500/20 p-8 flex items-center gap-6 group hover:border-brand-500/40 transition-all md:col-span-2 lg:col-span-1">
+          <div className="bg-gradient-to-br from-brand-600/20 to-red-800/20 glass-card rounded-2xl md:rounded-3xl border border-brand-500/20 p-4 sm:p-6 md:p-8 flex items-center gap-4 md:gap-6 group hover:border-brand-500/40 transition-all md:col-span-2 lg:col-span-1">
             <div className="p-4 bg-brand-500/20 rounded-2xl text-brand-400 shadow-lg shadow-brand-500/10">
               <TrendingUp size={32} />
             </div>
             <div>
               <p className="text-[10px] font-black text-brand-300 uppercase tracking-widest mb-1">Pendapatan Bulan Ini</p>
-              <p className="text-3xl font-black text-white tracking-tighter">Rp {stats.monthlyRevenue.toLocaleString()}</p>
+              <p className="text-2xl md:text-3xl font-black text-white tracking-tighter">Rp {stats.monthlyRevenue.toLocaleString()}</p>
             </div>
           </div>
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fadeInUp" style={{ animationDelay: "0.4s" }}>
-          <div className="glass-card bg-gray-900/40 rounded-[2.5rem] border border-gray-800 p-8">
-            <div className="flex justify-between items-center mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 animate-fadeInUp" style={{ animationDelay: "0.4s" }}>
+          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-[2.5rem] border border-gray-800 p-4 sm:p-6 md:p-8">
+            <div className="flex justify-between items-center mb-6 md:mb-8">
               <h2 className="text-2xl font-black text-white tracking-tight uppercase">Grafik Harian</h2>
               <span className="text-[10px] font-black px-4 py-1.5 bg-gray-800/50 text-brand-400 border border-brand-500/20 rounded-full uppercase tracking-widest">7 Hari Terakhir</span>
             </div>
@@ -446,8 +446,8 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          <div className="glass-card bg-gray-900/40 rounded-[2.5rem] border border-gray-800 p-8">
-            <div className="flex justify-between items-center mb-8">
+          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-[2.5rem] border border-gray-800 p-4 sm:p-6 md:p-8">
+            <div className="flex justify-between items-center mb-6 md:mb-8">
               <h2 className="text-2xl font-black text-white tracking-tight uppercase">Grafik Bulanan</h2>
               <span className="text-[10px] font-black px-4 py-1.5 bg-gray-800/50 text-blue-400 border border-blue-500/20 rounded-full uppercase tracking-widest">6 Bulan Terakhir</span>
             </div>

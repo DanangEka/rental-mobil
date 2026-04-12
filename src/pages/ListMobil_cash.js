@@ -369,9 +369,9 @@ export default function ListMobil() {
 
   return (
     <div className="min-h-screen bg-black">
-      <div className="bg-red-900 text-white px-4 py-8 md:py-12 lg:py-16">
+      <div className="bg-red-900 text-white px-4 py-4 md:py-8 md:py-12 lg:py-16">
         <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 tracking-tight">
+          <h1 className="text-2xl md:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 tracking-tight">
             Sewa Mobil Terbaik
           </h1>
           <p className="text-base md:text-lg lg:text-xl opacity-90 max-w-2xl mx-auto leading-relaxed">
@@ -380,9 +380,9 @@ export default function ListMobil() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 md:px-6 md:py-12 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 py-4 md:py-8 md:px-6 md:py-12 lg:px-8">
         {/* Search and Filter Section */}
-        <div className="mb-8 bg-gray-900 rounded-2xl p-4 sm:p-6 border border-gray-800">
+        <div className="mb-6 md:mb-8 bg-gray-900 rounded-2xl p-4 sm:p-6 border border-gray-800">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
             <h2 className="text-xl font-semibold text-white mb-2 sm:mb-0">Cari & Filter Mobil</h2>
             <button
@@ -532,7 +532,7 @@ export default function ListMobil() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-8 md:gap-10 lg:gap-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8 md:gap-10 lg:gap-12">
             {filteredMobil.map((m) => {
               const statusLower = m.status?.toLowerCase();
               const order = getUserOrderForCar(m.id);
@@ -567,7 +567,7 @@ export default function ListMobil() {
                     </div>
                   </div>
 
-                  <div className="p-6">
+                  <div className="p-4 md:p-6">
                     <h3 className="text-xl font-bold text-white mb-2 leading-tight">{m.nama}</h3>
                     <p className="text-red-400 font-bold text-lg mb-4">
                       Rp {m.harga.toLocaleString()}{" "}
@@ -582,7 +582,7 @@ export default function ListMobil() {
                       if (order && !isAdmin) {
                         if (orderStatus === "diproses") {
                           return (
-                            <div className="text-center py-6">
+                            <div className="text-center py-4 md:py-6">
                               <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-900 rounded-full mb-3">
                                 <div className="w-6 h-6 bg-yellow-500 rounded-full animate-pulse"></div>
                               </div>
@@ -599,7 +599,7 @@ export default function ListMobil() {
                         ) {
                           if (order.paymentStatus === "submitted") {
                             return (
-                              <div className="text-center py-6">
+                              <div className="text-center py-4 md:py-6">
                                 <div className="inline-flex items-center justify-center w-12 h-12 bg-green-900 rounded-full mb-3">
                                   <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -737,7 +737,7 @@ export default function ListMobil() {
                           );
                         } else if (orderStatus === "pembayaran berhasil") {
                           return (
-                            <div className="text-center py-6">
+                            <div className="text-center py-4 md:py-6">
                               <div className="inline-flex items-center justify-center w-12 h-12 bg-green-900 rounded-full mb-3">
                                 <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -871,7 +871,7 @@ export default function ListMobil() {
 
                       if (statusLower === "disewa") {
                         return (
-                          <div className="text-center py-6">
+                          <div className="text-center py-4 md:py-6">
                             <div className="inline-flex items-center justify-center w-12 h-12 bg-red-900 rounded-full mb-3">
                               <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -887,7 +887,7 @@ export default function ListMobil() {
 
                       if (statusLower === "servis") {
                         return (
-                          <div className="text-center py-6">
+                          <div className="text-center py-4 md:py-6">
                             <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-900 rounded-full mb-3">
                               <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -902,7 +902,7 @@ export default function ListMobil() {
                       }
 
                       return (
-                        <div className="text-center py-6">
+                        <div className="text-center py-4 md:py-6">
                           <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-900 rounded-full mb-3">
                             <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

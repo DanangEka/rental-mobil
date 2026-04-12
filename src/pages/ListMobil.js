@@ -405,8 +405,8 @@ export default function ListMobil() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-900/20 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      <div className="relative z-10 w-full px-4 py-8 md:py-16 text-center animate-fadeInUp">
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight mb-4 group inline-block relative cursor-default">
+      <div className="relative z-10 w-full px-4 py-4 md:py-8 md:py-16 text-center animate-fadeInUp">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight mb-4 group inline-block relative cursor-default">
           <span className="relative z-10">Sewa Mobil Terbaik</span>
           <span className="absolute bottom-1 left-0 w-full h-3 bg-brand-600/50 -z-10 group-hover:bg-brand-500 transition-colors duration-300"></span>
         </h1>
@@ -417,11 +417,11 @@ export default function ListMobil() {
 
       <div className="max-w-7xl mx-auto px-4 pb-8 md:px-6 md:pb-12 lg:px-8 relative z-10">
         {/* Search and Filter Section */}
-        <div className="mb-10 glass-card bg-gray-900/60 rounded-3xl p-6 sm:p-8 border border-gray-800 shadow-2xl relative overflow-hidden animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
+        <div className="mb-6 md:mb-10 glass-card bg-gray-900/60 rounded-2xl md:rounded-3xl p-4 md:p-6 sm:p-8 border border-gray-800 shadow-2xl relative overflow-hidden animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
           {/* Subtle top glare */}
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 border-b border-gray-800 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 md:mb-8 border-b border-gray-800 pb-6">
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                <div className="p-2 bg-brand-500/20 rounded-xl text-brand-400">
                   <Filter size={20} />
@@ -465,7 +465,7 @@ export default function ListMobil() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             <div className="sm:col-span-2 lg:col-span-2">
               <label className="block text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Pencarian Bebas</label>
               <div className="relative group">
@@ -515,11 +515,11 @@ export default function ListMobil() {
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-gray-800">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6 md:mt-8 pt-8 border-t border-gray-800">
             <div className="bg-gradient-to-br from-green-900/40 to-green-800/20 p-5 rounded-2xl border border-green-800/50 flex items-center justify-between group hover:border-green-500/50 transition-colors">
               <div>
                 <h3 className="text-sm font-bold text-green-400 uppercase tracking-wider mb-1">Tersedia</h3>
-                <p className="text-3xl font-black text-white group-hover:text-green-300 transition-colors">
+                <p className="text-2xl md:text-3xl font-black text-white group-hover:text-green-300 transition-colors">
                   {filteredMobil.filter(m => m.tersedia === true || m.status === "tersedia").length}
                 </p>
               </div>
@@ -531,7 +531,7 @@ export default function ListMobil() {
             <div className="bg-gradient-to-br from-red-900/40 to-red-800/20 p-5 rounded-2xl border border-red-800/50 flex items-center justify-between group hover:border-red-500/50 transition-colors">
               <div>
                 <h3 className="text-sm font-bold text-red-400 uppercase tracking-wider mb-1">Disewa</h3>
-                <p className="text-3xl font-black text-white group-hover:text-red-300 transition-colors">
+                <p className="text-2xl md:text-3xl font-black text-white group-hover:text-red-300 transition-colors">
                   {filteredMobil.filter(m => m.status === "disewa" || m.tersedia === false).length}
                 </p>
               </div>
@@ -543,7 +543,7 @@ export default function ListMobil() {
             <div className="bg-gradient-to-br from-yellow-900/40 to-yellow-800/20 p-5 rounded-2xl border border-yellow-800/50 flex items-center justify-between group hover:border-yellow-500/50 transition-colors">
               <div>
                 <h3 className="text-sm font-bold text-yellow-400 uppercase tracking-wider mb-1">Servis</h3>
-                <p className="text-3xl font-black text-white group-hover:text-yellow-300 transition-colors">
+                <p className="text-2xl md:text-3xl font-black text-white group-hover:text-yellow-300 transition-colors">
                   {filteredMobil.filter(m => m.status === "servis").length}
                 </p>
               </div>
@@ -555,7 +555,7 @@ export default function ListMobil() {
             <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 p-5 rounded-2xl border border-blue-800/50 flex items-center justify-between group hover:border-blue-500/50 transition-colors">
               <div>
                 <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-1">Total</h3>
-                <p className="text-3xl font-black text-white group-hover:text-blue-300 transition-colors">{filteredMobil.length}</p>
+                <p className="text-2xl md:text-3xl font-black text-white group-hover:text-blue-300 transition-colors">{filteredMobil.length}</p>
               </div>
               <div className="p-3 bg-blue-500/20 rounded-xl">
                 <Car className="h-6 w-6 text-blue-400" />
@@ -565,7 +565,7 @@ export default function ListMobil() {
         </div>
 
         {filteredMobil.length === 0 ? (
-          <div className="text-center py-16 md:py-24 glass-card bg-gray-900/60 rounded-3xl mt-8 animate-fadeInUp">
+          <div className="text-center py-16 md:py-24 glass-card bg-gray-900/60 rounded-2xl md:rounded-3xl mt-6 md:mt-8 animate-fadeInUp">
             <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
               <Car className="w-10 h-10 text-gray-500" />
             </div>
@@ -575,7 +575,7 @@ export default function ListMobil() {
             <p className="text-gray-400">Silakan ubah filter pencarian Anda atau kembali lagi nanti</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-8 mt-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8 mt-8 md:mt-12">
             {filteredMobil.map((m) => {
               const statusLower = m.status?.toLowerCase();
               const order = getUserOrderForCar(m.id);
@@ -584,7 +584,7 @@ export default function ListMobil() {
               return (
                 <div
                   key={m.id}
-                  className="glass-card bg-gray-900/60 rounded-3xl overflow-hidden group hover:border-brand-500/50 transition-all duration-300 flex flex-col h-full animate-fadeInUp"
+                  className="glass-card bg-gray-900/60 rounded-2xl md:rounded-3xl overflow-hidden group hover:border-brand-500/50 transition-all duration-300 flex flex-col h-full animate-fadeInUp"
                 >
                   <div className="relative aspect-video bg-black/50 overflow-hidden">
                     <img
@@ -612,7 +612,7 @@ export default function ListMobil() {
                     </div>
                   </div>
 
-                  <div className="p-6 md:p-8 flex flex-col flex-grow">
+                  <div className="p-4 md:p-6 md:p-8 flex flex-col flex-grow">
                     <div className="flex-grow">
                       <h3 className="text-2xl font-bold text-white mb-2 leading-tight group-hover:text-brand-400 transition-colors">{m.nama}</h3>
                       <div className="flex items-baseline gap-2 mb-6">
@@ -629,7 +629,7 @@ export default function ListMobil() {
                       if (order && !isAdmin) {
                         if (orderStatus === "diproses") {
                           return (
-                            <div className="text-center py-6">
+                            <div className="text-center py-4 md:py-6">
                               <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-900 rounded-full mb-3">
                                 <div className="w-6 h-6 bg-yellow-500 rounded-full animate-pulse"></div>
                               </div>
@@ -646,7 +646,7 @@ export default function ListMobil() {
 ) {
   if (order.paymentStatus === "submitted") {
     return (
-      <div className="text-center py-6">
+      <div className="text-center py-4 md:py-6">
         <div className="inline-flex items-center justify-center w-12 h-12 bg-green-900 rounded-full mb-3">
           <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -662,7 +662,7 @@ export default function ListMobil() {
     );
   } else if (order.paymentStatus === "pending_approval") {
     return (
-      <div className="text-center py-6">
+      <div className="text-center py-4 md:py-6">
         <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-900 rounded-full mb-3">
           <div className="w-6 h-6 bg-yellow-500 rounded-full animate-pulse"></div>
         </div>
@@ -759,7 +759,7 @@ export default function ListMobil() {
   );
                         } else if (orderStatus === "pembayaran berhasil") {
                           return (
-                            <div className="text-center py-6">
+                            <div className="text-center py-4 md:py-6">
                               <div className="inline-flex items-center justify-center w-12 h-12 bg-green-900 rounded-full mb-3">
                                 <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -773,7 +773,7 @@ export default function ListMobil() {
                           );
                         } else if (orderStatus === "approve sewa") {
                           return (
-                            <div className="text-center py-6">
+                            <div className="text-center py-4 md:py-6">
                               <div className="inline-flex items-center justify-center w-12 h-12 bg-green-900 rounded-full mb-3">
                                 <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -947,7 +947,7 @@ export default function ListMobil() {
 
                       if (statusLower === "disewa") {
                         return (
-                          <div className="text-center py-6">
+                          <div className="text-center py-4 md:py-6">
                             <div className="inline-flex items-center justify-center w-12 h-12 bg-red-900 rounded-full mb-3">
                               <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -963,7 +963,7 @@ export default function ListMobil() {
 
                       if (statusLower === "servis") {
                         return (
-                          <div className="text-center py-6">
+                          <div className="text-center py-4 md:py-6">
                             <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-900 rounded-full mb-3">
                               <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c-.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -994,7 +994,7 @@ export default function ListMobil() {
       {/* Payment Method Popups */}
       {showPaymentPopup && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] px-4">
-          <div className="glass-card bg-gray-900 border border-gray-800 rounded-3xl p-8 w-full max-w-sm relative animate-popIn shadow-2xl">
+          <div className="glass-card bg-gray-900 border border-gray-800 rounded-2xl md:rounded-3xl p-4 sm:p-6 md:p-8 w-full max-w-sm relative animate-popIn shadow-2xl">
             <button
               onClick={() => setShowPaymentPopup(false)}
               className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 hover:text-white hover:bg-brand-600 transition-colors"

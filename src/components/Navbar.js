@@ -227,7 +227,7 @@ export default function Navbar() {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="p-6 border-b border-red-700 flex items-center space-x-4">
+        <div className="p-4 md:p-6 border-b border-red-700 flex items-center space-x-4">
           <button
             onClick={toggleSidebar}
             className="p-2 hover:bg-red-700 rounded-lg transition-colors duration-200 md:hidden"
@@ -237,7 +237,7 @@ export default function Navbar() {
           <img src={logo} alt="Logo" className="h-10 w-10 rounded-full shadow-md" />
           <span className="font-bold text-xl tracking-wide">Cakra Lima Tujuh</span>
         </div>
-        <nav className="flex flex-col space-y-2 p-6">
+        <nav className="flex flex-col space-y-2 p-4 md:p-6">
           {menu.map((item) => (
             <Link
               key={item.name}
@@ -358,7 +358,7 @@ export default function Navbar() {
             
             <div className="overflow-y-auto flex-1 overscroll-contain">
               {notifications.length === 0 && orderNotifications.length === 0 ? (
-                <div className="p-8 flex flex-col items-center justify-center text-center">
+                <div className="p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center">
                   <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-3">
                     <Bell className="text-gray-300 w-8 h-8" />
                   </div>

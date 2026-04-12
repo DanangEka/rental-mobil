@@ -133,16 +133,16 @@ export default function ClientManagement() {
           <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="animate-pulse space-y-8 mt-10">
+          <div className="animate-pulse space-y-8 mt-6 md:mt-10">
             <div className="h-12 bg-gray-800 rounded-2xl w-1/3"></div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-40 bg-gray-900/40 rounded-3xl border border-gray-800"></div>
+                <div key={i} className="h-40 bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800"></div>
               ))}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-80 bg-gray-900/40 rounded-3xl border border-gray-800"></div>
+                <div key={i} className="h-80 bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800"></div>
               ))}
             </div>
           </div>
@@ -152,10 +152,10 @@ export default function ClientManagement() {
   }
 
   if (!isAdmin) return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-6 text-center">
-       <div className="glass-card bg-gray-900/40 p-10 rounded-[2.5rem] border border-red-500/20 max-w-md w-full">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 md:p-6 text-center">
+       <div className="glass-card bg-gray-900/40 p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[2.5rem] border border-red-500/20 max-w-md w-full">
           <p className="text-red-500 font-black text-xl mb-4 uppercase tracking-tighter">Akses Ditolak</p>
-          <p className="text-gray-400 font-bold mb-8 italic">Identitas Anda tidak terdaftar sebagai administrator sistem.</p>
+          <p className="text-gray-400 font-bold mb-6 md:mb-8 italic">Identitas Anda tidak terdaftar sebagai administrator sistem.</p>
           <div className="h-1 w-20 bg-red-500/50 mx-auto rounded-full"></div>
        </div>
     </div>
@@ -171,51 +171,51 @@ export default function ClientManagement() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="mb-10 pt-8 animate-fadeInUp">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="mb-6 md:mb-10 pt-8 animate-fadeInUp">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
             <div>
-              <h1 className="text-4xl font-black text-white tracking-tight mb-2">Manajemen Client</h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight mb-2">Manajemen Client</h1>
               <p className="text-gray-400 text-lg">Kelola verifikasi identitas dan database pelanggan sistem.</p>
             </div>
           </div>
         </div>
 
         {/* Status Dashboard Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
-          <div className="glass-card bg-gray-900/40 p-8 rounded-3xl border border-gray-800 group hover:border-red-500/50 transition-all">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-10 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
+          <div className="glass-card bg-gray-900/40 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-red-500/50 transition-all">
             <div className="flex items-center justify-between mb-4">
                <div className="p-3 bg-red-500/10 rounded-2xl text-red-500">
                   <UserX size={24} />
                </div>
                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Belum Terverifikasi</span>
             </div>
-            <p className="text-4xl font-black text-white mb-2">{clients.filter(c => c.verificationStatus === "unverified").length}</p>
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mb-2">{clients.filter(c => c.verificationStatus === "unverified").length}</p>
             <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
                <div className="bg-red-500 h-full w-[20%]"></div>
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 p-8 rounded-3xl border border-gray-800 group hover:border-yellow-500/50 transition-all">
+          <div className="glass-card bg-gray-900/40 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-yellow-500/50 transition-all">
             <div className="flex items-center justify-between mb-4">
                <div className="p-3 bg-yellow-500/10 rounded-2xl text-yellow-500">
                   <Clock size={24} />
                </div>
                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Menunggu Validasi</span>
             </div>
-            <p className="text-4xl font-black text-white mb-2">{clients.filter(c => c.verificationStatus === "pending").length}</p>
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mb-2">{clients.filter(c => c.verificationStatus === "pending").length}</p>
             <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
                <div className="bg-yellow-500 h-full w-[15%]"></div>
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 p-8 rounded-3xl border border-gray-800 group hover:border-green-500/50 transition-all">
+          <div className="glass-card bg-gray-900/40 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-green-500/50 transition-all">
             <div className="flex items-center justify-between mb-4">
                <div className="p-3 bg-green-500/10 rounded-2xl text-green-500">
                   <UserCheck size={24} />
                </div>
                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Client Terakomodasi</span>
             </div>
-            <p className="text-4xl font-black text-white mb-2">{clients.filter(c => c.verificationStatus === "verified").length}</p>
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mb-2">{clients.filter(c => c.verificationStatus === "verified").length}</p>
             <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
                <div className="bg-green-500 h-full w-[65%]"></div>
             </div>
@@ -223,8 +223,8 @@ export default function ClientManagement() {
         </div>
 
         {/* Search and Filters */}
-        <div className="glass-card bg-gray-900/40 p-8 rounded-[2.5rem] border border-gray-800 mb-12 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="glass-card bg-gray-900/40 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-gray-800 mb-8 md:mb-12 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
             <div className="space-y-3">
               <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Cari Database Client</label>
               <div className="relative group">
@@ -243,7 +243,7 @@ export default function ClientManagement() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-700 text-white rounded-2xl px-6 py-4 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-bold appearance-none cursor-pointer"
+                className="w-full bg-gray-800/50 border border-gray-700 text-white rounded-2xl px-4 md:px-6 py-4 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-bold appearance-none cursor-pointer"
               >
                 <option value="">SEMUA STATUS CLIENT</option>
                 <option value="unverified">BELUM TERVERIFIKASI</option>
@@ -256,12 +256,12 @@ export default function ClientManagement() {
 
         {/* Client Grid List */}
         <div className="animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
-          <div className="flex items-center gap-4 mb-8">
+          <div className="flex items-center gap-4 mb-6 md:mb-8">
              <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
              <h2 className="text-2xl font-black text-white tracking-tight">Daftar Client Terdaftar ({filteredClients.length})</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {filteredClients.length === 0 ? (
               <div className="col-span-full glass-card bg-gray-900/40 p-20 rounded-[3rem] border border-gray-800 text-center">
                  <Search size={48} className="text-gray-800 mx-auto mb-6" />
@@ -269,9 +269,9 @@ export default function ClientManagement() {
               </div>
             ) : (
               filteredClients.map((c) => (
-                <div key={c.id} className="glass-card bg-gray-900/40 rounded-[2.5rem] border border-gray-800 overflow-hidden hover:border-brand-500/30 transition-all group flex flex-col">
-                   <div className="p-8 pb-4">
-                      <div className="flex items-start justify-between mb-8">
+                <div key={c.id} className="glass-card bg-gray-900/40 rounded-2xl md:rounded-[2.5rem] border border-gray-800 overflow-hidden hover:border-brand-500/30 transition-all group flex flex-col">
+                   <div className="p-4 sm:p-6 md:p-8 pb-4">
+                      <div className="flex items-start justify-between mb-6 md:mb-8">
                          <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center text-brand-400 border border-gray-700 shadow-xl overflow-hidden">
                                <img 
@@ -295,7 +295,7 @@ export default function ClientManagement() {
                          </span>
                       </div>
 
-                      <div className="space-y-4 mb-8">
+                      <div className="space-y-4 mb-6 md:mb-8">
                          <div className="flex items-center gap-3">
                             <Mail size={14} className="text-gray-600" />
                             <p className="text-xs text-gray-400 font-bold truncate">{c.email}</p>

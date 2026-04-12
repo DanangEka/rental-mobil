@@ -406,7 +406,7 @@ export default function ManajemenPesanan() {
 
   if (loading) {
     return (
-      <div className="p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
+      <div className="p-4 md:p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
         <div className="flex flex-col justify-center items-center h-64 space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
           <p className="text-lg text-gray-600">Memuat data pesanan...</p>
@@ -417,9 +417,9 @@ export default function ManajemenPesanan() {
 
   if (!isAdmin) {
     return (
-      <div className="p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
-        <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
-          <div className="text-center py-12">
+      <div className="p-4 md:p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
+        <div className="bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-xl border border-gray-100">
+          <div className="text-center py-8 md:py-12">
             <AlertTriangle className="mx-auto h-12 w-12 text-red-400 mb-4" />
             <p className="text-red-600 font-semibold text-lg">Akses Ditolak</p>
             <p className="text-gray-600">Anda tidak memiliki akses ke halaman ini.</p>
@@ -439,16 +439,16 @@ export default function ManajemenPesanan() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="mb-10 pt-8 animate-fadeInUp">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="mb-6 md:mb-10 pt-8 animate-fadeInUp">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
             <div>
-              <h1 className="text-4xl font-black text-white tracking-tight mb-2">Manajemen Pesanan</h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight mb-2">Manajemen Pesanan</h1>
               <p className="text-gray-400 text-lg">Kelola ekosistem penyewaan dan monitor transaksi harian.</p>
             </div>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 border border-gray-700 text-white px-6 py-3 rounded-2xl transition-all font-bold shadow-lg"
+              className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 border border-gray-700 text-white px-4 md:px-6 py-3 rounded-2xl transition-all font-bold shadow-lg"
             >
               <RefreshCw size={18} className={`text-brand-400 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Memperbarui...' : 'Perbarui Data'}
@@ -457,12 +457,12 @@ export default function ManajemenPesanan() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-blue-500/50 transition-colors">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 mb-6 md:mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-blue-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Pesanan</p>
-                <p className="text-3xl font-black text-white">{filteredPemesanan.length}</p>
+                <p className="text-2xl md:text-3xl font-black text-white">{filteredPemesanan.length}</p>
               </div>
               <div className="p-3 bg-blue-500/20 rounded-2xl text-blue-400">
                 <Clock size={24} />
@@ -470,11 +470,11 @@ export default function ManajemenPesanan() {
             </div>
           </div>
           
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-green-500/50 transition-colors">
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-green-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Disetujui</p>
-                <p className="text-3xl font-black text-white">
+                <p className="text-2xl md:text-3xl font-black text-white">
                   {filteredPemesanan.filter(p => p.status === "disetujui" || p.status === "pembayaran berhasil").length}
                 </p>
               </div>
@@ -484,11 +484,11 @@ export default function ManajemenPesanan() {
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-yellow-500/50 transition-colors">
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-yellow-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Diproses</p>
-                <p className="text-3xl font-black text-white">
+                <p className="text-2xl md:text-3xl font-black text-white">
                   {filteredPemesanan.filter(p => p.status === "diproses").length}
                 </p>
               </div>
@@ -498,11 +498,11 @@ export default function ManajemenPesanan() {
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-red-500/50 transition-colors">
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-red-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Ditolak</p>
-                <p className="text-3xl font-black text-white">
+                <p className="text-2xl md:text-3xl font-black text-white">
                    {filteredPemesanan.filter(p => p.status === "ditolak").length}
                 </p>
               </div>
@@ -512,11 +512,11 @@ export default function ManajemenPesanan() {
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 p-6 rounded-3xl border border-gray-800 group hover:border-emerald-500/50 transition-colors">
+          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-emerald-500/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Lunas</p>
-                <p className="text-3xl font-black text-white">
+                <p className="text-2xl md:text-3xl font-black text-white">
                    {filteredPemesanan.filter(p => p.status === "lunas").length}
                 </p>
               </div>
@@ -528,8 +528,8 @@ export default function ManajemenPesanan() {
         </div>
 
         {/* Filter Section */}
-        <div className="mb-10 glass-card bg-gray-900/40 rounded-3xl p-8 border border-gray-800 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+        <div className="mb-6 md:mb-10 glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-4 sm:p-6 md:p-8 border border-gray-800 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 md:gap-6 mb-6 md:mb-8">
             <h3 className="text-xl font-bold text-white flex items-center gap-3">
               <Filter size={20} className="text-brand-400" />
               Filter Dinamis
@@ -549,7 +549,7 @@ export default function ManajemenPesanan() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Status Transaksi</label>
               <select
@@ -601,7 +601,7 @@ export default function ManajemenPesanan() {
         {/* List Content */}
         <div className="space-y-6 animate-fadeInUp" style={{ animationDelay: "0.4s" }}>
           {filteredPemesanan.length === 0 ? (
-            <div className="glass-card bg-gray-900/40 rounded-3xl p-20 text-center border border-gray-800">
+            <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-20 text-center border border-gray-800">
                <div className="w-16 h-16 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Search size={28} className="text-gray-600" />
                </div>
@@ -613,8 +613,8 @@ export default function ManajemenPesanan() {
                 const user = users.find(u => u.id === p.uid);
                 return (
                   <div key={p.id} className="glass-card bg-gray-900/40 rounded-[2rem] border border-gray-800 overflow-hidden hover:border-brand-500/30 transition-all group">
-                    <div className="p-8">
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 pb-6 border-b border-gray-800/50">
+                    <div className="p-4 sm:p-6 md:p-8">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 md:gap-6 mb-6 md:mb-8 pb-6 border-b border-gray-800/50">
                          <div className="flex items-center gap-4">
                             <div className="w-14 h-14 bg-brand-500/10 rounded-2xl flex items-center justify-center text-brand-400 border border-brand-500/20 shadow-brand-sm">
                                <Car size={30} />
@@ -639,7 +639,7 @@ export default function ManajemenPesanan() {
                          </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 mb-6 md:mb-8">
                          <div className="space-y-4">
                             <div>
                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Durasi Sewa</p>
@@ -674,7 +674,7 @@ export default function ManajemenPesanan() {
 
                          <div className="space-y-4 text-right">
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Estimasi Total</p>
-                            <p className="text-3xl font-black text-brand-400 tracking-tighter">Rp {p.perkiraanHarga?.toLocaleString()}</p>
+                            <p className="text-2xl md:text-3xl font-black text-brand-400 tracking-tighter">Rp {p.perkiraanHarga?.toLocaleString()}</p>
                             {p.dpAmount && (
                                <p className="text-xs font-bold text-gray-400">DP: <span className="text-blue-400">Rp {p.dpAmount.toLocaleString()}</span></p>
                             )}
@@ -682,18 +682,18 @@ export default function ManajemenPesanan() {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="mt-8 flex flex-wrap gap-3 pt-6 border-t border-gray-800/50">
+                      <div className="mt-6 md:mt-8 flex flex-wrap gap-3 pt-6 border-t border-gray-800/50">
                         {p.status === "diproses" && (
                           <>
                             <button
                               onClick={() => handleStatus(p.id, "disetujui", p.mobilId)}
-                              className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-brand-sm"
+                              className="bg-brand-600 hover:bg-brand-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold transition-all shadow-brand-sm"
                             >
                               Setujui Order
                             </button>
                             <button
                               onClick={() => handleStatus(p.id, "ditolak", p.mobilId)}
-                              className="bg-gray-800 hover:bg-red-500 text-white px-6 py-2.5 rounded-xl font-bold border border-gray-700 transition-all"
+                              className="bg-gray-800 hover:bg-red-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold border border-gray-700 transition-all"
                             >
                               Tolak
                             </button>
@@ -703,7 +703,7 @@ export default function ManajemenPesanan() {
                         {p.status === "menunggu konfirmasi lunas" && (
                           <button
                             onClick={() => handleMarkAsLunas(p.id, p.mobilId)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-900/20"
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-900/20"
                           >
                             Konfirmasi Pelunasan
                           </button>
@@ -713,13 +713,13 @@ export default function ManajemenPesanan() {
                            <div className="flex gap-2">
                               <button
                                 onClick={() => handleBalancePaymentApproval(p.id, "approved")}
-                                className="bg-green-600 hover:bg-green-500 text-white px-6 py-2.5 rounded-xl font-bold"
+                                className="bg-green-600 hover:bg-green-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold"
                               >
                                 Setujui Pelunasan
                               </button>
                               <button
                                 onClick={() => handleBalancePaymentApproval(p.id, "rejected")}
-                                className="bg-red-600 hover:bg-red-500 text-white px-6 py-2.5 rounded-xl font-bold"
+                                className="bg-red-600 hover:bg-red-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold"
                               >
                                 Tolak Pelunasan
                               </button>
@@ -729,7 +729,7 @@ export default function ManajemenPesanan() {
                         {p.paymentStatus === "pending" && p.paymentProof && p.status === "menunggu pembayaran" && (
                           <button
                             onClick={() => handlePaymentApproval(p.id, "pembayaran berhasil")}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-bold"
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold"
                           >
                             Konfirmasi Pembayaran
                           </button>
@@ -738,7 +738,7 @@ export default function ManajemenPesanan() {
                         {p.rentalType === "Driver" && p.status === "pembayaran berhasil" && (
                            <button
                              onClick={() => handleCashRentalApproval(p.id, "approved")}
-                             className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-xl font-bold"
+                             className="bg-purple-600 hover:bg-purple-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold"
                            >
                              Approve Sewa (Cash/Driver)
                            </button>
@@ -748,13 +748,13 @@ export default function ManajemenPesanan() {
                             <div className="flex gap-2">
                                <button
                                 onClick={() => handleEditRequestApproval(p.id, "approved")}
-                                className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-xl font-bold"
+                                className="bg-brand-600 hover:bg-brand-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold"
                                >
                                 Setujui Edit Tanggal
                                </button>
                                <button
                                 onClick={() => handleEditRequestApproval(p.id, "rejected")}
-                                className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-bold"
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold"
                                >
                                 Tolak Edit
                                </button>
@@ -763,7 +763,7 @@ export default function ManajemenPesanan() {
 
                         <button
                           onClick={() => generateInvoicePDF(p, user, "full")}
-                          className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-6 py-2.5 rounded-xl font-bold border border-gray-700 transition-all"
+                          className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold border border-gray-700 transition-all"
                         >
                           <Download size={16} className="text-brand-400" /> Invoice
                         </button>

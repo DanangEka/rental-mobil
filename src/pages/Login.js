@@ -111,7 +111,7 @@ export default function Login() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative bg-black overflow-hidden px-4 sm:px-6 py-12 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center relative bg-black overflow-hidden px-4 sm:px-6 py-8 md:py-12 lg:px-8">
       {/* Dynamic Background */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
@@ -121,16 +121,16 @@ export default function Login() {
 
       <div className="w-full max-w-md z-10 animate-fadeInUp">
         {/* Brand Logo or Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 md:mb-8">
           <Link to="/" className="inline-flex items-center justify-center p-3 rounded-2xl bg-brand-900/40 border border-brand-500/30 shadow-brand mb-6 card-hover backdrop-blur-sm">
             <LogIn className="text-brand-300 w-8 h-8" />
           </Link>
-          <h2 className="text-3xl font-black text-white tracking-tight">Selamat Datang Kembali</h2>
+          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">Selamat Datang Kembali</h2>
           <p className="mt-2 text-sm text-gray-400">Silakan masuk ke akun Anda untuk melanjutkan</p>
         </div>
 
         {/* Card */}
-        <div className="glass-card bg-gray-900/60 p-8 sm:p-10 rounded-3xl border border-gray-800 shadow-2xl relative overflow-hidden">
+        <div className="glass-card bg-gray-900/60 p-4 sm:p-6 md:p-8 sm:p-10 rounded-2xl md:rounded-3xl border border-gray-800 shadow-2xl relative overflow-hidden">
           {/* Subtle top glare */}
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
 
@@ -210,7 +210,7 @@ export default function Login() {
             </button>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-gray-800 text-center">
+          <div className="mt-6 md:mt-8 pt-6 border-t border-gray-800 text-center">
             <p className="text-gray-400 text-sm">
               Belum punya akun rental?{" "}
               <Link to="/signup" className="text-brand-400 font-bold hover:text-brand-300 transition-colors inline-block hover:-translate-y-0.5">

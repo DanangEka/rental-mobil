@@ -94,7 +94,7 @@ export default function Profile() {
   if (!auth.currentUser) {
     return (
       <div className="min-h-screen pt-24 pb-12 px-4 flex justify-center items-start bg-gray-50">
-        <div className="bg-white p-8 rounded-2xl shadow-card text-center max-w-md w-full">
+        <div className="bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-card text-center max-w-md w-full">
           <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-900 mb-2">Akses Ditolak</h2>
           <p className="text-gray-500">Silakan masuk ke akun Anda terlebih dahulu untuk melihat Halaman Profil.</p>
@@ -206,12 +206,12 @@ export default function Profile() {
          <div className="absolute top-20 right-10 w-72 h-72 bg-brand-500/20 rounded-full mix-blend-screen filter blur-[80px]"></div>
       </div>
 
-      <div className="w-full max-w-5xl px-4 sm:px-6 z-10 animate-fadeInUp mt-8">
-        <div className="flex flex-col md:flex-row gap-8">
+      <div className="w-full max-w-5xl px-4 sm:px-6 z-10 animate-fadeInUp mt-6 md:mt-8">
+        <div className="flex flex-col md:flex-row gap-4 sm:gap-6 md:gap-8">
           
           {/* Left: Avatar & Identity Card */}
-          <div className="w-full md:w-1/3 flex flex-col gap-6">
-            <div className="bg-white rounded-3xl shadow-card border border-gray-100 p-8 flex flex-col items-center relative overflow-hidden group">
+          <div className="w-full md:w-1/3 flex flex-col gap-4 md:gap-6">
+            <div className="bg-white rounded-2xl md:rounded-3xl shadow-card border border-gray-100 p-4 sm:p-6 md:p-8 flex flex-col items-center relative overflow-hidden group">
               {/* Top Accent line */}
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand-600 to-red-400"></div>
 
@@ -272,7 +272,7 @@ export default function Profile() {
             </div>
 
             {/* Quick Stats / Info Widget */}
-            <div className="bg-gradient-to-br from-brand-800 to-gray-900 rounded-3xl shadow-brand-lg p-6 relative overflow-hidden text-white">
+            <div className="bg-gradient-to-br from-brand-800 to-gray-900 rounded-2xl md:rounded-3xl shadow-brand-lg p-4 md:p-6 relative overflow-hidden text-white">
               <div className="absolute right-[-10%] top-[-10%] w-32 h-32 bg-white/10 rounded-full mix-blend-screen"></div>
               <h4 className="text-brand-100 font-bold uppercase tracking-wider text-xs mb-4">Informasi Akun</h4>
               <div className="space-y-4">
@@ -292,7 +292,7 @@ export default function Profile() {
 
           {/* Right: Form Data */}
           <div className="w-full md:w-2/3">
-            <div className="bg-white rounded-3xl shadow-card border border-gray-100 overflow-hidden relative">
+            <div className="bg-white rounded-2xl md:rounded-3xl shadow-card border border-gray-100 overflow-hidden relative">
               {editMode && (
                 <div className="absolute top-0 left-0 right-0 p-4 bg-brand-50 border-b border-brand-100 flex items-center justify-between z-10">
                   <span className="text-brand-700 font-bold text-sm flex items-center gap-2">
@@ -322,8 +322,8 @@ export default function Profile() {
                 </div>
               )}
 
-              <div className={`p-8 md:p-10 ${editMode ? 'pt-24' : ''}`}>
-                <div className="mb-8 border-b border-gray-100 pb-4">
+              <div className={`p-4 sm:p-6 md:p-8 md:p-10 ${editMode ? 'pt-24' : ''}`}>
+                <div className="mb-6 md:mb-8 border-b border-gray-100 pb-4">
                   <h3 className="text-2xl font-black text-gray-900">Detail Personal</h3>
                   <p className="text-gray-500 text-sm mt-1">Pastikan data Anda selalu terkini dan sesuai dengan kartu identitas KTP Anda.</p>
                 </div>
@@ -442,8 +442,8 @@ export default function Profile() {
                        <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                           <User className="text-brand-500 w-5 h-5"/> Data Penanggung Jawab
                        </h4>
-                       <div className="bg-brand-50/50 p-6 rounded-2xl border border-brand-100 space-y-6">
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       <div className="bg-brand-50/50 p-4 md:p-6 rounded-2xl border border-brand-100 space-y-6">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                             <div>
                                <label className="block text-sm font-bold text-gray-700 mb-2">Nama Penanggung Jawab</label>
                                {editMode ? (
@@ -479,14 +479,14 @@ export default function Profile() {
                         <ImageIcon className="text-brand-500 w-5 h-5"/> Dokumen Identitas
                      </h4>
                      
-                     <div className="bg-gray-50 border border-gray-100 p-6 rounded-2xl">
+                     <div className="bg-gray-50 border border-gray-100 p-4 md:p-6 rounded-2xl">
                        {editMode && (
                         <div className="mb-6">
                           <label className="block text-sm font-bold text-gray-700 mb-2">
                             Unggah Foto KTP Baru
                             {userData.verificationStatus === "unverified" && <span className="text-red-500 ml-1.5">*</span>}
                           </label>
-                          <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl overflow-hidden relative hover:bg-gray-100 transition-colors bg-white">
+                          <div className="mt-2 flex justify-center px-4 md:px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl overflow-hidden relative hover:bg-gray-100 transition-colors bg-white">
                             <div className="space-y-2 text-center z-10">
                               <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
                               <div className="flex justify-center text-sm text-gray-600">
@@ -511,7 +511,7 @@ export default function Profile() {
                               )}
                             </div>
                          ) : (
-                           <div className="text-center py-6">
+                           <div className="text-center py-4 md:py-6">
                              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
                                <ImageIcon className="w-8 h-8 text-gray-400" />
                              </div>

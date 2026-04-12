@@ -248,13 +248,13 @@ export default function PaymentVerification() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 md:py-12">
-        <div className="mb-10 animate-fadeInUp">
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Verifikasi Pembayaran</h1>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-4 md:py-8 md:py-12">
+        <div className="mb-6 md:mb-10 animate-fadeInUp">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Verifikasi Pembayaran</h1>
           <p className="text-gray-400 text-lg font-medium">Lakukan verifikasi bukti pembayaran untuk menyelesaikan order.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 items-start">
           {/* Order List */}
           <div className="lg:col-span-1 space-y-4 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
             <div className="flex items-center gap-3 mb-4">
@@ -263,7 +263,7 @@ export default function PaymentVerification() {
             </div>
             
             {orders.length === 0 ? (
-              <div className="glass-card bg-gray-900/40 rounded-3xl p-8 text-center border border-gray-800 border-dashed">
+              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-4 sm:p-6 md:p-8 text-center border border-gray-800 border-dashed">
                 <CreditCard className="h-10 w-10 text-gray-700 mx-auto mb-3" />
                 <p className="text-gray-500 font-bold text-sm">Tidak ada order aktif</p>
               </div>
@@ -277,7 +277,7 @@ export default function PaymentVerification() {
                     setPaymentAmount(dpAmount.toString());
                     setPaymentMethod(order.paymentMethod || "cash");
                   }}
-                  className={`glass-card p-5 rounded-3xl cursor-pointer transition-all duration-300 border ${
+                  className={`glass-card p-5 rounded-2xl md:rounded-3xl cursor-pointer transition-all duration-300 border ${
                     selectedOrder?.id === order.id
                       ? "bg-brand-500/10 border-brand-500/50 shadow-brand-sm translate-x-2"
                       : "bg-gray-900/40 border-gray-800 hover:border-gray-700"
@@ -311,16 +311,16 @@ export default function PaymentVerification() {
           {/* Payment Verification Form */}
           <div className="lg:col-span-2 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
             {selectedOrder ? (
-              <div className="glass-card bg-gray-900/60 rounded-[2.5rem] border border-gray-800 overflow-hidden shadow-2xl">
-                <div className="px-8 py-6 border-b border-gray-800 bg-white/[0.02]">
+              <div className="glass-card bg-gray-900/60 rounded-2xl md:rounded-[2.5rem] border border-gray-800 overflow-hidden shadow-2xl">
+                <div className="px-4 md:px-8 py-4 md:py-6 border-b border-gray-800 bg-white/[0.02]">
                   <h2 className="text-xl font-black text-white tracking-tight">
                     Verifikasi Pembayaran: <span className="text-brand-400">{selectedOrder.namaMobil}</span>
                   </h2>
                 </div>
 
-                <div className="p-8">
+                <div className="p-4 sm:p-6 md:p-8">
                   {/* Order Summary Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 bg-black/40 rounded-3xl p-6 border border-gray-800/50">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-10 bg-black/40 rounded-2xl md:rounded-3xl p-4 md:p-6 border border-gray-800/50">
                     <div>
                       <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-1">Mobil & Client</span>
                       <p className="font-bold text-white text-sm">{selectedOrder.namaMobil}</p>
@@ -337,7 +337,7 @@ export default function PaymentVerification() {
                     </div>
                     <div className="md:col-span-2 pt-4 border-t border-gray-800/50">
                       <span className="text-[10px] font-black text-brand-400 uppercase tracking-widest block mb-1">DP 50% yang harus dibayar</span>
-                      <p className="font-black text-brand-400 text-3xl tracking-tighter">
+                      <p className="font-black text-brand-400 text-2xl md:text-3xl tracking-tighter">
                         Rp {parseInt(paymentAmount).toLocaleString()}
                       </p>
                     </div>
@@ -360,7 +360,7 @@ export default function PaymentVerification() {
                     </div>
 
                     {/* Form Controls */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Metode Pembayaran</label>
                         <select
@@ -400,7 +400,7 @@ export default function PaymentVerification() {
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             id="payment-photo-upload"
                           />
-                          <div className="border-2 border-dashed border-gray-800 hover:border-brand-500/50 rounded-[2rem] p-8 text-center bg-gray-900/20 transition-all group-hover:bg-brand-500/[0.02]">
+                          <div className="border-2 border-dashed border-gray-800 hover:border-brand-500/50 rounded-[2rem] p-4 sm:p-6 md:p-8 text-center bg-gray-900/20 transition-all group-hover:bg-brand-500/[0.02]">
                             <Camera className="h-10 w-10 text-gray-700 mx-auto mb-3 transition-colors group-hover:text-brand-500" />
                             <p className="text-sm font-bold text-gray-400">Pilih atau ambil foto bukti</p>
                             <p className="text-[10px] text-gray-600 font-black uppercase mt-2 tracking-widest">Minimal 1 foto diperlukan</p>
@@ -475,7 +475,7 @@ export default function PaymentVerification() {
                 </div>
               </div>
             ) : (
-              <div className="glass-card bg-gray-900/40 rounded-[2.5rem] p-16 text-center border border-gray-800 flex flex-col items-center justify-center min-h-[400px]">
+              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-[2.5rem] p-16 text-center border border-gray-800 flex flex-col items-center justify-center min-h-[400px]">
                 <div className="h-20 w-20 bg-gray-800/50 rounded-full flex items-center justify-center text-gray-600 mb-6">
                   <CreditCard className="h-10 w-10" />
                 </div>
