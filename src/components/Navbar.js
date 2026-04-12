@@ -142,8 +142,7 @@ export default function Navbar() {
           }
         };
 
-        const unsubscribeOrders = fetchOrders();
-        unsubscribes.push(unsubscribeOrders);
+        fetchOrders();
       } else if (role === "driver") {
         // Driver specific order listener
         const fetchAvailableOrders = async () => {
