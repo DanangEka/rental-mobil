@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import axios from "axios";
 import jsPDF from "jspdf";
-import { Search, Filter, RefreshCw, Download, Eye, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, Car } from "lucide-react";
+import { Search, Filter, RefreshCw, Download, Eye, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, Car, ExternalLink } from "lucide-react";
 import { Edit } from "lucide-react";
 import InvoiceGenerator from "../components/InvoiceGenerator";
 
@@ -700,10 +700,58 @@ export default function ManajemenPesanan() {
                           </>
                         )}
 
+                        {p.status === "menunggu pembayaran" && p.paymentProof && (
+                          <div className="flex flex-wrap gap-3">
+                            <a
+                              href={p.paymentProof}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold border border-gray-700 transition-all text-sm"
+                            >
+                              <Eye size={16} /> Lihat Bukti DP
+                            </a>
+                            <button
+                              onClick={() => handlePaymentApproval(p.id, "pembayaran berhasil")}
+                              className="bg-blue-600 hover:bg-blue-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-900/20"
+                            >
+                              Konfirmasi Pembayaran
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Cetak Invoice DP Button - Available after approval */}
+                        {(p.status === "disetujui" || p.status === "menunggu pembayaran" || p.status === "pembayaran berhasil" || p.status === "selesai") && (
+                          <button
+                            onClick={() => generateInvoicePDF(p, user, "dp")}
+                            className="flex items-center gap-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 px-4 md:px-6 py-2.5 rounded-xl font-bold border border-blue-500/20 transition-all"
+                          >
+                            <Download size={16} /> Cetak Invoice DP
+                          </button>
+                        )}
+
+                        {/* Selesai Button - Triggers Car Status Reset */}
+                        {(p.status === "pembayaran berhasil" || p.status === "disewa" || p.status === "approve sewa") && (
+                          <button
+                            onClick={() => handleStatus(p.id, "selesai", p.mobilId)}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-900/20"
+                          >
+                            Tandai Selesai
+                          </button>
+                        )}
+
+                        {/* Full Invoice Button */}
+                        <button
+                          onClick={() => generateInvoicePDF(p, user, "full")}
+                          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold transition-all shadow-brand-sm"
+                        >
+                          <Download size={16} /> Invoice Penuh
+                        </button>
+
+                        {/* Keep some specialized management buttons if they exist */}
                         {p.status === "menunggu konfirmasi lunas" && (
                           <button
                             onClick={() => handleMarkAsLunas(p.id, p.mobilId)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-900/20"
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold"
                           >
                             Konfirmasi Pelunasan
                           </button>
@@ -725,48 +773,6 @@ export default function ManajemenPesanan() {
                               </button>
                            </div>
                         )}
-
-                        {p.paymentStatus === "pending" && p.paymentProof && p.status === "menunggu pembayaran" && (
-                          <button
-                            onClick={() => handlePaymentApproval(p.id, "pembayaran berhasil")}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold"
-                          >
-                            Konfirmasi Pembayaran
-                          </button>
-                        )}
-
-                        {p.rentalType === "Driver" && p.status === "pembayaran berhasil" && (
-                           <button
-                             onClick={() => handleCashRentalApproval(p.id, "approved")}
-                             className="bg-purple-600 hover:bg-purple-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold"
-                           >
-                             Approve Sewa (Cash/Driver)
-                           </button>
-                        )}
-
-                        {p.editRequest?.status === "pending" && (
-                            <div className="flex gap-2">
-                               <button
-                                onClick={() => handleEditRequestApproval(p.id, "approved")}
-                                className="bg-brand-600 hover:bg-brand-500 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold"
-                               >
-                                Setujui Edit Tanggal
-                               </button>
-                               <button
-                                onClick={() => handleEditRequestApproval(p.id, "rejected")}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold"
-                               >
-                                Tolak Edit
-                               </button>
-                            </div>
-                        )}
-
-                        <button
-                          onClick={() => generateInvoicePDF(p, user, "full")}
-                          className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 md:px-6 py-2.5 rounded-xl font-bold border border-gray-700 transition-all"
-                        >
-                          <Download size={16} className="text-brand-400" /> Invoice
-                        </button>
                       </div>
                     </div>
                   </div>
