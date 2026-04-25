@@ -190,7 +190,8 @@ export default function Navbar() {
       ...(user && role === "client"
         ? [
             { name: "Profil", path: "/profil", icon: <User size={20} /> },
-            { name: "List Mobil", path: "/home", icon: <Car size={20} /> },
+            { name: "Rental Mobil", path: "/home", icon: <Car size={20} /> },
+            { name: "Open Trip", path: "/open-trip", icon: <Users size={20} /> },
             { name: "History Pesanan", path: "/history-pesanan", icon: <History size={20} /> }
           ]
         : []),
@@ -198,6 +199,7 @@ export default function Navbar() {
         ? [
             { name: "Admin Dashboard", path: "/admin-dashboard", icon: <TrendingUp size={20} /> },
             { name: "Manajemen Pesanan", path: "/manajemen-pesanan", icon: <ClipboardList size={20} /> },
+            { name: "Manajemen Open Trip", path: "/admin/open-trip", icon: <Users size={20} /> },
             { name: "List Mobil", path: "/home", icon: <Car size={20} /> },
             { name: "Manajemen Mobil", path: "/car-management", icon: <Car size={20} /> },
             { name: "Manajemen Client", path: "/client-management", icon: <Users size={20} /> },

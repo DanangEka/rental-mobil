@@ -31,6 +31,19 @@ export default function ListMobil() {
   const [showPaymentPopup, setShowPaymentPopup] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
 
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [manualMobil, setManualMobil] = useState(null);
+  const [manualClient, setManualClient] = useState({
+    namaLengkap: "",
+    nomorTelepon: "",
+    email: "",
+    alamat: "",
+    paymentMethod: "Cash"
+  });
+
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [selectedUserMobil, setSelectedUserMobil] = useState(null);
+
   const addNotification = async (message) => {
     try {
       console.log("Adding notification for user:", auth.currentUser.uid, "message:", message);
@@ -271,6 +284,8 @@ export default function ListMobil() {
       await addAdminNotification(`Pesanan baru dari ${auth.currentUser.email}: ${m.nama}`);
       
       toast.success("Pemesanan Berhasil!", "Silakan tunggu konfirmasi selanjutnya.");
+      setShowUserModal(false);
+      setSelectedUserMobil(null);
     } catch (err) {
       console.error("Gagal menyewa:", err);
       toast.error("Terjadi kesalahan saat menyewa. Error: " + err.message);
@@ -394,7 +409,98 @@ export default function ListMobil() {
     }
   };
 
+  const openSewaManualModal = (m) => {
+    setManualMobil(m);
+    setShowManualModal(true);
+  };
 
+  const openUserSewaModal = (m) => {
+    setSelectedUserMobil(m);
+    setShowUserModal(true);
+  };
+
+  const handleSubmitSewaManual = async () => {
+    if (!manualClient.namaLengkap || !manualClient.nomorTelepon) {
+      toast.warning("Nama dan Nomor Telepon wajib diisi");
+      return;
+    }
+
+    try {
+      const m = manualMobil;
+      const mulai = tanggalMulai[m.id];
+      const selesai = tanggalSelesai[m.id];
+
+      if (!mulai || !selesai) {
+        toast.warning("Pilih tanggal mulai dan selesai terlebih dahulu.");
+        return;
+      }
+
+      const start = new Date(mulai);
+      const end = new Date(selesai);
+      const durasiHari = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+      if (durasiHari <= 0) {
+        toast.error("Format Tanggal Salah", "Tanggal selesai harus setelah tanggal mulai.");
+        return;
+      }
+
+      let perkiraanHarga = durasiHari * m.harga;
+      const selectedRentalType = rentalType[m.id] || "Lepas Kunci";
+      if (selectedRentalType === "Driver") {
+        perkiraanHarga += 250000;
+      }
+
+      const finalEmail = manualClient.email || `guest_${Date.now()}@rent.local`;
+      
+      const userRef = await addDoc(collection(db, "users"), {
+        nama: manualClient.namaLengkap,
+        email: finalEmail,
+        nomorTelepon: manualClient.nomorTelepon,
+        alamat: manualClient.alamat || "",
+        role: "client",
+        verificationStatus: "verified",
+        createdAt: Timestamp.now(),
+        isGuest: true
+      });
+
+      await addDoc(collection(db, "pemesanan"), {
+        uid: userRef.id,
+        email: finalEmail,
+        mobilId: m.id,
+        namaMobil: m.nama,
+        tanggal: new Date().toISOString(),
+        tanggalMulai: mulai,
+        tanggalSelesai: selesai,
+        durasiHari,
+        hargaPerhari: m.harga,
+        perkiraanHarga,
+        rentalType: selectedRentalType,
+        status: "tugas aktif",
+        paymentStatus: manualClient.paymentMethod === "Cash" ? "paid_cash" : "paid_transfer",
+        paymentMethod: manualClient.paymentMethod,
+        namaClient: manualClient.namaLengkap,
+        telepon: manualClient.nomorTelepon,
+        dpAmount: perkiraanHarga,
+        lokasiPenyerahan: lokasiPenyerahan[m.id] || "Di Tempat",
+        titikTemuAddress: titikTemuAddress[m.id] || "",
+        isManualSewa: true
+      });
+
+      await updateDoc(doc(db, "mobil", m.id), {
+        status: "disewa",
+        tersedia: false,
+      });
+
+      toast.success("Sewa Manual Berhasil", `Penyewaan ${m.nama} telah diaktifkan`);
+      setShowManualModal(false);
+      setManualMobil(null);
+      setManualClient({ namaLengkap: "", nomorTelepon: "", email: "", alamat: "", paymentMethod: "Cash" });
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal Sewa Manual", err.message);
+    }
+  };
 
   return (
     <div className={`min-h-screen bg-black pt-[72px] relative overflow-hidden ${mobil.length > 0 ? "pb-20" : ""}`}>
@@ -799,148 +905,23 @@ export default function ListMobil() {
                       ) {
                         return (
                           <div className="space-y-5 pt-4 border-t border-gray-800">
-                            <div className="grid grid-cols-1 gap-4">
-                              <div>
-                                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">
-                                    Mulai Sewa
-                                  </label>
-                                  <input
-                                    type="datetime-local"
-                                    value={tanggalMulai[m.id] || ""}
-                                    onChange={(e) =>
-                                      handleTanggalChange(m.id, "mulai", e.target.value)
-                                    }
-                                    style={{ colorScheme: "dark" }}
-                                    className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 transition-colors outline-none"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">
-                                    Selesai Sewa
-                                  </label>
-                                  <input
-                                    type="datetime-local"
-                                    value={tanggalSelesai[m.id] || ""}
-                                    onChange={(e) =>
-                                      handleTanggalChange(m.id, "selesai", e.target.value)
-                                    }
-                                    style={{ colorScheme: "dark" }}
-                                    className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 transition-colors outline-none"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">
-                                    Lokasi Penyerahan
-                                  </label>
-                                  <select
-                                    value={lokasiPenyerahan[m.id] || ""}
-                                    onChange={(e) =>
-                                      handleTanggalChange(m.id, "lokasi", e.target.value)
-                                    }
-                                    className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 transition-colors outline-none cursor-pointer appearance-none text-center"
-                                  >
-                                    <option value="">-- Pilih --</option>
-                                    <option value="Rumah">Diantar ke Rumah / Hotel</option>
-                                    <option value="Kantor">Ambil di Garasi</option>
-                                    <option value="Titik Temu">Titik Temu Lain</option>
-                                  </select>
-                                </div>
-                                {lokasiPenyerahan[m.id] === "Titik Temu" && (
-                                  <div>
-                                    <label className="text-xs text-brand-400 font-bold uppercase tracking-wider block mb-2">
-                                      Detail Titik Temu
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={titikTemuAddress[m.id] || ""}
-                                      onChange={(e) =>
-                                        handleTanggalChange(m.id, "titikTemu", e.target.value)
-                                      }
-                                      placeholder="Contoh: Bandara Juanda T1"
-                                      className="w-full bg-brand-900/30 border border-brand-500/50 text-white text-sm rounded-xl p-3 focus:border-brand-500 transition-colors outline-none placeholder-gray-500 focus:bg-black/50"
-                                    />
-                                  </div>
-                                )}
-                                <div>
-                                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">
-                                    Opsi Layanan
-                                  </label>
-                                  <div className="flex bg-black/50 border border-gray-800 rounded-xl p-1.5 w-full">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setRentalType((prev) => ({
-                                          ...prev,
-                                          [m.id]: "Lepas Kunci",
-                                        }))
-                                      }
-                                      className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-200 ${
-                                        rentalType[m.id] === "Lepas Kunci" || !rentalType[m.id]
-                                          ? "bg-brand-600 text-white shadow-lg"
-                                          : "text-gray-400 hover:text-white hover:bg-gray-800"
-                                      }`}
-                                    >
-                                      Lepas Kunci
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setRentalType((prev) => ({
-                                          ...prev,
-                                          [m.id]: "Driver",
-                                        }))
-                                      }
-                                      className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-200 ${
-                                        rentalType[m.id] === "Driver"
-                                          ? "bg-brand-600 text-white shadow-lg"
-                                          : "text-gray-400 hover:text-white hover:bg-gray-800"
-                                      }`}
-                                    >
-                                      Driver (250k)
-                                    </button>
-                                  </div>
-                                </div>
+                            <div className="grid grid-cols-1 gap-3 mt-4">
+                              <button
+                                className="w-full btn-brand py-3.5 rounded-xl text-center flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-sm shadow-brand-sm"
+                                onClick={() => openUserSewaModal(m)}
+                              >
+                                <Car size={18} /> Ajukan Sewa
+                              </button>
+                              {isAdmin && (
+                                <button
+                                  type="button"
+                                  className="w-full py-3 rounded-xl text-center flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-xs bg-purple-600/10 hover:bg-purple-600 text-purple-400 hover:text-white border border-purple-500/30 transition-all"
+                                  onClick={() => openSewaManualModal(m)}
+                                >
+                                  Sewa Manual (Kasir)
+                                </button>
+                              )}
                             </div>
-
-                            {tanggalMulai[m.id] && tanggalSelesai[m.id] ? (
-                              <div className="bg-brand-900/20 border border-brand-500/30 rounded-xl p-4 mt-2">
-                                <p className="text-xs tracking-wider text-brand-400 mb-1 font-bold uppercase">Estimasi Total</p>
-                                <p className="text-white font-black text-xl mb-1">
-                                  Rp{" "}
-                                  {(() => {
-                                    const durasi = Math.ceil(
-                                      (new Date(tanggalSelesai[m.id]) -
-                                        new Date(tanggalMulai[m.id])) /
-                                        (1000 * 60 * 60 * 24)
-                                    );
-                                    if (durasi <= 0) return "0";
-                                    let total = durasi * m.harga;
-                                    if ((rentalType[m.id] || "Lepas Kunci") === "Driver") {
-                                      total += 250000;
-                                    }
-                                    return total.toLocaleString();
-                                  })()}
-                                </p>
-                                {(rentalType[m.id] || "Lepas Kunci") === "Driver" ? (
-                                  <p className="text-xs text-gray-400 font-medium">
-                                    Termasuk jasa supir Rp 250rb
-                                  </p>
-                                ) : (
-                                  <p className="text-xs text-gray-500">&nbsp;</p>
-                                )}
-                              </div>
-                            ) : (
-                               <div className="h-[84px] flex items-center justify-center bg-gray-900/50 rounded-xl border border-gray-800 border-dashed mt-2">
-                                  <p className="text-sm text-gray-600 font-medium">Isi tanggal untuk estimasi harga</p>
-                               </div>
-                            )}
-
-                            <button
-                              className="w-full btn-brand py-3.5 mt-2 rounded-xl text-center flex items-center justify-center gap-2"
-                              onClick={() => handleSewa(m)}
-                            >
-                              <Car size={18} /> Ajukan Sewa
-                            </button>
                           </div>
                         );
                       }
@@ -1029,6 +1010,294 @@ export default function ListMobil() {
                 Saya Sudah Membayar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* User Sewa Modal */}
+      {showUserModal && selectedUserMobil && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] px-4 overflow-y-auto pt-20 pb-20">
+          <div className="glass-card bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 w-full max-w-md relative animate-popIn shadow-2xl mt-12 md:mt-0">
+            <button
+              onClick={() => setShowUserModal(false)}
+              className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 hover:text-white hover:bg-red-500 transition-colors"
+            >
+              ×
+            </button>
+            <h3 className="text-2xl font-black text-white mb-2 tracking-tight">
+              Ajukan Sewa Mobil
+            </h3>
+            <p className="text-gray-400 text-sm mb-6 border-b border-gray-800 pb-4">
+              Lengkapi detail pesanan untuk <span className="text-brand-400 font-bold">{selectedUserMobil.nama}</span>.
+            </p>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">Mulai Sewa</label>
+                <input
+                  type="datetime-local"
+                  value={tanggalMulai[selectedUserMobil.id] || ""}
+                  onChange={(e) => handleTanggalChange(selectedUserMobil.id, "mulai", e.target.value)}
+                  style={{ colorScheme: "dark" }}
+                  className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 transition-colors outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">Selesai Sewa</label>
+                <input
+                  type="datetime-local"
+                  value={tanggalSelesai[selectedUserMobil.id] || ""}
+                  onChange={(e) => handleTanggalChange(selectedUserMobil.id, "selesai", e.target.value)}
+                  style={{ colorScheme: "dark" }}
+                  className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 transition-colors outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">Lokasi Penyerahan</label>
+                <select
+                  value={lokasiPenyerahan[selectedUserMobil.id] || ""}
+                  onChange={(e) => handleTanggalChange(selectedUserMobil.id, "lokasi", e.target.value)}
+                  className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 transition-colors outline-none cursor-pointer appearance-none"
+                >
+                  <option value="">-- Pilih --</option>
+                  <option value="Rumah">Diantar ke Rumah / Hotel</option>
+                  <option value="Kantor">Ambil di Garasi</option>
+                  <option value="Titik Temu">Titik Temu Lain</option>
+                </select>
+              </div>
+              {lokasiPenyerahan[selectedUserMobil.id] === "Titik Temu" && (
+                <div>
+                  <label className="text-xs text-brand-400 font-bold uppercase tracking-wider block mb-2">Detail Titik Temu</label>
+                  <input
+                    type="text"
+                    value={titikTemuAddress[selectedUserMobil.id] || ""}
+                    onChange={(e) => handleTanggalChange(selectedUserMobil.id, "titikTemu", e.target.value)}
+                    placeholder="Contoh: Bandara Juanda T1"
+                    className="w-full bg-brand-900/30 border border-brand-500/50 text-white text-sm rounded-xl p-3 focus:border-brand-500 transition-colors outline-none placeholder-gray-500 focus:bg-black/50"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">Opsi Layanan</label>
+                <div className="flex bg-black/50 border border-gray-800 rounded-xl p-1.5 w-full">
+                  <button
+                    type="button"
+                    onClick={() => setRentalType((prev) => ({ ...prev, [selectedUserMobil.id]: "Lepas Kunci" }))}
+                    className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-200 ${
+                      rentalType[selectedUserMobil.id] === "Lepas Kunci" || !rentalType[selectedUserMobil.id]
+                        ? "bg-brand-600 text-white shadow-lg"
+                        : "text-gray-400 hover:text-white hover:bg-gray-800"
+                    }`}
+                  >Lepas Kunci</button>
+                  <button
+                    type="button"
+                    onClick={() => setRentalType((prev) => ({ ...prev, [selectedUserMobil.id]: "Driver" }))}
+                    className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-200 ${
+                      rentalType[selectedUserMobil.id] === "Driver"
+                        ? "bg-brand-600 text-white shadow-lg"
+                        : "text-gray-400 hover:text-white hover:bg-gray-800"
+                    }`}
+                  >Driver (250k)</button>
+                </div>
+              </div>
+
+              {tanggalMulai[selectedUserMobil.id] && tanggalSelesai[selectedUserMobil.id] && (
+                <div className="bg-brand-900/20 border border-brand-500/30 rounded-xl p-4 mt-4">
+                  <p className="text-xs tracking-wider text-brand-400 mb-1 font-bold uppercase">Estimasi Total</p>
+                  <p className="text-white font-black text-xl mb-1">
+                    Rp {(() => {
+                      const durasi = Math.ceil((new Date(tanggalSelesai[selectedUserMobil.id]) - new Date(tanggalMulai[selectedUserMobil.id])) / (1000 * 60 * 60 * 24));
+                      if (durasi <= 0) return "0";
+                      let total = durasi * selectedUserMobil.harga;
+                      if ((rentalType[selectedUserMobil.id] || "Lepas Kunci") === "Driver") total += 250000;
+                      return total.toLocaleString();
+                    })()}
+                  </p>
+                  <p className="text-xs text-gray-400 font-medium">
+                    {(rentalType[selectedUserMobil.id] || "Lepas Kunci") === "Driver" ? "Termasuk jasa supir Rp 250rb" : " "}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={() => handleSewa(selectedUserMobil)}
+              className="w-full py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold transition-all uppercase tracking-widest text-sm shadow-brand-sm flex items-center justify-center gap-2"
+            >
+              <Car size={18} /> Konfirmasi Sewa
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Sewa Manual Modal */}
+      {showManualModal && manualMobil && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[110] px-4 overflow-y-auto pt-20 pb-20">
+          <div className="glass-card bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 w-full max-w-2xl relative animate-popIn shadow-2xl mt-12 md:mt-0">
+            <button
+              onClick={() => setShowManualModal(false)}
+              className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 hover:text-white hover:bg-red-500 transition-colors"
+            >
+              ×
+            </button>
+            <h3 className="text-2xl font-black text-white mb-2 tracking-tight">
+              Sewa Manual (Kasir)
+            </h3>
+            <p className="text-gray-400 text-sm mb-6 border-b border-gray-800 pb-4">
+              Isi data penyewa untuk menyewakan <span className="text-brand-400 font-bold">{manualMobil.nama}</span>.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Identitas Penyewa</h4>
+                
+                <div>
+                  <label className="text-xs text-gray-400 font-bold block mb-1">Nama Lengkap *</label>
+                  <input
+                    type="text"
+                    value={manualClient.namaLengkap}
+                    onChange={(e) => setManualClient({ ...manualClient, namaLengkap: e.target.value })}
+                    className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 outline-none"
+                    placeholder="Contoh: John Doe"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-bold block mb-1">Nomor Telepon / WA *</label>
+                  <input
+                    type="text"
+                    value={manualClient.nomorTelepon}
+                    onChange={(e) => setManualClient({ ...manualClient, nomorTelepon: e.target.value })}
+                    className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 outline-none"
+                    placeholder="Contoh: 081234567890"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-bold block mb-1">Email <span className="font-normal text-gray-600">(opsional)</span></label>
+                  <input
+                    type="email"
+                    value={manualClient.email}
+                    onChange={(e) => setManualClient({ ...manualClient, email: e.target.value })}
+                    className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 outline-none"
+                    placeholder="Contoh: john@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-bold block mb-1">Alamat Domisili</label>
+                  <textarea
+                    value={manualClient.alamat}
+                    onChange={(e) => setManualClient({ ...manualClient, alamat: e.target.value })}
+                    className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-3 focus:border-brand-500 outline-none h-20 resize-none"
+                    placeholder="Contoh: Jl. Merdeka No 1"
+                  ></textarea>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Detail Transaksi</h4>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Mulai Sewa</label>
+                    <input
+                      type="datetime-local"
+                      value={tanggalMulai[manualMobil.id] || ""}
+                      onChange={(e) => handleTanggalChange(manualMobil.id, "mulai", e.target.value)}
+                      style={{ colorScheme: "dark" }}
+                      className="w-full bg-black/50 border border-gray-700 text-white text-xs rounded-xl p-2.5 focus:border-brand-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Selesai Sewa</label>
+                    <input
+                      type="datetime-local"
+                      value={tanggalSelesai[manualMobil.id] || ""}
+                      onChange={(e) => handleTanggalChange(manualMobil.id, "selesai", e.target.value)}
+                      style={{ colorScheme: "dark" }}
+                      className="w-full bg-black/50 border border-gray-700 text-white text-xs rounded-xl p-2.5 focus:border-brand-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Lokasi Penyerahan</label>
+                  <select
+                    value={lokasiPenyerahan[manualMobil.id] || ""}
+                    onChange={(e) => handleTanggalChange(manualMobil.id, "lokasi", e.target.value)}
+                    className="w-full bg-black/50 border border-gray-700 text-white text-sm rounded-xl p-2.5 focus:border-brand-500 outline-none cursor-pointer appearance-none"
+                  >
+                    <option value="">-- Pilih --</option>
+                    <option value="Rumah">Diantar ke Rumah / Hotel</option>
+                    <option value="Kantor">Ambil di Garasi</option>
+                    <option value="Titik Temu">Titik Temu Lain</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Opsi Layanan</label>
+                  <div className="flex bg-black/50 border border-gray-800 rounded-xl p-1 w-full">
+                    <button
+                      type="button"
+                      onClick={() => setRentalType((prev) => ({ ...prev, [manualMobil.id]: "Lepas Kunci" }))}
+                      className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all duration-200 ${
+                        rentalType[manualMobil.id] === "Lepas Kunci" || !rentalType[manualMobil.id]
+                          ? "bg-brand-600 text-white shadow-lg"
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >Lepas Kunci</button>
+                    <button
+                      type="button"
+                      onClick={() => setRentalType((prev) => ({ ...prev, [manualMobil.id]: "Driver" }))}
+                      className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all duration-200 ${
+                        rentalType[manualMobil.id] === "Driver"
+                          ? "bg-brand-600 text-white shadow-lg"
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >Sama Driver</button>
+                  </div>
+                </div>
+
+                <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 mt-2">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-gray-400">Durasi</span>
+                    <span className="text-sm text-white font-bold">
+                      {tanggalMulai[manualMobil.id] && tanggalSelesai[manualMobil.id] ? 
+                        Math.max(1, Math.ceil((new Date(tanggalSelesai[manualMobil.id]) - new Date(tanggalMulai[manualMobil.id])) / (1000 * 60 * 60 * 24))) + " Hari" 
+                        : "0 Hari"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-gray-400">Total Harga</span>
+                    <span className="text-sm text-brand-400 font-bold">
+                      Rp {(() => {
+                        const durasi = Math.max(1, Math.ceil((new Date(tanggalSelesai[manualMobil.id]) - new Date(tanggalMulai[manualMobil.id])) / (1000 * 60 * 60 * 24)));
+                        let total = durasi * manualMobil.harga;
+                        if ((rentalType[manualMobil.id] || "Lepas Kunci") === "Driver") total += 250000;
+                        return (tanggalMulai[manualMobil.id] && tanggalSelesai[manualMobil.id]) ? total.toLocaleString() : "0";
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-400">Metode Pembayaran</span>
+                    <div className="w-1/2">
+                      <select
+                        value={manualClient.paymentMethod}
+                        onChange={(e) => setManualClient({ ...manualClient, paymentMethod: e.target.value })}
+                        className="w-full bg-black/80 border border-gray-600 text-white text-xs rounded-lg p-1.5 focus:border-brand-500 outline-none cursor-pointer appearance-none text-right"
+                      >
+                        <option value="Cash">Cash (Tunai)</option>
+                        <option value="Transfer Bank">Transfer Bank</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleSubmitSewaManual}
+              className="w-full py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold transition-all uppercase tracking-widest text-sm shadow-brand-sm"
+            >
+              Proses Transaksi Sekarang
+            </button>
           </div>
         </div>
       )}

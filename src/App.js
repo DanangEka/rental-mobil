@@ -21,6 +21,9 @@ import AdminPaymentVerifications from "./pages/AdminPaymentVerifications";
 import AdminDriverProfiles from "./pages/AdminDriverProfiles";
 import AdminAddDriver from "./pages/AdminAddDriver";
 
+import AdminOpenTrip from "./pages/AdminOpenTrip";
+import OpenTrip from "./pages/OpenTrip";
+
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ToastProvider } from "./components/Toast";
@@ -87,6 +90,22 @@ function App() {
           element={
             <ProtectedRoute role={["client", "admin"]}>
               <ListMobil />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/open-trip"
+          element={
+            <ProtectedRoute role={["client", "admin"]}>
+              <OpenTrip />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/open-trip"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminOpenTrip />
             </ProtectedRoute>
           }
         />
