@@ -111,7 +111,7 @@ export default function Login() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative bg-slate-50 overflow-hidden px-4 sm:px-6 py-8 md:py-12 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center relative bg-slate-50 overflow-hidden px-4 sm:px-6 pt-32 pb-8 md:py-12 lg:px-8">
       {/* Dynamic Background */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_#fff1f1_0%,_#f8fafc_50%,_#ffffff_100%)]"></div>

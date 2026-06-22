@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from "../services/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, updateDoc } from "firebase/firestore";
-import { Menu, X, User, LogIn, LogOut, Gauge, Car, Users, Bell, ClipboardList, TrendingUp, History, FileText, CreditCard, Camera, CheckCircle, Settings, UserPlus, Clock, DollarSign, Calendar, ChevronDown, Key, ChevronRight } from "lucide-react";
+import { X, User, LogIn, LogOut, Gauge, Car, Users, Bell, ClipboardList, TrendingUp, History, CreditCard, Camera, Settings, Clock, DollarSign, ChevronDown, Key, ChevronRight, Map, Menu } from "lucide-react";
 import logo from "../assets/logo.png";
 
 export default function Navbar() {
@@ -15,16 +15,12 @@ export default function Navbar() {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [layananDropdownOpen, setLayananDropdownOpen] = useState(false);
-  const [sidebarLayananOpen, setSidebarLayananOpen] = useState(false);
   const [loadingNotif, setLoadingNotif] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   const isLandingPage = location.pathname === "/";
-  const navBg = isLandingPage && !scrolled ? "bg-[#990000]" : "bg-white/95 backdrop-blur-md border-b border-slate-100";
-  const navText = isLandingPage && !scrolled ? "text-white" : "text-slate-900";
-  const navShadow = scrolled || !isLandingPage ? "shadow-sm" : "";
   const navPadding = scrolled ? "py-3" : "py-4";
 
   useEffect(() => {
@@ -123,6 +119,7 @@ export default function Navbar() {
     { name: "Mobil", path: "/car-management", icon: <Car size={16} /> },
     { name: "Client", path: "/client-management", icon: <Users size={16} /> },
     { name: "Driver", path: "/admin-driver-management", icon: <Settings size={16} /> },
+    { name: "Paket Wisata", path: "/admin-tour-packages", icon: <Map size={16} /> },
   ];
 
   const driverMenu = [
@@ -185,6 +182,7 @@ export default function Navbar() {
                <Link to="/home" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/home' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Layanan</Link>
                <Link to="/open-trip" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/open-trip' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Open Trip</Link>
                <Link to="/company-profile" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/company-profile' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Company</Link>
+               <Link to="/tour-packages" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/tour-packages' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Paket Wisata</Link>
                {user && role === 'client' && (
                  <Link to="/history-pesanan" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/history-pesanan' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>
                    <History size={16} /> History Pesanan
@@ -233,7 +231,14 @@ export default function Navbar() {
         {/* --- MAIN NAVIGATION BAR --- */}
         <nav className={`transition-all duration-500 ${scrolled ? 'bg-white shadow-xl py-3 border-b border-slate-100' : 'bg-white/95 backdrop-blur-md shadow-sm py-5'}`}>
           <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-            
+            {/* Mobile Burger Menu */}
+            <button 
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 text-slate-600 hover:bg-red-50 hover:text-[#990000] rounded-xl transition-all"
+            >
+              <Menu size={24} />
+            </button>
+
             {/* Logo Group */}
             <Link to="/" className="flex items-center gap-4 shrink-0 group">
                <div className="relative">
@@ -320,6 +325,7 @@ export default function Navbar() {
 
                    <Link to="/open-trip" className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider transition-all ${location.pathname === '/open-trip' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>Open Trip</Link>
                    <Link to="/company-profile" className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider transition-all ${location.pathname === '/company-profile' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>Company</Link>
+                   <Link to="/tour-packages" className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider transition-all ${location.pathname === '/tour-packages' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>Paket Wisata</Link>
                  </>
                )}
             </div>
@@ -442,7 +448,7 @@ export default function Navbar() {
                     </div>
                  </div>
                ) : (
-                 <Link to="/login" className="flex items-center gap-3 bg-[#990000] text-white px-7 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.1em] hover:bg-slate-900 shadow-xl shadow-red-900/10 transition-all group">
+                 <Link to="/login" className="hidden sm:flex items-center gap-3 bg-[#990000] text-white px-7 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.1em] hover:bg-slate-900 shadow-xl shadow-red-900/10 transition-all group">
                     Member Access <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
                  </Link>
                )}

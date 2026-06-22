@@ -10,7 +10,7 @@ export default function CompanyProfile() {
   }, []);
 
   return (
-    <div className={`min-h-screen bg-slate-50 pt-[100px] pb-20 relative overflow-hidden transition-all duration-1000 ${animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+    <div className={`min-h-screen bg-slate-50 pt-40 pb-20 relative overflow-hidden transition-all duration-1000 ${animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
 
       {/* Decorative BG */}
       <div className="absolute top-0 right-0 w-[40vw] h-[40vw] bg-red-100/30 rounded-full blur-[120px] -mr-20 -mt-20 z-0 pointer-events-none"></div>

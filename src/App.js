@@ -23,6 +23,8 @@ import AdminAddDriver from "./pages/AdminAddDriver";
 
 import AdminOpenTrip from "./pages/AdminOpenTrip";
 import OpenTrip from "./pages/OpenTrip";
+import AdminTourPackages from "./pages/AdminTourPackages";
+import TourPackages from "./pages/TourPackages";
 
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -106,6 +108,22 @@ function App() {
           element={
             <ProtectedRoute role="admin">
               <AdminOpenTrip />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tour-packages"
+          element={
+            <ProtectedRoute role={["client", "admin"]}>
+              <TourPackages />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-tour-packages"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminTourPackages />
             </ProtectedRoute>
           }
         />
