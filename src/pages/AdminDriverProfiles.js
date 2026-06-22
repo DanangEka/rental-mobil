@@ -1,26 +1,23 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from "firebase/firestore";
-import { User, Mail, Phone, MapPin, Calendar, Car, Star, DollarSign, Edit, Eye } from "lucide-react";
+import { User, Mail, Phone, MapPin, Calendar, Car, Star, DollarSign, Edit, Eye, ShieldCheck, ArrowRight, Clock } from "lucide-react";
 
 export default function AdminDriverProfiles() {
   const [user, setUser] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState(null);
-  const [filter, setFilter] = useState("all"); // all, active, inactive
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);
     });
-
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     if (!user) return;
-
-    // Fetch all drivers
     const q = query(
       collection(db, "users"),
       where("role", "==", "driver"),
@@ -40,29 +37,8 @@ export default function AdminDriverProfiles() {
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/A";
-    return new Date(timestamp.toDate()).toLocaleDateString("id-ID");
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "active":
-        return "bg-green-500/10 border-green-500/30 text-green-400";
-      case "inactive":
-        return "bg-red-500/10 border-red-500/30 text-red-400";
-      default:
-        return "bg-gray-800/50 border-gray-700 text-gray-400";
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case "active":
-        return "Aktif";
-      case "inactive":
-        return "Tidak Aktif";
-      default:
-        return status;
-    }
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleDateString("id-ID", { day: '2-digit', month: 'long', year: 'numeric' });
   };
 
   const filteredDrivers = drivers.filter((driver) => {
@@ -76,320 +52,194 @@ export default function AdminDriverProfiles() {
         status: newStatus,
         updatedAt: new Date()
       });
+      alert("Status mitra diperbarui.");
     } catch (error) {
       console.error("Error updating driver status:", error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black pt-[72px] pb-12 relative overflow-hidden">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
-        <div className="absolute top-[5%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-900/10 mix-blend-screen filter blur-[100px] animate-pulse"></div>
-        <div className="absolute bottom-[-10%] right-[5%] w-[45vw] h-[45vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="mb-6 md:mb-10 pt-8 animate-fadeInUp">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
-            <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight mb-2">Profil Driver</h1>
-              <p className="text-gray-400 text-lg">Kelola database mitra pengemudi dan monitor statistik performa mereka.</p>
+    <div className="min-h-screen bg-slate-50 pt-[100px] pb-20 text-slate-800">
+      <div className="max-w-7xl mx-auto px-6">
+        
+        {/* Header */}
+        <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div>
+            <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+              <User size={14} />
+              <span>Mitra Pengemudi</span>
             </div>
-          </div>
-        </div>
-
-        {/* Filter Section */}
-        <div className="mb-6 md:mb-10 glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-4 md:p-6 border border-gray-800 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => setFilter("all")}
-              className={`px-4 md:px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
-                filter === "all"
-                  ? "bg-brand-600 text-white shadow-brand-sm"
-                  : "bg-gray-800/50 text-gray-400 hover:bg-gray-800 border border-gray-700"
-              }`}
-            >
-              Semua Driver
-            </button>
-            <button
-              onClick={() => setFilter("active")}
-              className={`px-4 md:px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
-                filter === "active"
-                  ? "bg-green-600 text-white shadow-lg shadow-green-900/20"
-                  : "bg-gray-800/50 text-gray-400 hover:bg-gray-800 border border-gray-700"
-              }`}
-            >
-              Aktif
-            </button>
-            <button
-              onClick={() => setFilter("inactive")}
-              className={`px-4 md:px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
-                filter === "inactive"
-                  ? "bg-red-600 text-white shadow-lg shadow-red-900/20"
-                  : "bg-gray-800/50 text-gray-400 hover:bg-gray-800 border border-gray-700"
-              }`}
-            >
-              Tidak Aktif
-            </button>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-purple-500/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Driver</p>
-                <p className="text-2xl md:text-3xl font-black text-white">{drivers.length}</p>
-              </div>
-              <div className="p-3 bg-purple-500/20 rounded-2xl text-purple-400">
-                <User size={24} />
-              </div>
-            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Database Profil Driver</h1>
+            <p className="text-slate-500 mt-1">Monitor kinerja, status aktif, dan data fundamental mitra pengemudi.</p>
           </div>
           
-          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-green-500/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Driver Aktif</p>
-                <p className="text-2xl md:text-3xl font-black text-white">
-                  {drivers.filter(d => d.status === "active").length}
-                </p>
-              </div>
-              <div className="p-3 bg-green-500/20 rounded-2xl text-green-400">
-                <div className="w-6 h-6 rounded-full border-2 border-current flex items-center justify-center font-black text-xs">A</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-blue-500/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Order</p>
-                <p className="text-2xl md:text-3xl font-black text-white">
-                  {drivers.reduce((total, driver) => total + (driver.totalOrders || 0), 0)}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-500/20 rounded-2xl text-blue-400">
-                <Car size={24} />
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-emerald-500/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Pendapatan</p>
-                <p className="text-2xl font-black text-emerald-400 tracking-tighter">
-                  Rp {drivers.reduce((total, driver) => total + (driver.totalEarnings || 0), 0).toLocaleString()}
-                </p>
-              </div>
-              <div className="p-3 bg-emerald-500/20 rounded-2xl text-emerald-400">
-                <DollarSign size={24} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Drivers Grid */}
-        <div className="animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
-          <div className="flex items-center gap-4 mb-6 md:mb-8">
-            <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
-            <h2 className="text-2xl font-black text-white tracking-tight">Daftar Driver ({filteredDrivers.length})</h2>
-          </div>
-
-          <div className="space-y-6">
-            {filteredDrivers.length === 0 ? (
-              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-[2.5rem] p-20 text-center border border-gray-800">
-                <User className="h-16 w-16 text-gray-800 mx-auto mb-6" />
-                <p className="text-gray-500 font-bold">Belum ada mitra pengemudi terdaftar dalam sistem.</p>
-              </div>
-            ) : (
-              filteredDrivers.map((driver) => (
-                <div
-                  key={driver.id}
-                  className="glass-card bg-gray-900/40 rounded-[2rem] border border-gray-800 overflow-hidden hover:border-brand-500/30 transition-all group"
-                >
-                  <div className="p-4 sm:p-6 md:p-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 md:gap-6 mb-6 md:mb-8 pb-6 border-b border-gray-800/50">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-brand-500/10 rounded-2xl flex items-center justify-center text-brand-400 border border-brand-500/20 shadow-brand-sm">
-                          <User size={30} />
-                        </div>
-                        <div>
-                          <h4 className="text-2xl font-black text-white tracking-tight">{driver.displayName || driver.name || "N/A"}</h4>
-                          <p className="text-gray-500 text-sm font-semibold">{driver.email} • ID: {driver.id}</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full border ${getStatusColor(driver.status)}`}>
-                          {getStatusText(driver.status)}
-                        </span>
-                        <div className="flex items-center gap-2">
-                           <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Update Status</span>
-                           <select
-                            value={driver.status || "active"}
-                            onChange={(e) => handleStatusChange(driver.id, e.target.value)}
-                            className="bg-gray-800 border border-gray-700 text-white text-[10px] font-black uppercase rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-brand-500 outline-none transition-all"
-                           >
-                            <option value="active">Aktif</option>
-                            <option value="inactive">Tidak Aktif</option>
-                           </select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-6 md:mb-8">
-                      <div className="space-y-4">
-                         <div className="flex items-center gap-3">
-                            <Phone size={16} className="text-brand-400" />
-                            <div>
-                               <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Kontak</p>
-                               <p className="text-white font-bold">{driver.phone || "N/A"}</p>
-                            </div>
-                         </div>
-                         <div className="flex items-center gap-3">
-                            <MapPin size={16} className="text-brand-400" />
-                            <div>
-                               <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Domisili</p>
-                               <p className="text-white font-bold truncate max-w-[200px]">{driver.address || "N/A"}</p>
-                            </div>
-                         </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-gray-800/30 rounded-2xl p-4 border border-gray-800/50 text-center">
-                           <Car size={16} className="text-blue-400 mx-auto mb-2" />
-                           <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Orders</p>
-                           <p className="text-xl font-black text-white">{driver.totalOrders || 0}</p>
-                        </div>
-                        <div className="bg-gray-800/30 rounded-2xl p-4 border border-gray-800/50 text-center">
-                           <Star size={16} className="text-yellow-400 mx-auto mb-2" />
-                           <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Rating</p>
-                           <p className="text-xl font-black text-white">{driver.rating || 0}</p>
-                        </div>
-                        <div className="bg-gray-800/30 rounded-2xl p-4 border border-gray-800/50 text-center">
-                           <DollarSign size={16} className="text-emerald-400 mx-auto mb-2" />
-                           <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Cuan</p>
-                           <p className="text-sm font-black text-white">{(driver.totalEarnings / 1000).toFixed(0)}k</p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col justify-center gap-3">
-                        <div className="flex items-center gap-3">
-                           <Calendar size={16} className="text-gray-500" />
-                           <p className="text-xs text-gray-400 font-bold group-hover:text-gray-200 transition-colors">
-                              Mitra Sejak: {formatDate(driver.createdAt)}
-                           </p>
-                        </div>
-                        <button
-                          onClick={() => setSelectedDriver(driver)}
-                          className="w-full bg-brand-600/10 hover:bg-brand-600 text-brand-400 hover:text-white border border-brand-500/20 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all"
-                        >
-                          Lihat Berkas Lengkap
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Premium Detail Modal */}
-        {selectedDriver && (
-          <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-fadeIn">
-            <div className="glass-card bg-gray-950/80 border border-gray-800 rounded-[3rem] max-w-4xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl">
+          <div className="bg-white p-1 rounded-2xl border border-slate-200 flex gap-1 shadow-sm">
+            {[
+              { id: "all", label: "Semua" },
+              { id: "active", label: "Aktif" },
+              { id: "inactive", label: "Nonaktif" },
+            ].map((f) => (
               <button
-                onClick={() => setSelectedDriver(null)}
-                className="absolute top-8 right-8 w-12 h-12 bg-gray-800 hover:bg-red-500 text-white rounded-full flex items-center justify-center transition-all focus:outline-none focus:ring-4 focus:ring-red-500/20"
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${filter === f.id ? 'bg-[#990000] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
               >
-                <span className="text-2xl font-black">×</span>
+                {f.label}
               </button>
+            ))}
+          </div>
+        </div>
 
-              <div className="p-6 sm:p-10 md:p-12">
-                <div className="flex items-center gap-4 sm:gap-6 md:gap-8 mb-8 md:mb-12">
-                   <div className="w-24 h-24 bg-brand-500 rounded-2xl md:rounded-3xl flex items-center justify-center text-white shadow-brand-lg">
-                      <User size={48} />
-                   </div>
-                   <div>
-                      <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tighter mb-2">{selectedDriver.displayName || selectedDriver.name}</h3>
-                      <p className="text-brand-400 font-black uppercase tracking-widest text-sm">Mitra Pengemudi Pro</p>
-                   </div>
-                </div>
+        {/* Dynamic Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredDrivers.length === 0 ? (
+            <div className="col-span-full bg-white rounded-3xl border border-dashed border-slate-200 py-24 text-center">
+              <User size={48} className="mx-auto text-slate-200 mb-4" />
+              <p className="text-slate-400 font-bold italic text-sm">Belum ada mitra pengemudi yang terdaftar.</p>
+            </div>
+          ) : (
+            filteredDrivers.map((driver) => (
+              <div key={driver.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition-all group overflow-hidden flex flex-col">
+                <div className="p-8">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center border border-slate-100 group-hover:scale-110 transition-transform">
+                      <User size={32} />
+                    </div>
+                    <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
+                      driver.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-[#990000] border-red-100'
+                    }`}>
+                      {driver.status || 'Active'}
+                    </span>
+                  </div>
+                  
+                  <h3 className="text-xl font-black text-slate-900 group-hover:text-[#990000] transition-colors mb-1">{driver.displayName || driver.name || 'Anonymous Driver'}</h3>
+                  <p className="text-xs font-bold text-slate-400 mb-6">{driver.email}</p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  <div className="space-y-8">
-                    <div>
-                       <div className="flex items-center gap-3 mb-6">
-                          <div className="w-1.5 h-4 bg-brand-500 rounded-full"></div>
-                          <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Informasi Identitas</h4>
-                       </div>
-                       <div className="space-y-4 bg-gray-900/40 p-4 md:p-6 rounded-[2rem] border border-gray-800">
-                          <div className="flex justify-between border-b border-gray-800 pb-3">
-                            <span className="text-gray-500 font-bold">Email Utama</span>
-                            <span className="text-white font-black">{selectedDriver.email}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-gray-800 pb-3">
-                            <span className="text-gray-500 font-bold">Nomor WhatsApp</span>
-                            <span className="text-white font-black">{selectedDriver.phone || "N/A"}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-gray-800 pb-3">
-                            <span className="text-gray-500 font-bold">Lisensi SIM</span>
-                            <span className="text-white font-black">{selectedDriver.simNumber || "N/A"}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-gray-800 pb-3">
-                            <span className="text-gray-500 font-bold">Tgl. Lahir</span>
-                            <span className="text-white font-black">{formatDate(selectedDriver.birthDate)}</span>
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            <span className="text-gray-500 font-bold">Alamat Terverifikasi</span>
-                            <span className="text-white font-black leading-relaxed italic">{selectedDriver.address || "N/A"}</span>
-                          </div>
-                       </div>
+                  <div className="space-y-4 mb-8">
+                    <div className="flex items-center gap-3 text-xs font-bold text-slate-600">
+                       <Phone size={14} className="text-slate-300" />
+                       <span>{driver.phone || "-"}</span>
+                    </div>
+                    <div className="flex items-start gap-3 text-[10px] font-bold text-slate-400">
+                       <MapPin size={14} className="text-slate-300 flex-shrink-0" />
+                       <span className="line-clamp-2 italic">{driver.address || "Alamat belum diverifikasi"}</span>
                     </div>
                   </div>
 
-                  <div className="space-y-8">
+                  <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-50">
                      <div>
-                        <div className="flex items-center gap-3 mb-6">
-                           <div className="w-1.5 h-4 bg-brand-500 rounded-full"></div>
-                           <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Metrik Performa</h4>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                           <div className="bg-gray-900/40 p-4 md:p-6 rounded-[2rem] border border-gray-800 text-center">
-                              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Total Order</p>
-                              <p className="text-2xl md:text-3xl font-black text-white">{selectedDriver.totalOrders || 0}</p>
-                           </div>
-                           <div className="bg-gray-900/40 p-4 md:p-6 rounded-[2rem] border border-gray-800 text-center">
-                              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Kualitas (1-5)</p>
-                              <p className="text-2xl md:text-3xl font-black text-yellow-400">{selectedDriver.rating || 0}</p>
-                           </div>
-                           <div className="bg-gray-900/40 p-4 md:p-6 rounded-[2rem] border border-gray-800 text-center col-span-2">
-                              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Akumulasi Pendapatan</p>
-                              <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-emerald-400 tracking-tighter">Rp {(selectedDriver.totalEarnings || 0).toLocaleString()}</p>
-                           </div>
-                        </div>
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Order</p>
+                        <p className="text-lg font-black text-slate-900">{driver.totalOrders || 0} <span className="text-[10px] font-bold text-slate-400">Poin</span></p>
                      </div>
-
-                     <div className="bg-brand-500/5 p-4 md:p-6 rounded-[2rem] border border-brand-500/10">
-                        <div className="flex items-center gap-2 mb-3">
-                           <Edit size={14} className="text-brand-400" />
-                           <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Catatan Administrasi</span>
+                     <div className="text-right">
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rating</p>
+                        <div className="flex items-center justify-end gap-1">
+                           <Star size={12} className="text-amber-400 fill-amber-400" />
+                           <p className="text-lg font-black text-slate-900">{driver.rating || 0}</p>
                         </div>
-                        <p className="text-sm text-gray-300 italic leading-relaxed">
-                           {selectedDriver.notes || "Tidak ada catatan khusus untuk mitra ini."}
-                        </p>
                      </div>
                   </div>
                 </div>
+
+                <div className="mt-auto px-8 py-6 bg-slate-50 flex items-center justify-between">
+                   <button 
+                    onClick={() => setSelectedDriver(driver)}
+                    className="flex items-center gap-2 text-[#990000] text-[10px] font-bold uppercase tracking-widest hover:gap-4 transition-all"
+                   >
+                     Lihat Detail Mitra <ArrowRight size={14} />
+                   </button>
+                   <div className="flex items-center gap-2">
+                      <select 
+                        value={driver.status || 'active'}
+                        onChange={(e) => handleStatusChange(driver.id, e.target.value)}
+                        className="bg-transparent border-none text-[10px] font-bold uppercase tracking-widest text-slate-400 focus:ring-0 cursor-pointer hover:text-slate-600"
+                      >
+                         <option value="active">Aktif</option>
+                         <option value="inactive">Nonaktif</option>
+                      </select>
+                   </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Modal Info */}
+        {selectedDriver && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white rounded-[2.5rem] w-full max-w-4xl shadow-2xl overflow-hidden animate-scaleUp max-h-[90vh] flex flex-col">
+              <div className="px-10 py-8 border-b border-slate-100 flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-red-50 text-[#990000] rounded-2xl flex items-center justify-center">
+                       <User size={24} />
+                    </div>
+                    <div>
+                       <h3 className="text-2xl font-black text-slate-900">Profil Lengkap Mitra</h3>
+                       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">ID Log: {selectedDriver.id.substring(0, 12).toUpperCase()}</p>
+                    </div>
+                 </div>
+                 <button onClick={() => setSelectedDriver(null)} className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all font-black text-2xl">×</button>
+              </div>
+
+              <div className="p-10 overflow-y-auto">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div className="space-y-8">
+                       <div className="space-y-6">
+                          <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">Informasi Autentikasi</h4>
+                          {[
+                            { label: "Nama Terdaftar", val: selectedDriver.displayName || selectedDriver.name },
+                            { label: "Email Sistem", val: selectedDriver.email },
+                            { label: "Telepon / WA", val: selectedDriver.phone || "-" },
+                            { label: "Bergabung Pada", val: formatDate(selectedDriver.createdAt) },
+                          ].map((item, i) => (
+                            <div key={i} className="flex justify-between items-center">
+                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.label}</span>
+                               <span className="text-sm font-black text-slate-900">{item.val}</span>
+                            </div>
+                          ))}
+                       </div>
+
+                       <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                             <MapPin size={10} /> Alamat Tinggal
+                          </h4>
+                          <p className="text-sm text-slate-600 font-medium italic">"{selectedDriver.address || "Informasi alamat belum diinput atau diverifikasi oleh mitra."}"</p>
+                       </div>
+                    </div>
+
+                    <div className="space-y-8">
+                       <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">Dashboard Performa</h4>
+                       <div className="grid grid-cols-2 gap-6">
+                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-center">
+                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Order</p>
+                             <p className="text-3xl font-black text-slate-900 tracking-tighter">{selectedDriver.totalOrders || 0}</p>
+                          </div>
+                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-center">
+                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Rating</p>
+                             <p className="text-3xl font-black text-amber-500 tracking-tighter">{selectedDriver.rating || 0}</p>
+                          </div>
+                          <div className="col-span-2 bg-emerald-50 p-8 rounded-3xl border border-emerald-100 text-center relative overflow-hidden group">
+                             <div className="relative z-10">
+                                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2">Total Pendapatan</p>
+                                <p className="text-4xl font-black text-emerald-700 tracking-tighter">Rp {(selectedDriver.totalEarnings || 0).toLocaleString()}</p>
+                             </div>
+                             <DollarSign size={80} className="absolute -right-8 -bottom-8 text-emerald-100 group-hover:scale-110 transition-transform" />
+                          </div>
+                       </div>
+
+                       {selectedDriver.notes && (
+                         <div className="p-6 bg-red-50 border border-red-100 rounded-3xl">
+                            <p className="text-[10px] font-bold text-[#990000] uppercase tracking-widest mb-1 italic">Internal Admin Notes:</p>
+                            <p className="text-sm text-slate-600 font-medium leading-relaxed italic">"{selectedDriver.notes}"</p>
+                         </div>
+                       )}
+                    </div>
+                 </div>
               </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

@@ -1,134 +1,120 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Camera, CreditCard, User, ArrowRight, Plus } from "lucide-react";
+import { Camera, CreditCard, User, ArrowRight, Plus, ShieldCheck, LayoutGrid } from "lucide-react";
 
 export default function AdminDriverManagement() {
-  const [activeTab, setActiveTab] = useState("overview");
-
   const menuItems = [
     {
       id: "vehicle-verifications",
-      title: "Bukti Foto Keadaan Mobil",
-      description: "Lihat foto verifikasi keadaan mobil sebelum dan sesudah disewa",
-      icon: <Camera className="h-8 w-8" />,
+      title: "Verifikasi Unit",
+      description: "Pantau kondisi armada sebelum & sesudah operasional.",
+      icon: <Camera size={28} />,
       path: "/admin-vehicle-verifications",
-      color: "bg-blue-500"
+      color: "text-blue-600",
+      bg: "bg-blue-50"
     },
     {
       id: "payment-verifications",
-      title: "Bukti Pembayaran Cash",
-      description: "Lihat bukti pembayaran cash dari driver",
-      icon: <CreditCard className="h-8 w-8" />,
+      title: "Log Transaksi Cash",
+      description: "Validasi setoran tunai dari mitra pengemudi.",
+      icon: <CreditCard size={28} />,
       path: "/admin-payment-verifications",
-      color: "bg-green-500"
+      color: "text-emerald-600",
+      bg: "bg-emerald-50"
     },
     {
       id: "driver-profiles",
-      title: "Profil Driver",
-      description: "Kelola profil dan informasi driver",
-      icon: <User className="h-8 w-8" />,
+      title: "Database Mitra",
+      description: "Kelola biodata dan status aktifitas pengemudi.",
+      icon: <User size={28} />,
       path: "/admin-driver-profiles",
-      color: "bg-purple-500"
+      color: "text-[#990000]",
+      bg: "bg-red-50"
     }
   ];
 
   return (
-    <div className="min-h-screen bg-black pt-[72px] pb-12 relative overflow-hidden">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
-        <div className="absolute top-[5%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-900/10 mix-blend-screen filter blur-[100px] animate-pulse"></div>
-        <div className="absolute bottom-[-10%] left-[5%] w-[45vw] h-[45vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="mb-8 md:mb-12 pt-8 animate-fadeInUp">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
+    <div className="min-h-screen bg-slate-50 pt-[100px] pb-20 text-slate-800">
+      <div className="max-w-7xl mx-auto px-6">
+        
+        {/* Header */}
+        <div className="mb-12">
+          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+            <LayoutGrid size={14} />
+            <span>Driver Operations</span>
+          </div>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight mb-2">Management Driver</h1>
-              <p className="text-gray-400 text-lg">Kelola verifikasi, kinerja, dan database mitra pengemudi.</p>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Manajemen Driver</h1>
+              <p className="text-slate-500 mt-1">Pusat kendali operasional mitra pengemudi Cakra Lima Tujuh.</p>
             </div>
             <Link
               to="/admin-add-driver"
-              className="group bg-brand-600 hover:bg-brand-500 text-white px-4 md:px-8 py-4 rounded-2xl font-black transition-all flex items-center shadow-brand-sm hover:shadow-brand-md"
+              className="group bg-[#990000] hover:bg-[#7a0000] text-white px-8 py-4 rounded-2xl font-bold flex items-center shadow-lg shadow-red-900/10 transition-all active:scale-95"
             >
               <Plus className="h-5 w-5 mr-3 group-hover:rotate-90 transition-transform" />
-              Tambah Driver Baru
+              Tambah Mitra Baru
             </Link>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-8 md:mb-12 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          {menuItems.map((item, idx) => (
+        {/* Menu Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          {menuItems.map((item) => (
             <Link
               key={item.id}
               to={item.path}
-              className="glass-card bg-gray-900/40 rounded-2xl md:rounded-[2.5rem] p-5 sm:p-8 md:p-10 border border-gray-800 hover:border-brand-500/50 transition-all group relative overflow-hidden"
+              className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden flex flex-col items-start"
             >
-              <div className="absolute -right-6 -top-6 w-32 h-32 bg-brand-500/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-              <div className="relative z-10 focus:outline-none">
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white mb-6 md:mb-8 shadow-2xl ${item.color.replace('bg-', 'bg-')}/20 border border-${item.color.replace('bg-', '')}/30`}>
-                  {item.icon}
-                </div>
-                <h3 className="text-2xl font-black text-white mb-4 tracking-tight group-hover:text-brand-400 transition-colors">
-                  {item.title}
-                </h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-6 md:mb-8">
-                  {item.description}
-                </p>
-                <div className="flex items-center text-brand-400 font-black text-[10px] uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
-                  <span>Telusuri Detail</span>
-                  <ArrowRight className="h-4 w-4 ml-3" />
-                </div>
+              <div className={`w-16 h-16 ${item.bg} ${item.color} rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform`}>
+                {item.icon}
               </div>
+              <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight group-hover:text-[#990000] transition-colors line-clamp-1">
+                {item.title}
+              </h3>
+              <p className="text-slate-500 text-sm leading-relaxed mb-10 min-h-[40px]">
+                {item.description}
+              </p>
+              <div className="mt-auto flex items-center text-[#990000] font-bold text-xs uppercase tracking-widest group-hover:gap-4 gap-2 transition-all">
+                <span>Akses Modul</span>
+                <ArrowRight size={16} />
+              </div>
+              {/* Subtle background decoration */}
+              <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-slate-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700"></div>
             </Link>
           ))}
         </div>
 
-        {/* Quick Stats Section */}
-        <div className="animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
-          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-[2.5rem] p-5 sm:p-8 md:p-10 border border-gray-800">
-            <div className="flex items-center gap-4 mb-6 md:mb-10">
-               <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
-               <h2 className="text-xl font-bold text-white tracking-tight">Ringkasan Operasional</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-              <div className="space-y-2 group">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover:text-blue-400 transition-colors">Verifikasi Mobil Hari Ini</p>
-                <div className="flex items-end gap-3">
-                   <p className="text-3xl sm:text-4xl lg:text-5xl font-black text-white">0</p>
-                   <span className="text-blue-500 text-xs font-bold mb-2">Pemeriksaan</span>
+        {/* Summary Banner */}
+        <div className="bg-white rounded-[2.5rem] p-10 border border-slate-200 shadow-sm relative overflow-hidden">
+           <div className="flex items-center gap-4 mb-10 relative z-10">
+              <div className="w-1.5 h-8 bg-[#990000] rounded-full"></div>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Status Operasional Hari Ini</h2>
+           </div>
+           
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
+              {[
+                { label: "Verifikasi Mobil", val: 0, suffix: "Pemeriksaan", color: "text-blue-600" },
+                { label: "Transaksi Cash", val: 0, suffix: "Disetujui", color: "text-emerald-600" },
+                { label: "Mitra Bertugas", val: 0, suffix: "Pengemudi", color: "text-[#990000]" },
+              ].map((stat, i) => (
+                <div key={i} className="space-y-3 group">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                  <div className="flex items-baseline gap-3">
+                     <p className="text-5xl font-black text-slate-900">{stat.val}</p>
+                     <span className={`${stat.color} text-[10px] font-bold uppercase tracking-widest group-hover:translate-x-1 transition-transform inline-block`}>{stat.suffix}</span>
+                  </div>
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                     <div className={`h-full opacity-30 ${stat.color === 'text-[#990000]' ? 'bg-[#990000]' : stat.color.replace('text-', 'bg-')} transition-all`} style={{ width: '0%' }}></div>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
-                   <div className="bg-blue-500 h-full w-0"></div>
-                </div>
-              </div>
-
-              <div className="space-y-2 group">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover:text-green-400 transition-colors">Pembayaran Terverifikasi</p>
-                <div className="flex items-end gap-3">
-                   <p className="text-3xl sm:text-4xl lg:text-5xl font-black text-white">0</p>
-                   <span className="text-green-500 text-xs font-bold mb-2">Berhasil</span>
-                </div>
-                <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
-                   <div className="bg-green-500 h-full w-0"></div>
-                </div>
-              </div>
-
-              <div className="space-y-2 group">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover:text-purple-400 transition-colors">Total Driver Aktif</p>
-                <div className="flex items-end gap-3">
-                   <p className="text-3xl sm:text-4xl lg:text-5xl font-black text-white">0</p>
-                   <span className="text-purple-500 text-xs font-bold mb-2">Mitra</span>
-                </div>
-                <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
-                   <div className="bg-purple-500 h-full w-0"></div>
-                </div>
-              </div>
-            </div>
-          </div>
+              ))}
+           </div>
+           
+           {/* Abstract pattern */}
+           <div className="absolute right-0 top-0 w-64 h-64 bg-slate-50 rounded-full -mr-20 -mt-20 opacity-50"></div>
         </div>
+
       </div>
     </div>
   );

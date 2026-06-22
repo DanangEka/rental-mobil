@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from "../services/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, updateDoc } from "firebase/firestore";
-import { Menu, X, User, LogIn, LogOut, Gauge, Car, Users, Bell, ClipboardList, TrendingUp, History, FileText, CreditCard, Camera, CheckCircle, Settings, UserPlus, Clock, DollarSign, Calendar } from "lucide-react";
+import { Menu, X, User, LogIn, LogOut, Gauge, Car, Users, Bell, ClipboardList, TrendingUp, History, FileText, CreditCard, Camera, CheckCircle, Settings, UserPlus, Clock, DollarSign, Calendar, ChevronDown, Key, ChevronRight } from "lucide-react";
 import logo from "../assets/logo.png";
 
 export default function Navbar() {
@@ -13,31 +13,35 @@ export default function Navbar() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [orderNotifications, setOrderNotifications] = useState([]);
+  const [scrolled, setScrolled] = useState(false);
+  const [layananDropdownOpen, setLayananDropdownOpen] = useState(false);
+  const [sidebarLayananOpen, setSidebarLayananOpen] = useState(false);
+  const [loadingNotif, setLoadingNotif] = useState(false);
+  const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const isLandingPage = location.pathname === "/";
+  const navBg = isLandingPage && !scrolled ? "bg-[#990000]" : "bg-white/95 backdrop-blur-md border-b border-slate-100";
+  const navText = isLandingPage && !scrolled ? "text-white" : "text-slate-900";
+  const navShadow = scrolled || !isLandingPage ? "shadow-sm" : "";
+  const navPadding = scrolled ? "py-3" : "py-4";
 
-  const toggleNotification = () => {
-    setNotificationOpen(!notificationOpen);
-    if (!notificationOpen && unreadCount > 0) {
-      // Mark all as read
-      notifications.forEach(async (notif) => {
-        if (!notif.read) {
-          await updateDoc(doc(db, "notifications", notif.id), { read: true });
-        }
-      });
-    }
-  };
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    setSidebarOpen(false);
-    setUser(null);
-    setRole(null);
-    navigate("/login");
-  };
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setLayananDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -45,16 +49,7 @@ export default function Navbar() {
       if (currentUser) {
         const docRef = doc(db, "users", currentUser.uid);
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setRole(docSnap.data().role);
-        } else {
-          // If no document, check if admin via claims
-          currentUser.getIdTokenResult().then((idTokenResult) => {
-            if (idTokenResult.claims.admin === true) {
-              setRole("admin");
-            }
-          });
-        }
+        if (docSnap.exists()) setRole(docSnap.data().role);
       } else {
         setRole(null);
         setNotifications([]);
@@ -66,384 +61,396 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!user || role === undefined) return;
-
     const unsubscribes = [];
-
-    // Always fetch user notifications
     const qUser = query(collection(db, "notifications"), where("userId", "==", user.uid), orderBy("timestamp", "desc"));
     const unsubscribeUser = onSnapshot(qUser, (querySnapshot) => {
-      console.log("User notifications snapshot:", querySnapshot.docs.length);
       const userNotifs = [];
       let userUnread = 0;
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        console.log("User notification data:", data);
         userNotifs.push({ id: doc.id, ...data });
         if (!data.read) userUnread++;
       });
 
-      // If admin, also fetch admin notifications
       if (role === "admin") {
         const qAdmin = query(collection(db, "notifications"), where("userId", "==", "admin"), orderBy("timestamp", "desc"));
         const unsubscribeAdmin = onSnapshot(qAdmin, (adminSnapshot) => {
-          console.log("Admin notifications snapshot:", adminSnapshot.docs.length);
-          const adminNotifs = [];
-          let adminUnread = 0;
-          adminSnapshot.forEach((doc) => {
-            const data = doc.data();
-            console.log("Admin notification data:", data);
-            adminNotifs.push({ id: doc.id, ...data });
-            if (!data.read) adminUnread++;
-          });
-
-          // Merge and sort
-          const allNotifs = [...userNotifs, ...adminNotifs].sort((a, b) => {
-            const dateA = a.timestamp && typeof a.timestamp.toDate === "function"
-              ? a.timestamp.toDate()
-              : new Date(0);
-
-            const dateB = b.timestamp && typeof b.timestamp.toDate === "function"
-              ? b.timestamp.toDate()
-              : new Date(0);
-
-            return dateB - dateA;
-          });
-
-          const allUnread = userUnread + adminUnread;
-          console.log("Setting all notifications:", allNotifs, "unread:", allUnread);
+          const adminNotifs = adminSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const adminUnread = adminSnapshot.docs.filter(d => !d.data().read).length;
+          const allNotifs = [...userNotifs, ...adminNotifs].sort((a,b) => (b.timestamp?.toDate?.() || 0) - (a.timestamp?.toDate?.() || 0));
           setNotifications(allNotifs);
-          setUnreadCount(allUnread);
+          setUnreadCount(userUnread + adminUnread);
         });
         unsubscribes.push(unsubscribeAdmin);
-
-        // Fetch admin orders as notifications - using getDocs to avoid composite index issues
-        const fetchOrders = async () => {
-          try {
-            // Use getDocs instead of onSnapshot to avoid real-time listener issues
-            const { getDocs } = await import("firebase/firestore");
-            const querySnapshot = await getDocs(collection(db, "pemesanan"));
-
-            const orders = [];
-            querySnapshot.forEach((doc) => {
-              orders.push({ id: doc.id, ...doc.data() });
-            });
-
-            // Sort by date client-side to avoid composite index
-            orders.sort((a, b) => {
-              const dateA = a.tanggal ? new Date(a.tanggal) : new Date(0);
-              const dateB = b.tanggal ? new Date(b.tanggal) : new Date(0);
-              return dateB - dateA;
-            });
-
-            setOrderNotifications(orders);
-          } catch (error) {
-            console.error("Error fetching orders:", error);
-            setOrderNotifications([]);
-          }
-        };
-
-        fetchOrders();
-      } else if (role === "driver") {
-        // Driver specific order listener
-        const fetchAvailableOrders = async () => {
-          try {
-            const { getDocs } = await import("firebase/firestore");
-            const querySnapshot = await getDocs(collection(db, "pemesanan"));
-            const available = [];
-            
-            querySnapshot.forEach((doc) => {
-              const data = doc.data();
-              // Available means: status in [approve sewa, pembayaran berhasil] AND no driverId
-              if (!data.driverId && (data.status === "approve sewa" || data.status === "pembayaran berhasil" || data.status === "disetujui")) {
-                available.push({ id: doc.id, ...data, isNewOrder: true });
-              }
-            });
-            
-            setOrderNotifications(available);
-          } catch (error) {
-            console.error("Error fetching driver orders:", error);
-          }
-        };
-        fetchAvailableOrders();
-        
-        // Also add an interval for drivers
-        const interval = setInterval(fetchAvailableOrders, 30000);
-        unsubscribes.push(() => clearInterval(interval));
-        
-        setNotifications(userNotifs);
-        setUnreadCount(userUnread);
       } else {
-        console.log("Setting user notifications:", userNotifs, "unread:", userUnread);
         setNotifications(userNotifs);
         setUnreadCount(userUnread);
       }
     });
     unsubscribes.push(unsubscribeUser);
-
-    return () => {
-      unsubscribes.forEach(unsub => unsub());
-    };
+    return () => unsubscribes.forEach(u => u());
   }, [user, role]);
 
-    const menu = [
-      { name: "Tentang Kami", path: "/company-profile", icon: <User size={20} /> },
-      ...(user && role === "client"
-        ? [
-            { name: "Profil", path: "/profil", icon: <User size={20} /> },
-            { name: "Rental Mobil", path: "/home", icon: <Car size={20} /> },
-            { name: "Open Trip", path: "/open-trip", icon: <Users size={20} /> },
-            { name: "History Pesanan", path: "/history-pesanan", icon: <History size={20} /> }
-          ]
-        : []),
-      ...(user && role === "admin"
-        ? [
-            { name: "Admin Dashboard", path: "/admin-dashboard", icon: <TrendingUp size={20} /> },
-            { name: "Manajemen Pesanan", path: "/manajemen-pesanan", icon: <ClipboardList size={20} /> },
-            { name: "Manajemen Open Trip", path: "/admin/open-trip", icon: <Users size={20} /> },
-            { name: "List Mobil", path: "/home", icon: <Car size={20} /> },
-            { name: "Manajemen Mobil", path: "/car-management", icon: <Car size={20} /> },
-            { name: "Manajemen Client", path: "/client-management", icon: <Users size={20} /> },
-            { name: "Management Driver", path: "/admin-driver-management", icon: <Settings size={20} /> },
-            { name: "Tambah Driver", path: "/admin-add-driver", icon: <UserPlus size={20} /> }
-          ]
-        : []),
-      ...(user && role === "driver"
-        ? [
-            { name: "Dashboard", path: "/driver-dashboard", icon: <Gauge size={20} /> },
-            { name: "Order", path: "/driver-orders", icon: <ClipboardList size={20} /> },
-            { name: "Verifikasi Mobil", path: "/vehicle-verification", icon: <Camera size={20} /> },
-            { name: "Verifikasi Pembayaran", path: "/payment-verification", icon: <CreditCard size={20} /> },
-            { name: "Profil Driver", path: "/driver-profile", icon: <User size={20} /> }
-          ]
-        : []),
-      ...(!user
-        ? [{ name: "Login", path: "/login", icon: <LogIn size={20} /> }]
-        : []),
-    ];
+  const handleMarkAsRead = async (id) => {
+    try {
+      await updateDoc(doc(db, "notifications", id), { read: true });
+    } catch (error) {
+      console.error("Gagal update notifikasi:", error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    const unreadNotifs = notifications.filter(n => !n.read);
+    try {
+      setLoadingNotif(true);
+      await Promise.all(unreadNotifs.map(n => updateDoc(doc(db, "notifications", n.id), { read: true })));
+      setLoadingNotif(false);
+    } catch (error) {
+      console.error("Gagal update semua notifikasi:", error);
+      setLoadingNotif(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    setSidebarOpen(false);
+    navigate("/login");
+  };
+
+  const adminMenu = [
+    { name: "Dashboard", path: "/admin-dashboard", icon: <TrendingUp size={16} /> },
+    { name: "Pesanan", path: "/manajemen-pesanan", icon: <ClipboardList size={16} /> },
+    { name: "Mobil", path: "/car-management", icon: <Car size={16} /> },
+    { name: "Client", path: "/client-management", icon: <Users size={16} /> },
+    { name: "Driver", path: "/admin-driver-management", icon: <Settings size={16} /> },
+  ];
+
+  const driverMenu = [
+    { name: "Dashboard", path: "/driver-dashboard", icon: <Gauge size={16} /> },
+    { name: "Order", path: "/driver-orders", icon: <ClipboardList size={16} /> },
+    { name: "Verifikasi", path: "/vehicle-verification", icon: <Camera size={16} /> },
+    { name: "Bayar", path: "/payment-verification", icon: <CreditCard size={16} /> },
+    { name: "Profil", path: "/driver-profile", icon: <User size={16} /> },
+  ];
 
   return (
     <>
-      {/* Sidebar */}
-      <div
-        className={`fixed top-0 left-0 h-full w-72 bg-[#990000] text-white z-50 transform transition-all duration-300 ease-in-out shadow-2xl ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="p-4 md:p-6 border-b border-red-700 flex items-center space-x-4">
-          <button
-            onClick={toggleSidebar}
-            className="p-2 hover:bg-red-700 rounded-lg transition-colors duration-200 md:hidden"
-          >
-            <X className="text-white w-6 h-6" />
-          </button>
-          <img src={logo} alt="Logo" className="h-10 w-10 rounded-full shadow-md" />
-          <span className="font-bold text-xl tracking-wide">Cakra Lima Tujuh</span>
+      {/* Sidebar for Mobile Only */}
+      <div className={`fixed top-0 left-0 h-full w-72 bg-white text-slate-900 z-[100] transform transition-transform duration-500 ease-smooth shadow-2xl lg:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+              <img src={logo} alt="Logo" className="h-8 w-8 rounded-lg" />
+              <span className="font-black text-sm tracking-tight">Cakra Lima Tujuh</span>
+           </div>
+           <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors"><X size={20} /></button>
         </div>
-        <nav className="flex flex-col space-y-2 p-4 md:p-6">
-          {menu.map((item) => (
-            <Link
-              key={item.name}
-              to={item.path}
-              onClick={() => setSidebarOpen(false)}
-              className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 text-base font-medium group ${
-                location.pathname === item.path
-                  ? "bg-red-800 text-white shadow-brand border border-red-700"
-                  : "text-red-100 hover:bg-red-800 hover:text-white hover:shadow-brand border border-transparent"
-              }`}
-            >
-              <span className={`transition-transform duration-200 ${location.pathname === item.path ? 'scale-110' : 'group-hover:scale-110'}`}>
-                {item.icon}
-              </span>
-              {item.name}
-            </Link>
-          ))}
-          {user && (
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-4 px-4 py-3 mt-6 text-left bg-red-700 hover:bg-red-800 rounded-xl transition-all duration-200 text-base font-medium shadow-md hover:shadow-lg"
-            >
-              <LogOut size={20} />
-              Logout
-            </button>
-          )}
+        <nav className="p-4 space-y-1 flex flex-col h-[calc(100%-81px)]">
+           {/* Driver-specific mobile sidebar */}
+           {role === 'driver' ? (
+             <>
+               <p className="px-5 pt-3 pb-2 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Driver Panel</p>
+               {driverMenu.map(m => (
+                 <Link
+                   key={m.path}
+                   to={m.path}
+                   onClick={() => setSidebarOpen(false)}
+                   className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${
+                     location.pathname === m.path ? 'bg-red-50 text-[#990000]' : 'text-slate-600 hover:bg-slate-50'
+                   }`}
+                 >
+                   {m.icon}
+                   {m.name}
+                 </Link>
+               ))}
+             </>
+           ) : role === 'admin' ? (
+             <>
+               <p className="px-5 pt-3 pb-2 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Admin Panel</p>
+               {adminMenu.map(m => (
+                 <Link
+                   key={m.path}
+                   to={m.path}
+                   onClick={() => setSidebarOpen(false)}
+                   className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${
+                     location.pathname === m.path ? 'bg-red-50 text-[#990000]' : 'text-slate-600 hover:bg-slate-50'
+                   }`}
+                 >
+                   {m.icon}
+                   {m.name}
+                 </Link>
+               ))}
+             </>
+           ) : (
+             <>
+               <Link to="/home" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/home' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Layanan</Link>
+               <Link to="/open-trip" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/open-trip' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Open Trip</Link>
+               <Link to="/company-profile" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/company-profile' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Company</Link>
+               {user && role === 'client' && (
+                 <Link to="/history-pesanan" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/history-pesanan' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>
+                   <History size={16} /> History Pesanan
+                 </Link>
+               )}
+             </>
+           )}
+
+           {/* Spacer */}
+           <div className="flex-1" />
+
+           {/* Auth buttons at bottom */}
+           {user ? (
+             <button onClick={handleLogout} className="w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest text-[#990000] hover:bg-red-50 mt-4 mb-4">
+                <LogOut size={16} /> Logout
+             </button>
+           ) : (
+             <Link to="/login" onClick={() => setSidebarOpen(false)} className="flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest bg-[#990000] text-white mt-4 mb-4">
+                <LogIn size={16} /> Login
+             </Link>
+           )}
         </nav>
       </div>
+      {sidebarOpen && <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      {/* Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 backdrop-blur-sm"
-          onClick={toggleSidebar}
-        />
-      )}
-
-      {/* Top Navbar Wrapper (Sticky) */}
-      <div className="sticky top-0 z-40 w-full">
-        <nav className="bg-[#990000]/95 backdrop-blur-md text-white px-4 py-3 md:px-6 md:py-4 flex justify-between items-center shadow-brand border-b border-red-800 transition-all duration-300">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={toggleSidebar}
-              className="p-2 hover:bg-red-800 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-400"
-            >
-              <Menu className="text-white w-6 h-6" />
-            </button>
-            <Link to="/" className="flex items-center gap-3 group">
-              <img src={logo} alt="Logo" className="h-10 w-10 rounded-full shadow-brand-lg object-contain group-hover:scale-105 transition-transform duration-300 bg-white" />
-              <span className="font-bold text-lg md:text-2xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-red-100 to-white hidden sm:block">
-                Cakra Lima Tujuh
-              </span>
-            </Link>
-          </div>
-          
-          <div className="flex flex-nowrap items-center space-x-3 sm:space-x-5">
-            {user ? (
-              <>
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-red-800/50 border border-red-700 rounded-full shadow-inner">
-                  <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-xs font-bold border border-red-400">
-                    {user.email?.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-sm font-medium text-red-50 max-w-[100px] truncate">
-                    {user.email?.split('@')[0]}
-                  </span>
-                  {role && (
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-white text-brand-800 rounded-full ml-1">
-                      {role === "client" ? "USER" : role}
-                    </span>
-                  )}
-                </div>
-                
-                <button
-                  onClick={toggleNotification}
-                  className="relative p-2.5 bg-red-800 hover:bg-red-700 border border-red-700 rounded-xl transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 group"
-                >
-                  <Bell className="text-white w-5 h-5 group-hover:animate-pulse" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-400 text-white text-[10px] font-bold rounded-full min-w-[20px] h-[20px] flex items-center justify-center border-2 border-[#990000] shadow-md px-1 animate-popIn">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                </button>
-              </>
-            ) : (
-              <div className="flex flex-nowrap items-center space-x-2 sm:space-x-3">
-                <Link
-                  to="/login"
-                  className="px-4 py-2 bg-red-800/80 border border-red-600 text-white rounded-xl hover:bg-red-700 transition-all duration-200 font-medium text-sm sm:text-base whitespace-nowrap focus:ring-2 focus:ring-red-400"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/signup"
-                  className="hidden xs:inline-block px-4 py-2 bg-white text-[#990000] rounded-xl hover:bg-red-50 transition-all duration-200 font-bold text-sm sm:text-base shadow-brand whitespace-nowrap focus:ring-2 focus:ring-white"
-                >
-                  Sign Up
-                </Link>
+      {/* REFINED NAVIGATION STRUCTURE */}
+      <div className={`fixed top-0 left-0 right-0 z-[80] transition-all duration-500 ${scrolled ? 'translate-y-[-36px]' : 'translate-y-0'}`}>
+        
+        {/* --- MINIMAL TOP UTILITY BAR --- */}
+        <div className="bg-[#990000] text-white/90 py-2 px-6">
+           <div className="max-w-7xl mx-auto flex justify-between items-center text-[9px] font-black uppercase tracking-[0.2em]">
+              <div className="flex items-center gap-8">
+                 <div className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
+                    <Clock size={11} className="text-red-300" /> <span>Layanan 24 Jam</span>
+                 </div>
+                 <div className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer hidden md:flex border-l border-white/10 pl-8">
+                    <DollarSign size={11} className="text-red-300" /> <span>Tarif Transparan & Kompetitif</span>
+                 </div>
               </div>
-            )}
-          </div>
-        </nav>
+              <div className="flex items-center gap-6">
+                 <span className="hidden lg:inline opacity-50 font-medium">Melayani perjalanan Anda dengan sepenuh hati</span>
+              </div>
+           </div>
+        </div>
 
-        {/* Notification Dropdown */}
-        {notificationOpen && user && (
-          <div className="absolute top-full right-2 sm:right-6 mt-2 bg-white border border-gray-100 rounded-2xl shadow-card-hover z-50 w-[92vw] sm:w-[380px] max-h-[80vh] overflow-hidden flex flex-col animate-popIn origin-top-right">
-            <div className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Bell size={18} className="text-brand-600" />
-                Notifikasi
-              </h3>
-              {unreadCount > 0 && (
-                <span className="bg-brand-100 text-brand-800 text-xs font-bold px-2.5 py-1 rounded-full">
-                  {unreadCount} Baru
-                </span>
-              )}
-            </div>
+        {/* --- MAIN NAVIGATION BAR --- */}
+        <nav className={`transition-all duration-500 ${scrolled ? 'bg-white shadow-xl py-3 border-b border-slate-100' : 'bg-white/95 backdrop-blur-md shadow-sm py-5'}`}>
+          <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
             
-            <div className="overflow-y-auto flex-1 overscroll-contain">
-              {notifications.length === 0 && orderNotifications.length === 0 ? (
-                <div className="p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center">
-                  <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-3">
-                    <Bell className="text-gray-300 w-8 h-8" />
+            {/* Logo Group */}
+            <Link to="/" className="flex items-center gap-4 shrink-0 group">
+               <div className="relative">
+                  <div className="absolute inset-0 bg-[#990000] rounded-xl blur-lg opacity-0 group-hover:opacity-20 transition-opacity" />
+                  <img src={logo} alt="Logo" className="relative h-11 w-11 rounded-xl shadow-sm border border-slate-100" />
+               </div>
+               <div className="flex flex-col">
+                  <span className="font-black tracking-tight text-xl text-slate-900 leading-none mb-1">Cakra Lima Tujuh</span>
+                  <div className="flex items-center gap-2">
+                     <div className="h-0.5 w-4 bg-[#990000] rounded-full" />
+                     <span className="text-[8px] font-bold text-slate-400 tracking-[0.2em] uppercase">Premium Rental</span>
                   </div>
-                  <p className="text-gray-500 font-medium">Bebas notifikasi</p>
-                  <p className="text-sm text-gray-400 mt-1">Anda sudah membaca semuanya.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-100">
-                  {notifications.length > 0 && notifications.map((notif) => (
-                    <div key={notif.id} className={`p-4 transition-colors hover:bg-gray-50 ${!notif.read ? 'bg-brand-50/30' : ''}`}>
-                      <div className="flex gap-3">
-                        <div className={`mt-1 flex-shrink-0 w-2 h-2 rounded-full ${!notif.read ? 'bg-brand-500 shadow-[0_0_8px_rgba(255,37,37,0.6)]' : 'bg-transparent'}`} />
-                        <div>
-                          <p className={`text-sm ${!notif.read ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
-                            {notif.message}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
-                            <Clock size={12} />
-                            {new Date(notif.timestamp?.toDate()).toLocaleString('id-ID', { 
-                              day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
-                            })}
-                          </p>
+               </div>
+            </Link>
+
+            {/* Desktop Center Links — role-aware */}
+            <div className="hidden lg:flex items-center bg-slate-50 rounded-full px-3 py-1.5 border border-slate-200/60 shadow-sm">
+               {role === 'driver' ? (
+                 /* Driver-specific center nav */
+                 <>
+                   {driverMenu.map(m => (
+                     <Link
+                       key={m.path}
+                       to={m.path}
+                       className={`px-6 py-3 rounded-full text-[13px] font-black uppercase tracking-wider flex items-center gap-2.5 transition-all ${
+                         location.pathname === m.path
+                           ? 'text-[#990000] bg-white shadow-md shadow-red-900/5'
+                           : 'text-slate-700 hover:text-[#990000]'
+                       }`}
+                     >
+                       {m.icon}
+                       {m.name}
+                     </Link>
+                   ))}
+                 </>
+               ) : role === 'admin' ? (
+                 /* Admin-specific center nav */
+                 <>
+                   {adminMenu.map(m => (
+                     <Link
+                       key={m.path}
+                       to={m.path}
+                       className={`px-5 py-3 rounded-full text-[12px] font-black uppercase tracking-wider flex items-center gap-2 transition-all ${
+                         location.pathname === m.path
+                           ? 'text-[#990000] bg-white shadow-md shadow-red-900/5'
+                           : 'text-slate-700 hover:text-[#990000]'
+                       }`}
+                     >
+                       {m.icon}
+                       {m.name}
+                     </Link>
+                   ))}
+                 </>
+               ) : (
+                 /* Public / Client center nav */
+                 <>
+                   <div className="relative" onMouseEnter={() => setLayananDropdownOpen(true)} onMouseLeave={() => setLayananDropdownOpen(false)}>
+                      <Link to="/home" className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider flex items-center gap-2.5 transition-all ${location.pathname === '/home' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>
+                        Layanan <ChevronDown size={16} className={layananDropdownOpen ? 'rotate-180 transition-transform text-[#990000]' : 'transition-transform'} />
+                      </Link>
+                      {layananDropdownOpen && (
+                        <div className="absolute top-[calc(100%+12px)] left-0 w-80 bg-white border border-slate-100 shadow-[0_25px_50px_rgba(0,0,0,0.15)] rounded-[2.5rem] p-4 animate-fadeInUp z-[100]">
+                           <Link to="/home?type=lepas" className="flex items-center gap-5 p-5 hover:bg-red-50/50 rounded-3xl transition-all group/item">
+                              <div className="w-12 h-12 bg-[#990000] text-white rounded-2xl flex items-center justify-center group-hover/item:scale-110 transition-transform shadow-lg shadow-red-900/20">
+                                 <Key size={22} />
+                              </div>
+                              <div>
+                                 <p className="text-[11px] font-black uppercase tracking-widest text-slate-900">Sewa Lepas Kunci</p>
+                                 <p className="text-[10px] font-bold text-slate-500 mt-1">Explore mandiri tanpa sopir</p>
+                              </div>
+                           </Link>
+                           <Link to="/home?type=driver" className="flex items-center gap-5 p-5 hover:bg-red-50/50 rounded-3xl transition-all group/item border-t border-slate-50 mt-1">
+                              <div className="w-12 h-12 bg-[#990000] text-white rounded-2xl flex items-center justify-center group-hover/item:scale-110 transition-transform shadow-lg shadow-red-900/20">
+                                 <Users size={22} />
+                              </div>
+                              <div>
+                                 <p className="text-[11px] font-black uppercase tracking-widest text-slate-900">Dengan Driver</p>
+                                 <p className="text-[10px] font-bold text-slate-500 mt-1">Layanan sopir profesional</p>
+                              </div>
+                           </Link>
+                        </div>
+                      )}
+                   </div>
+
+                   <Link to="/open-trip" className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider transition-all ${location.pathname === '/open-trip' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>Open Trip</Link>
+                   <Link to="/company-profile" className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider transition-all ${location.pathname === '/company-profile' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>Company</Link>
+                 </>
+               )}
+            </div>
+
+            {/* Right Side Actions */}
+            <div className="flex items-center gap-4">
+               {user && (
+                 <div className="relative">
+                    <button onClick={() => setNotificationOpen(!notificationOpen)} className="hidden sm:flex p-3 rounded-full bg-slate-50 text-slate-500 hover:bg-red-50 hover:text-[#990000] transition-all relative group">
+                        <Bell size={20} className="group-hover:animate-swing" />
+                        {unreadCount > 0 && <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>}
+                    </button>
+
+                    {/* Notification Dropdown Overlay */}
+                    {notificationOpen && (
+                      <div className="absolute top-[calc(100%+15px)] right-0 w-[400px] bg-white border border-slate-100 shadow-[0_30px_60px_rgba(0,0,0,0.2)] rounded-[2.5rem] p-6 animate-fadeInUp z-[110]">
+                        <div className="flex items-center justify-between mb-6 border-b border-slate-50 pb-4">
+                          <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Notifikasi</h4>
+                          {unreadCount > 0 && (
+                            <button 
+                              onClick={handleMarkAllAsRead}
+                              disabled={loadingNotif}
+                              className="text-[10px] font-black text-[#990000] hover:underline uppercase tracking-tighter disabled:opacity-50"
+                            >
+                              {loadingNotif ? "Processing..." : "Tandai semua dibaca"}
+                            </button>
+                          )}
+                        </div>
+                        <div className="max-h-[400px] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                          {notifications.length === 0 ? (
+                            <div className="py-12 text-center">
+                              <Bell size={40} className="mx-auto text-slate-200 mb-4 opacity-50" />
+                              <p className="text-xs font-bold text-slate-400 italic">Belum ada notifikasi untuk Anda.</p>
+                            </div>
+                          ) : (
+                            notifications.map(n => (
+                              <div 
+                                key={n.id} 
+                                onClick={() => !n.read && handleMarkAsRead(n.id)}
+                                className={`p-5 rounded-3xl transition-all cursor-pointer border ${n.read ? 'bg-slate-50/50 border-transparent opacity-60' : 'bg-red-50/40 border-red-100 hover:bg-red-50 shadow-sm'}`}
+                              >
+                                <div className="flex gap-4">
+                                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${n.read ? 'bg-slate-200 text-slate-500' : 'bg-[#990000] text-white'}`}>
+                                    <Bell size={18} />
+                                  </div>
+                                  <div>
+                                    <p className={`text-[11px] leading-relaxed mb-2 ${n.read ? 'text-slate-500 font-medium' : 'text-slate-900 font-black'}`}>
+                                      {n.message}
+                                    </p>
+                                    <div className="flex items-center gap-2 text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                                      <Clock size={10} />
+                                      {n.timestamp?.toDate ? n.timestamp.toDate().toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) : 'Baru saja'}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
+                    )}
+                 </div>
+               )}
+
+               {user ? (
+                 <div className="relative group">
+                    <button className={`flex items-center gap-3 px-1.5 py-1.5 rounded-full transition-all border ${role === 'admin' ? 'border-[#990000]/20 bg-red-50/30' : 'border-slate-200 bg-slate-50'}`}>
+                       <div className="w-9 h-9 bg-[#990000] text-white rounded-full flex items-center justify-center text-sm font-black shadow-lg shadow-red-900/20">
+                          {user.email?.charAt(0).toUpperCase()}
+                       </div>
+                       <div className="hidden xl:block text-left mr-2">
+                          <p className="text-[9px] font-black text-slate-900 uppercase leading-none mb-1">{user.email?.split('@')[0]}</p>
+                          <p className="text-[8px] font-bold text-[#990000] uppercase tracking-widest opacity-70">{role || 'Member'}</p>
+                       </div>
+                       <ChevronDown size={14} className="text-slate-400 group-hover:rotate-180 transition-transform mr-2" />
+                    </button>
+                    
+                    {/* ACCOUNT DROPDOWN */}
+                    <div className="absolute top-[calc(100%+12px)] right-0 w-64 bg-white/95 backdrop-blur-xl border border-slate-100 shadow-[0_20px_40px_rgba(0,0,0,0.15)] rounded-[2rem] p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all group-hover:translate-y-2 z-[90]">
+                       <div className="px-4 py-3 mb-2 border-b border-slate-50">
+                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Active Account</p>
+                          <p className="text-[10px] font-black text-slate-900 truncate">{user.email}</p>
+                       </div>
+                        {role !== "driver" && (
+                          <>
+                            <Link to="/home" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-2xl transition-all group/sewa">
+                           <div className="bg-white p-1.5 rounded-lg shadow-sm group-hover/sewa:bg-red-50 transition-colors"><Car size={16} className="text-[#990000]" /></div>
+                           <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 group-hover/sewa:text-[#990000]">Sewa Mobil</span>
+                        </Link>
+                        <div className="h-px bg-slate-50 my-2" />
+                          </>
+                        )}
+                       
+                       {role === 'admin' && adminMenu.map(m => (
+                         <Link key={m.path} to={m.path} className="flex items-center gap-3 px-4 py-3 hover:bg-red-50/50 rounded-2xl transition-all text-slate-600 hover:text-[#990000]">
+                            <div className="bg-white p-1.5 rounded-lg shadow-sm">{m.icon}</div>
+                            <span className="text-[10px] font-black uppercase tracking-widest">{m.name} Control</span>
+                         </Link>
+                       ))}
+
+                       {role === 'driver' && driverMenu.map(m => (
+                         <Link key={m.path} to={m.path} className="flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 rounded-2xl transition-all text-slate-600 hover:text-emerald-600">
+                             <div className="bg-white p-1.5 rounded-lg shadow-sm">{m.icon}</div>
+                             <span className="text-[10px] font-black uppercase tracking-widest">{m.name} Panel</span>
+                         </Link>
+                       ))}
+
+                       {/* CLIENT & GENERAL HISTORY LINK */}
+                       {(role === 'client' || !role) && (
+                         <Link to="/history-pesanan" className="flex items-center gap-3 px-4 py-3 hover:bg-red-50/50 rounded-2xl transition-all text-slate-600 hover:text-[#990000]">
+                            <div className="bg-white p-1.5 rounded-lg shadow-sm"><History size={16} /></div>
+                            <span className="text-[10px] font-black uppercase tracking-widest">History Pesanan</span>
+                         </Link>
+                       )}
+
+                       <div className="h-px bg-slate-50 my-2" />
+                       <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-4 text-[#990000] hover:bg-red-50 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest">
+                          <LogOut size={16} /> Logout System
+                       </button>
                     </div>
-                  ))}
-                  
-                  {orderNotifications.length > 0 && (
-                    <div className="bg-gray-50">
-                      <div className="px-4 py-2 border-y border-gray-100 bg-gray-100/50">
-                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                          {role === "admin" ? "Pesanan Masuk (Admin)" : "Pesanan Baru Tersedia"}
-                        </h4>
-                      </div>
-                      <div className="divide-y divide-gray-100">
-                        {orderNotifications.map((order) => (
-                          <div key={order.id} className={`p-4 hover:bg-white transition-colors ${order.isNewOrder ? 'bg-blue-50/30' : ''}`}>
-                            <div className="flex justify-between items-start mb-1">
-                              <p className="text-sm font-bold text-gray-900 line-clamp-1">{order.namaMobil}</p>
-                              {order.isNewOrder && (
-                                <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded mr-1">NEW</span>
-                              )}
-                              <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ml-2 ${
-                                order.status === 'diproses' ? 'bg-yellow-100 text-yellow-800' :
-                                order.status === 'disetujui' ? 'bg-blue-100 text-blue-800' :
-                                order.status === 'menunggu pembayaran' ? 'bg-orange-100 text-orange-800' :
-                                order.status === 'pembayaran berhasil' ? 'bg-green-100 text-green-800' :
-                                order.status === 'selesai' ? 'bg-brand-100 text-brand-800' :
-                                order.status === 'ditolak' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {order.status}
-                              </span>
-                            </div>
-                            <div className="text-xs text-gray-500 space-y-1 mt-2">
-                              {role === "driver" && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate("/driver-orders");
-                                  }}
-                                  className="w-full mt-2 py-1.5 bg-brand-600 text-white rounded-lg font-bold hover:bg-brand-700 transition-colors"
-                                >
-                                  Lihat & Terima Order
-                                </button>
-                              )}
-                              <p className="flex items-center gap-1.5"><User size={12} /> {order.namaClient || order.email}</p>
-                              <p className="flex items-center gap-1.5"><Calendar size={12} /> {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString() : 'N/A'} - {order.tanggalSelesai ? new Date(order.tanggalSelesai).toLocaleDateString() : 'N/A'}</p>
-                              <p className="flex items-center gap-1.5 font-bold text-gray-700 mt-2">
-                                <DollarSign size={12} className="text-green-600" />
-                                Rp {order.perkiraanHarga?.toLocaleString() || '-'}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                 </div>
+               ) : (
+                 <Link to="/login" className="flex items-center gap-3 bg-[#990000] text-white px-7 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.1em] hover:bg-slate-900 shadow-xl shadow-red-900/10 transition-all group">
+                    Member Access <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                 </Link>
+               )}
+
             </div>
+
           </div>
-        )}
+        </nav>
       </div>
     </>
   );

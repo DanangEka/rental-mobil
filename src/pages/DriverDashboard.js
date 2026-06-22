@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp, getDoc, getDocs } from "firebase/firestore";
-import { ClipboardList, CheckCircle, Clock, DollarSign, TrendingUp, UserPlus, MapPin, Search } from "lucide-react";
+import { ClipboardList, CheckCircle, Clock, DollarSign, TrendingUp, UserPlus, MapPin, Search, Gauge, ChevronRight } from "lucide-react";
 import { useToast } from "../components/Toast";
 
 export default function DriverDashboard() {
@@ -478,127 +478,181 @@ export default function DriverDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-black pt-[72px] relative overflow-hidden">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
-        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-900/20 mix-blend-screen filter blur-[100px] animate-pulse"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+    <div className="min-h-screen bg-slate-50 pt-[100px] pb-12 text-slate-800">
+      {/* Background decoration */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
+        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-red-100 mix-blend-multiply filter blur-[100px]"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-slate-200 mix-blend-multiply filter blur-[120px]"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-4 md:py-8 md:py-12">
-        <div className="mb-6 md:mb-10 animate-fadeInUp">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Dashboard Driver</h1>
-          <p className="text-gray-400 text-lg">Ringkasan operasional dan order tersedia untuk Anda.</p>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-6 md:py-10 lg:py-12">
+        <div className="mb-8 md:mb-10 animate-fadeInUp">
+          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+             <Gauge size={14} />
+             <span>Driver Control Dashboard</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight mb-3">Dashboard Driver</h1>
+          <p className="text-slate-500 text-lg">Ringkasan operasional dan order tersedia untuk Anda.</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
           {[
-            { label: "Total Order", value: stats.totalOrders, icon: <ClipboardList className="h-6 w-6" />, color: "bg-blue-500/20 text-blue-400 border-blue-500/20" },
-            { label: "Order Aktif", value: stats.activeOrders, icon: <Clock className="h-6 w-6" />, color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/20" },
-            { label: "Order Selesai", value: stats.completedOrders, icon: <CheckCircle className="h-6 w-6" />, color: "bg-green-500/20 text-green-400 border-green-500/20" },
-            { label: "Total Pendapatan", value: `Rp ${stats.totalEarnings.toLocaleString()}`, icon: <DollarSign className="h-6 w-6" />, color: "bg-purple-500/20 text-purple-400 border-purple-500/20" },
+            { label: "Total Order", value: stats.totalOrders, icon: <ClipboardList className="h-5 w-5" />, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
+            { label: "Order Aktif", value: stats.activeOrders, icon: <Clock className="h-5 w-5" />, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
+            { label: "Order Selesai", value: stats.completedOrders, icon: <CheckCircle className="h-5 w-5" />, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
+            { label: "Total Pendapatan", value: `Rp ${stats.totalEarnings.toLocaleString()}`, icon: <DollarSign className="h-5 w-5" />, color: "text-[#990000]", bg: "bg-red-50", border: "border-red-100" },
           ].map((stat, idx) => (
-            <div key={idx} className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-4 md:p-6 border border-gray-800 hover:border-gray-700 transition-all group">
-              <div className="flex items-center mb-4">
-                <div className={`p-3 rounded-2xl ${stat.color} border group-hover:scale-110 transition-transform`}>
+            <div key={idx} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition-all group">
+              <div className="flex items-start justify-between mb-4">
+                <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
                   {stat.icon}
                 </div>
+                <ChevronRight size={16} className="text-gray-300" />
               </div>
-              <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">{stat.label}</p>
-              <p className="text-2xl font-black text-white mt-1">{stat.value}</p>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">{stat.label}</p>
+              <p className="text-2xl font-black text-slate-900">{stat.value}</p>
             </div>
           ))}
         </div>
 
         {/* Recent Orders Section */}
         <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          <div className="flex items-center justify-between mb-6 md:mb-8">
+          <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
-              <h2 className="text-2xl font-black text-white tracking-tight uppercase tracking-widest">Order Terbaru Tersedia</h2>
+              <div className="w-1.5 h-6 bg-[#990000] rounded-full"></div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest">Order Terbaru Tersedia</h2>
             </div>
-            <div className="bg-brand-500/10 text-brand-400 text-xs font-bold px-4 py-1.5 rounded-full border border-brand-500/20">
-              {orders.length} Tersedia
+            <div className="bg-red-50 text-[#990000] text-[10px] font-black px-4 py-2 rounded-full border border-red-100 uppercase tracking-widest">
+              {orders.length} Order Tersedia
             </div>
           </div>
 
           <div className="space-y-6">
             {orders.length === 0 ? (
-              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-16 text-center border border-gray-800 border-dashed">
-                <div className="w-20 h-20 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <ClipboardList className="h-10 w-10 text-gray-600" />
+              <div className="bg-white rounded-[2rem] p-16 text-center border border-gray-100 shadow-sm shadow-slate-200/50">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100">
+                  <ClipboardList className="h-10 w-10 text-slate-300" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2 tracking-tight">Belum Ada Order</h3>
-                <p className="text-gray-500 max-w-xs mx-auto">Saat ini tidak ada order penyewaan yang tersedia untuk diambil.</p>
+                <h3 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">Belum Ada Order</h3>
+                <p className="text-slate-500 max-w-xs mx-auto">Saat ini tidak ada order penyewaan yang tersedia untuk diambil.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead>
-                    <tr className="border-b border-gray-800">
-                      <th className="px-4 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Mobil</th>
-                      <th className="px-4 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Client</th>
-                      <th className="px-4 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Lokasi</th>
-                      <th className="px-4 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Tanggal</th>
-                      <th className="px-4 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-800/50">
-                    {orders.slice(0, 10).map((order) => (
-                      <tr key={order.id} className="group hover:bg-white/[0.02] transition-colors">
-                        <td className="px-4 md:px-6 py-4 md:py-6 whitespace-nowrap">
-                          <div className="text-sm font-bold text-white group-hover:text-brand-400 transition-colors underline-offset-4 decoration-brand-500 decoration-2">{order.namaMobil}</div>
+              <>
+                {/* Mobile Card View */}
+                <div className="space-y-4 md:hidden">
+                  {orders.slice(0, 10).map((order) => (
+                    <div key={order.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:border-[#990000]/30 transition-all">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Armada</div>
+                          <div className="text-sm font-black text-slate-900">{order.namaMobil}</div>
                           {order.status === "approve sewa" && (
-                             <div className="text-[10px] text-brand-400 font-black uppercase tracking-tighter mt-1 bg-brand-500/10 px-1.5 py-0.5 rounded border border-brand-500/20 w-fit">Siap diambil (Cash)</div>
+                            <div className="text-[8px] text-[#990000] font-black uppercase tracking-widest mt-1 bg-red-50 px-2 py-0.5 rounded border border-red-100 w-fit">Siap diambil (Cash)</div>
                           )}
-                        </td>
-                        <td className="px-4 md:px-6 py-4 md:py-6 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="h-9 w-9 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center text-xs font-bold text-gray-400 mr-3 overflow-hidden shadow-inner">
-                              {(users.find(u => u.id === order.uid)?.nama || order.email || 'U').charAt(0).toUpperCase()}
-                            </div>
-                            <div className="text-sm font-medium text-gray-300">
-                              {users.find(u => u.id === order.uid)?.nama || order.email}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 md:px-6 py-4 md:py-6">
-                          <div className="flex items-start text-sm text-gray-400">
-                            <MapPin className="h-4 w-4 mr-2 mt-0.5 text-brand-500/70" />
-                            <div>
-                              <span className="font-bold text-gray-200 block text-xs">{order.lokasiPenyerahan || "Lokasi Default"}</span>
-                              <span className="text-[11px] text-gray-500 line-clamp-1 mt-0.5" title={getFullAddress(order)}>
-                                {getFullAddress(order)}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 md:px-6 py-4 md:py-6 whitespace-nowrap">
-                          <div className="text-xs font-bold text-gray-400 bg-gray-900/80 px-2.5 py-1 rounded-lg border border-gray-800">
-                            {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
-                          </div>
-                        </td>
-                        <td className="px-4 md:px-6 py-4 md:py-6 whitespace-nowrap">
-                          {(order.status === "approve sewa" || order.status === "pembayaran berhasil") && !order.driverId ? (
-                            <button
-                              onClick={() => handleAcceptOrder(order.id)}
-                              className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-brand-sm hover:scale-105 active:scale-95"
-                            >
-                              Terima Order
-                            </button>
-                          ) : (
-                            <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest bg-gray-900/50 px-3 py-1.5 rounded-lg border border-gray-800">
-                              {order.driverId ? "Diambil Driver" : getStatusText(order.status)}
-                            </span>
-                          )}
-                        </td>
+                        </div>
+                        <div className="text-[10px] font-black text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 uppercase tracking-widest">
+                          {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short'}) : '-'}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                        <div className="h-8 w-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black text-[#990000] shadow-sm">
+                          {(users.find(u => u.id === order.uid)?.nama || order.email || 'U').charAt(0).toUpperCase()}
+                        </div>
+                        <div className="text-[11px] font-bold text-slate-600 truncate">{users.find(u => u.id === order.uid)?.nama || order.email}</div>
+                      </div>
+                      <div className="flex items-start text-xs text-slate-400 mb-5">
+                        <MapPin className="h-4 w-4 mr-2 mt-0.5 text-[#990000]/70 flex-shrink-0" />
+                        <div>
+                          <span className="font-black text-slate-700 text-[11px] block">{order.lokasiPenyerahan || "Lokasi Default"}</span>
+                          <span className="text-[10px] text-slate-400 line-clamp-1 block mt-0.5 uppercase tracking-wide">{getFullAddress(order)}</span>
+                        </div>
+                      </div>
+                      {(order.status === "approve sewa" || order.status === "pembayaran berhasil") && !order.driverId ? (
+                        <button
+                          onClick={() => handleAcceptOrder(order.id)}
+                          className="w-full bg-[#990000] hover:bg-slate-900 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-red-900/10 active:scale-95"
+                        >
+                          Terima Order
+                        </button>
+                      ) : (
+                        <div className="text-center bg-slate-50 py-3 rounded-xl border border-slate-100">
+                          <span className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">
+                            {order.driverId ? "Diambil Driver" : getStatusText(order.status)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block bg-white rounded-[2rem] border border-gray-200 overflow-hidden shadow-sm">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-gray-200">
+                        <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Mobil</th>
+                        <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Client</th>
+                        <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Lokasi</th>
+                        <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</th>
+                        <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Aksi</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {orders.slice(0, 10).map((order) => (
+                        <tr key={order.id} className="group hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-6 whitespace-nowrap">
+                            <div className="text-[13px] font-black text-slate-900 group-hover:text-[#990000] transition-colors">{order.namaMobil}</div>
+                            {order.status === "approve sewa" && (
+                               <div className="text-[8px] text-[#990000] font-black uppercase tracking-widest mt-1 bg-red-50 px-2 py-0.5 rounded border border-red-100 w-fit">Siap diambil (Cash)</div>
+                            )}
+                          </td>
+                          <td className="px-6 py-6 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[11px] font-black text-[#990000] mr-3 overflow-hidden shadow-inner uppercase">
+                                {(users.find(u => u.id === order.uid)?.nama || order.email || 'U').charAt(0).toUpperCase()}
+                              </div>
+                              <div className="text-[12px] font-bold text-slate-600">
+                                {users.find(u => u.id === order.uid)?.nama || (order.email ? order.email.split('@')[0] : 'Unknown')}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-6">
+                            <div className="flex items-start text-xs text-slate-500">
+                              <MapPin className="h-4 w-4 mr-2 mt-0.5 text-[#990000]/70" />
+                              <div>
+                                <span className="font-black text-slate-700 block text-[11px]">{order.lokasiPenyerahan || "Lokasi Default"}</span>
+                                <span className="text-[10px] text-slate-400 line-clamp-1 mt-0.5" title={getFullAddress(order)}>
+                                  {getFullAddress(order)}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-6 whitespace-nowrap">
+                            <div className="text-[10px] font-black text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 uppercase tracking-tighter">
+                              {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-6 whitespace-nowrap text-center">
+                            {(order.status === "approve sewa" || order.status === "pembayaran berhasil") && !order.driverId ? (
+                              <button
+                                onClick={() => handleAcceptOrder(order.id)}
+                                className="bg-[#990000] hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-red-900/10 hover:scale-105 active:scale-95"
+                              >
+                                Terima Order
+                              </button>
+                            ) : (
+                              <span className="text-slate-400 text-[9px] font-black uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                                {order.driverId ? "Diambil Driver" : getStatusText(order.status)}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>

@@ -12,8 +12,9 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
 } from "chart.js";
-import { Car, Users, DollarSign, TrendingUp } from "lucide-react";
+import { Car, Users, DollarSign, TrendingUp, ChevronRight, LayoutDashboard } from "lucide-react";
 
 ChartJS.register(
   CategoryScale,
@@ -23,7 +24,8 @@ ChartJS.register(
   PointElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 export default function AdminDashboard() {
@@ -43,11 +45,12 @@ export default function AdminDashboard() {
       datasets: [{
         label: 'Pendapatan Harian',
         data: [],
-        backgroundColor: 'rgba(239, 68, 68, 0.7)',
-        borderColor: '#ef4444',
-        borderWidth: 2,
-        borderRadius: 8,
-        hoverBackgroundColor: '#ef4444',
+        backgroundColor: 'rgba(153, 0, 0, 0.7)',
+        borderColor: '#990000',
+        borderWidth: 0,
+        borderRadius: 6,
+        hoverBackgroundColor: '#990000',
+        barThickness: 20,
       }],
     },
     monthly: {
@@ -55,15 +58,16 @@ export default function AdminDashboard() {
       datasets: [{
         label: 'Pendapatan Bulanan',
         data: [],
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderColor: '#990000',
+        backgroundColor: 'rgba(153, 0, 0, 0.05)',
         fill: true,
         tension: 0.4,
-        pointBackgroundColor: '#3b82f6',
-        pointBorderColor: '#fff',
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#990000',
         pointBorderWidth: 2,
         pointRadius: 4,
         pointHoverRadius: 6,
+        borderWidth: 3,
       }],
     },
   });
@@ -78,7 +82,6 @@ export default function AdminDashboard() {
         const companyDoc = await getDoc(companyDocRef);
 
         if (!companyDoc.exists()) {
-          // Create company profile with the specified address
           await setDoc(companyDocRef, {
             nama: "Cakra Lima Tujuh",
             alamat: "Lembah Harapan, Blok AA-57, Lidah Wetan Kec. Lakarsantri, Surabaya",
@@ -100,7 +103,6 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    // Listener mobil
     const unsubscribeCars = onSnapshot(collection(db, "mobil"), (carsSnapshot) => {
       let available = 0;
       let rented = 0;
@@ -126,12 +128,10 @@ export default function AdminDashboard() {
       }));
     });
 
-    // Listener user
     const unsubscribeUsers = onSnapshot(collection(db, "users"), (usersSnapshot) => {
       setStats((prev) => ({ ...prev, totalCustomers: usersSnapshot.size }));
     });
 
-    // Hitung pendapatan
     const fetchRevenue = async () => {
       try {
         const ordersSnapshot = await getDocs(collection(db, "pemesanan"));
@@ -171,7 +171,6 @@ export default function AdminDashboard() {
           }
         });
 
-        // Data harian (7 hari terakhir)
         const last7Days = [];
         const dailyValues = [];
         for (let i = 6; i >= 0; i--) {
@@ -182,7 +181,6 @@ export default function AdminDashboard() {
           dailyValues.push(dailyRevenue[dayKey] || 0);
         }
 
-        // Data bulanan (6 bulan terakhir)
         const last6Months = [];
         const monthlyValues = [];
         for (let i = 5; i >= 0; i--) {
@@ -233,51 +231,44 @@ export default function AdminDashboard() {
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { 
-        position: 'top',
-        labels: {
-          color: '#9ca3af',
-          font: { weight: 'bold', family: 'Inter' },
-          padding: 20,
-          usePointStyle: true,
-          pointStyle: 'circle'
-        }
+        display: false
       },
       tooltip: {
-        backgroundColor: 'rgba(17, 24, 39, 0.95)',
-        titleColor: '#fff',
-        bodyColor: '#9ca3af',
-        borderColor: 'rgba(75, 85, 99, 0.3)',
+        backgroundColor: '#fff',
+        titleColor: '#111827',
+        bodyColor: '#4b5563',
+        borderColor: '#e5e7eb',
         borderWidth: 1,
-        padding: 16,
-        cornerRadius: 16,
-        displayColors: true,
-        boxPadding: 8,
-        titleFont: { size: 14, weight: 'bold' },
-        bodyFont: { size: 13 }
+        padding: 12,
+        cornerRadius: 8,
+        displayColors: false,
+        titleFont: { size: 12, weight: 'bold' },
+        bodyFont: { size: 12 }
       }
     },
     scales: {
       x: {
         grid: { display: false },
         ticks: { 
-          color: '#6b7280', 
-          font: { weight: 'bold', size: 11 },
-          padding: 10
+          color: '#9ca3af', 
+          font: { size: 10, weight: '500' },
+          padding: 8
         }
       },
       y: {
         beginAtZero: true,
         grid: { 
-          color: 'rgba(75, 85, 99, 0.1)',
+          color: '#f3f4f6',
           drawBorder: false
         },
         ticks: {
-          color: '#6b7280',
-          font: { weight: 'bold', size: 11 },
-          padding: 10,
-          callback: (value) => 'Rp ' + (value >= 1000000 ? (value / 1000000).toFixed(1) + 'jt' : value.toLocaleString()),
+          color: '#9ca3af',
+          font: { size: 10, weight: '500' },
+          padding: 8,
+          callback: (value) => value >= 1000000 ? (value / 1000000).toFixed(1) + 'jt' : value.toLocaleString(),
         },
       },
     },
@@ -285,22 +276,13 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black pt-[72px] pb-12 relative overflow-hidden">
-        {/* Dynamic Background */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="animate-pulse space-y-8 mt-6 md:mt-10">
-            <div className="h-12 bg-gray-800 rounded-2xl w-1/3"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="min-h-screen bg-slate-50 pt-[100px] pb-12">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="animate-pulse space-y-8">
+            <div className="h-10 bg-gray-200 rounded-lg w-1/4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-40 bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800"></div>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800"></div>
+                <div key={i} className="h-32 bg-white rounded-2xl shadow-sm border border-gray-100"></div>
               ))}
             </div>
           </div>
@@ -310,159 +292,140 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-black pt-[72px] pb-12 relative overflow-hidden">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
-        <div className="absolute top-[5%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-900/10 mix-blend-screen filter blur-[100px] animate-pulse"></div>
-        <div className="absolute bottom-[-10%] right-[5%] w-[45vw] h-[45vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="mb-6 md:mb-10 pt-8 animate-fadeInUp">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
-            <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight mb-2">Admin Dashboard</h1>
-              <p className="text-gray-400 text-lg">Ringkasan performa dan metrik ekosistem armada.</p>
+    <div className="min-h-screen bg-slate-50 pt-[100px] pb-12 text-slate-800">
+      <div className="max-w-7xl mx-auto px-6">
+        
+        {/* Header */}
+        <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+              <LayoutDashboard size={14} />
+              <span>Admin Control Panel</span>
             </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Admin Dashboard</h1>
+            <p className="text-slate-500 mt-1">Ringkasan performa sistem dan armada Cakra Lima Tujuh.</p>
           </div>
         </div>
 
-        {/* Stats Cards Mobil */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800 p-4 md:p-6 flex flex-col justify-between group hover:border-green-500/50 transition-all">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Mobil Tersedia</p>
-                <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">{stats.availableCars}</p>
+        {/* Stats Cards Row 1 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[
+            { label: "Mobil Tersedia", val: stats.availableCars, icon: <Car size={20} />, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
+            { label: "Mobil Disewa", val: stats.rentedCars, icon: <Car size={20} />, color: "text-[#990000]", bg: "bg-red-50", border: "border-red-100" },
+            { label: "Mobil Diservis", val: stats.serviceCars, icon: <Car size={20} />, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
+            { label: "Total Pelanggan", val: stats.totalCustomers, icon: <Users size={20} />, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
+          ].map((item, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition-shadow group">
+              <div className="flex items-start justify-between mb-4">
+                <div className={`p-3 ${item.bg} ${item.color} rounded-xl group-hover:scale-110 transition-transform`}>
+                  {item.icon}
+                </div>
+                <ChevronRight size={16} className="text-gray-300" />
               </div>
-              <div className="p-3 bg-green-500/20 text-green-400 rounded-2xl">
-                <Car size={24} />
-              </div>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">{item.label}</p>
+              <p className="text-3xl font-black text-slate-900">{item.val.toLocaleString()}</p>
             </div>
-            <div className="mt-6 pt-4 border-t border-gray-800/50">
-              <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">Siap Disewakan</span>
-            </div>
-          </div>
-
-          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800 p-4 md:p-6 flex flex-col justify-between group hover:border-blue-500/50 transition-all">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Mobil Disewa</p>
-                <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">{stats.rentedCars}</p>
-              </div>
-              <div className="p-3 bg-blue-500/20 text-blue-400 rounded-2xl">
-                <Car size={24} />
-              </div>
-            </div>
-            <div className="mt-6 pt-4 border-t border-gray-800/50">
-              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Sedang Berjalan</span>
-            </div>
-          </div>
-
-          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800 p-4 md:p-6 flex flex-col justify-between group hover:border-red-500/50 transition-all">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Mobil Diservis</p>
-                <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">{stats.serviceCars}</p>
-              </div>
-              <div className="p-3 bg-red-500/20 text-red-400 rounded-2xl">
-                <Car size={24} />
-              </div>
-            </div>
-            <div className="mt-6 pt-4 border-t border-gray-800/50">
-              <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">Sedang Perbaikan</span>
-            </div>
-          </div>
-
-          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800 p-4 md:p-6 flex flex-col justify-between group hover:border-brand-500/50 transition-all">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Armada</p>
-                <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">{stats.totalCars}</p>
-              </div>
-              <div className="p-3 bg-brand-500/20 text-brand-400 rounded-2xl">
-                <Car size={24} />
-              </div>
-            </div>
-            <div className="mt-6 pt-4 border-t border-gray-800/50 space-y-2">
-              <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                <div className="bg-brand-500 h-1.5 rounded-full transition-all duration-1000" style={{ width: `${(stats.availableCars / stats.totalCars) * 100}%` }}></div>
-              </div>
-              <p className="text-[10px] text-gray-400 text-right font-black uppercase tracking-widest italic">{Math.round((stats.availableCars / stats.totalCars) * 100)}% Ketersediaan</p>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Customers & Revenue */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-10 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
-          <div className="bg-gradient-to-br from-indigo-600/20 to-purple-800/20 glass-card rounded-2xl md:rounded-3xl border border-indigo-500/20 p-4 sm:p-6 md:p-8 flex items-center gap-4 md:gap-6 group hover:border-indigo-500/40 transition-all">
-            <div className="p-4 bg-indigo-500/20 rounded-2xl text-indigo-400 shadow-lg shadow-indigo-500/10">
-              <Users size={32} />
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1">Total Pelanggan</p>
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">{stats.totalCustomers}</p>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-emerald-600/20 to-teal-800/20 glass-card rounded-2xl md:rounded-3xl border border-emerald-500/20 p-4 sm:p-6 md:p-8 flex items-center gap-4 md:gap-6 group hover:border-emerald-500/40 transition-all">
-            <div className="p-4 bg-emerald-500/20 rounded-2xl text-emerald-400 shadow-lg shadow-emerald-500/10">
+        {/* Revenue Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 flex items-center gap-6 group">
+            <div className="w-16 h-16 bg-red-50 text-[#990000] rounded-2xl flex items-center justify-center flex-shrink-0">
               <DollarSign size={32} />
             </div>
-            <div>
-              <p className="text-[10px] font-black text-emerald-300 uppercase tracking-widest mb-1">Pendapatan Hari Ini</p>
-              <p className="text-2xl md:text-3xl font-black text-white tracking-tighter">Rp {stats.todayRevenue.toLocaleString()}</p>
+            <div className="flex-1">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Pendapatan Hari Ini</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-sm font-bold text-gray-400">Rp</span>
+                <span className="text-3xl font-black text-slate-900 tracking-tighter">{stats.todayRevenue.toLocaleString()}</span>
+              </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-brand-600/20 to-red-800/20 glass-card rounded-2xl md:rounded-3xl border border-brand-500/20 p-4 sm:p-6 md:p-8 flex items-center gap-4 md:gap-6 group hover:border-brand-500/40 transition-all md:col-span-2 lg:col-span-1">
-            <div className="p-4 bg-brand-500/20 rounded-2xl text-brand-400 shadow-lg shadow-brand-500/10">
+          <div className="bg-[#990000] rounded-2xl shadow-lg p-8 flex items-center gap-6 group overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10" />
+            <div className="w-16 h-16 bg-white/20 text-white rounded-2xl flex items-center justify-center flex-shrink-0 relative z-10 backdrop-blur-sm">
               <TrendingUp size={32} />
             </div>
+            <div className="flex-1 relative z-10">
+              <p className="text-xs font-bold text-red-200 uppercase tracking-widest mb-1">Pendapatan Bulan Ini</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-sm font-bold text-red-200">Rp</span>
+                <span className="text-3xl font-black text-white tracking-tighter">{stats.monthlyRevenue.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Daily Chart */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Analisis Harian</h3>
+                <p className="text-xs text-slate-400 font-medium tracking-wide uppercase">7 Hari Terakhir</p>
+              </div>
+              <div className="w-2.5 h-2.5 rounded-full bg-[#990000]" />
+            </div>
+            <div className="h-64">
+              {revenueData.daily.labels.length > 0 ? (
+                <Bar data={revenueData.daily} options={chartOptions} />
+              ) : (
+                <div className="h-full flex items-center justify-center text-slate-300 text-xs font-bold uppercase tracking-widest">Memuat Data...</div>
+              )}
+            </div>
+          </div>
+
+          {/* Monthly Chart */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Performa Bulanan</h3>
+                <p className="text-xs text-slate-400 font-medium tracking-wide uppercase">6 Bulan Terakhir</p>
+              </div>
+              <div className="w-2.5 h-2.5 rounded-full bg-slate-200" />
+            </div>
+            <div className="h-64">
+              {revenueData.monthly.labels.length > 0 ? (
+                <Line data={revenueData.monthly} options={chartOptions} />
+              ) : (
+                <div className="h-full flex items-center justify-center text-slate-300 text-xs font-bold uppercase tracking-widest">Memuat Data...</div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Fleet Summary Card */}
+        <div className="mt-8 bg-white rounded-2xl border border-gray-200 shadow-sm p-8 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex items-center gap-6">
+            <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400">
+              <Car size={28} />
+            </div>
             <div>
-              <p className="text-[10px] font-black text-brand-300 uppercase tracking-widest mb-1">Pendapatan Bulan Ini</p>
-              <p className="text-2xl md:text-3xl font-black text-white tracking-tighter">Rp {stats.monthlyRevenue.toLocaleString()}</p>
+              <h4 className="text-lg font-bold text-slate-900">Total Armada Terdaftar</h4>
+              <p className="text-slate-500 pr-4">Total unit kendaraan dalam sistem manajemen saat ini.</p>
             </div>
+          </div>
+          
+          <div className="flex items-center gap-8 w-full md:w-auto">
+             <div className="flex-1 md:w-48">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Utilisasi Armada</span>
+                  <span className="text-xs font-black text-slate-900">{Math.round(((stats.totalCars - stats.availableCars) / stats.totalCars) * 100) || 0}%</span>
+                </div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-[#990000] transition-all duration-1000 ease-out" 
+                    style={{ width: `${((stats.totalCars - stats.availableCars) / stats.totalCars) * 100}%` }}
+                  />
+                </div>
+             </div>
+             <div className="text-4xl font-black text-slate-900">{stats.totalCars}</div>
           </div>
         </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 animate-fadeInUp" style={{ animationDelay: "0.4s" }}>
-          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-[2.5rem] border border-gray-800 p-4 sm:p-6 md:p-8">
-            <div className="flex justify-between items-center mb-6 md:mb-8">
-              <h2 className="text-2xl font-black text-white tracking-tight uppercase">Grafik Harian</h2>
-              <span className="text-[10px] font-black px-4 py-1.5 bg-gray-800/50 text-brand-400 border border-brand-500/20 rounded-full uppercase tracking-widest">7 Hari Terakhir</span>
-            </div>
-            {revenueData.daily.labels.length > 0 ? (
-              <div className="h-80">
-                <Bar data={revenueData.daily} options={{...chartOptions, maintainAspectRatio: false}} />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-80 text-gray-600 space-y-4">
-                <div className="w-12 h-12 border-4 border-gray-800 border-t-brand-500 rounded-full animate-spin"></div>
-                <p className="text-xs font-black uppercase tracking-widest">Sinkronisasi Data...</p>
-              </div>
-            )}
-          </div>
-
-          <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-[2.5rem] border border-gray-800 p-4 sm:p-6 md:p-8">
-            <div className="flex justify-between items-center mb-6 md:mb-8">
-              <h2 className="text-2xl font-black text-white tracking-tight uppercase">Grafik Bulanan</h2>
-              <span className="text-[10px] font-black px-4 py-1.5 bg-gray-800/50 text-blue-400 border border-blue-500/20 rounded-full uppercase tracking-widest">6 Bulan Terakhir</span>
-            </div>
-            {revenueData.monthly.labels.length > 0 ? (
-              <div className="h-80">
-                <Line data={revenueData.monthly} options={{...chartOptions, maintainAspectRatio: false}} />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-80 text-gray-600 space-y-4">
-                <div className="w-12 h-12 border-4 border-gray-800 border-t-blue-500 rounded-full animate-spin"></div>
-                <p className="text-xs font-black uppercase tracking-widest">Sinkronisasi Data...</p>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

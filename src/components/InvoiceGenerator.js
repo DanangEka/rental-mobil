@@ -214,7 +214,7 @@ const InvoiceGenerator = {
   // Generate DP Invoice (50% payment)
   generateDPInvoice: (order, user) => {
     const doc = new jsPDF();
-    const dpAmount = Math.ceil(order.perkiraanHarga * 0.5);
+    const dpAmount = order.dpAmount || Math.ceil(order.perkiraanHarga * 0.5);
     const remainingAmount = order.perkiraanHarga - dpAmount;
     const invNo = `INV-DP-${order.id.slice(-8).toUpperCase()}`;
 
@@ -282,7 +282,6 @@ const InvoiceGenerator = {
   // Generate Driver Invoice
   generateDriverInvoice: (order, user) => {
     const doc = new jsPDF();
-    const dpAmount = Math.ceil(order.perkiraanHarga * 0.5);
     const invNo = `DRV-DP-${order.id.slice(-8).toUpperCase()}`;
 
     addHeader(doc, "ORDER FORM - DRIVER COPY", COLORS.INFO);

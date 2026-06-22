@@ -1,26 +1,23 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
-import { CreditCard, Calendar, User, DollarSign, Eye, CheckCircle, XCircle, Download } from "lucide-react";
+import { CreditCard, Calendar, User, DollarSign, Eye, CheckCircle, XCircle, Download, FileText, Filter, LayoutGrid, Clock } from "lucide-react";
 
 export default function AdminPaymentVerifications() {
   const [user, setUser] = useState(null);
   const [verifications, setVerifications] = useState([]);
   const [selectedVerification, setSelectedVerification] = useState(null);
-  const [filter, setFilter] = useState("all"); // all, today, week, month, pending, approved, rejected
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);
     });
-
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     if (!user) return;
-
-    // Fetch all payment verifications
     const q = query(
       collection(db, "paymentVerifications"),
       orderBy("timestamp", "desc")
@@ -39,347 +36,198 @@ export default function AdminPaymentVerifications() {
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/A";
-    return new Date(timestamp.toDate()).toLocaleString("id-ID");
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleString("id-ID", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
+      maximumFractionDigits: 0
     }).format(amount);
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case "pending":
-        return "Menunggu";
-      case "approved":
-        return "Disetujui";
-      case "rejected":
-        return "Ditolak";
-      default:
-        return status;
-    }
-  };
-
-  const getPaymentMethodText = (method) => {
-    switch (method) {
-      case "cash":
-        return "Tunai";
-      case "transfer":
-        return "Transfer Bank";
-      case "other":
-        return "Lainnya";
-      default:
-        return method;
-    }
   };
 
   const filteredVerifications = verifications.filter((verification) => {
     if (filter === "all") return true;
-
     if (["pending", "approved", "rejected"].includes(filter)) {
       return verification.status === filter;
     }
-
     const now = new Date();
-    const verificationDate = new Date(verification.timestamp?.toDate());
-
-    switch (filter) {
-      case "today":
-        return verificationDate.toDateString() === now.toDateString();
-      case "week":
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return verificationDate >= weekAgo;
-      case "month":
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        return verificationDate >= monthAgo;
-      default:
-        return true;
-    }
+    const verificationDate = verification.timestamp?.toDate ? verification.timestamp.toDate() : new Date(verification.timestamp);
+    if (filter === "today") return verificationDate.toDateString() === now.toDateString();
+    return true;
   });
 
   return (
-    <div className="min-h-screen bg-black pt-[72px] pb-12 relative overflow-hidden">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0000] to-black"></div>
-        <div className="absolute top-[15%] right-[-5%] w-[45vw] h-[45vw] rounded-full bg-brand-900/10 mix-blend-screen filter blur-[100px] animate-pulse"></div>
-        <div className="absolute bottom-[5%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-red-900/10 mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDelay: '3s' }}></div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="mb-6 md:mb-10 pt-8 animate-fadeInUp">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight mb-2">Verifikasi Pembayaran</h1>
-          <p className="text-gray-400 text-lg">Validasi setoran tunai dari driver untuk memastikan integritas keuangan.</p>
+    <div className="min-h-screen bg-slate-50 pt-[100px] pb-20 text-slate-800 font-sans">
+      <div className="max-w-7xl mx-auto px-6">
+        
+        {/* Header */}
+        <div className="mb-10">
+          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+            <DollarSign size={14} />
+            <span>Financial Logistics</span>
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Verifikasi Pembayaran</h1>
+          <p className="text-slate-500 mt-1">Audit setoran tunai dari mitra pengemudi untuk validasi harian.</p>
         </div>
 
-        {/* Filter Section */}
-        <div className="mb-6 md:mb-8 glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-4 md:p-6 border border-gray-800 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
-          <div className="flex flex-wrap items-center gap-3">
-             <div className="p-2 bg-brand-500/20 rounded-xl text-brand-400 mr-2">
-                <CreditCard size={20} />
-             </div>
-            {["all", "pending", "approved", "rejected", "today"].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 md:px-6 py-2.5 rounded-xl font-bold transition-all ${
-                  filter === f
-                    ? "bg-brand-600 text-white shadow-brand-sm"
-                    : "bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-white border border-gray-700"
-                }`}
-              >
-                {f === "all" ? "Semua" : f === "pending" ? "Menunggu" : f === "approved" ? "Disetujui" : f === "rejected" ? "Ditolak" : "Hari Ini"}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-10 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-brand-500/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Total</p>
-                <p className="text-2xl md:text-3xl font-black text-white">{verifications.length}</p>
-              </div>
-              <div className="p-3 bg-brand-500/20 rounded-2xl text-brand-400">
-                <CreditCard size={24} />
-              </div>
-            </div>
-          </div>
+        {/* Filters and Stats Summary */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-10">
           
-          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-yellow-500/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Menunggu</p>
-                <p className="text-2xl md:text-3xl font-black text-white">
-                  {verifications.filter(v => v.status === "pending").length}
-                </p>
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                <Filter size={14} /> Log Filter
+              </h3>
+              <div className="flex flex-col gap-2">
+                {[
+                  { id: "all", label: "Semua Laporan" },
+                  { id: "pending", label: "Menunggu Approval" },
+                  { id: "approved", label: "Disetujui" },
+                  { id: "rejected", label: "Ditolak" },
+                  { id: "today", label: "Hari Ini" },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setFilter(f.id)}
+                    className={`px-5 py-3 rounded-xl text-left text-xs font-bold uppercase tracking-widest transition-all ${filter === f.id ? 'bg-[#990000] text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
               </div>
-              <div className="p-3 bg-yellow-500/20 rounded-2xl text-yellow-400 text-xs font-black">
-                WP
-              </div>
+            </div>
+
+            <div className="bg-[#990000] rounded-3xl p-8 text-white shadow-lg overflow-hidden relative">
+               <div className="relative z-10">
+                  <p className="text-[10px] font-bold text-red-200 uppercase tracking-widest mb-1">Menunggu Review</p>
+                  <p className="text-4xl font-black">{verifications.filter(v => v.status === "pending").length}</p>
+               </div>
+               <div className="absolute right-0 bottom-0 p-6 opacity-20 relative z-0">
+                  <Clock size={60} />
+               </div>
             </div>
           </div>
 
-          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-green-500/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Disetujui</p>
-                <p className="text-2xl md:text-3xl font-black text-white">
-                  {verifications.filter(v => v.status === "approved").length}
-                </p>
-              </div>
-              <div className="p-3 bg-green-500/20 rounded-2xl text-green-400 text-xs font-black">
-                OK
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card bg-gray-900/40 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-800 group hover:border-red-500/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Ditolak</p>
-                <p className="text-2xl md:text-3xl font-black text-white">
-                  {verifications.filter(v => v.status === "rejected").length}
-                </p>
-              </div>
-              <div className="p-3 bg-red-500/20 rounded-2xl text-red-400 text-xs font-black">
-                REJ
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* List Content */}
-        <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl border border-gray-800 overflow-hidden animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
-          <div className="px-4 md:px-8 py-4 md:py-6 border-b border-gray-800 bg-gray-900/20 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white flex items-center gap-3">
-              <DollarSign size={20} className="text-brand-400" />
-              Verifikasi Pembayaran ({filteredVerifications.length})
-            </h2>
-          </div>
-
-          <div className="divide-y divide-gray-800">
-            {filteredVerifications.length === 0 ? (
-              <div className="p-20 text-center">
-                <div className="w-16 h-16 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CreditCard size={28} className="text-gray-600" />
+          <div className="lg:col-span-3">
+             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden h-full">
+                <div className="bg-slate-50 px-8 py-5 border-b border-slate-100 flex items-center justify-between">
+                   <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">Daftar Setoran</h2>
+                   <span className="text-[10px] font-bold text-slate-400">{filteredVerifications.length} Entries</span>
                 </div>
-                <p className="text-gray-400 font-medium">Belum ada data pembayaran yang masuk</p>
-              </div>
-            ) : (
-              filteredVerifications.map((verification, idx) => (
-                <div
-                  key={verification.id}
-                  className="p-4 sm:p-6 md:p-8 hover:bg-gray-800/20 transition-all group"
-                  style={{ animationDelay: `${0.1 * idx}s` }}
-                >
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6 md:gap-8">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className={`px-3 py-1 text-xs font-black uppercase tracking-widest rounded-full border ${
-                          verification.status === "pending" 
-                            ? "bg-yellow-500/20 border-yellow-500/50 text-yellow-400" 
-                            : verification.status === "approved"
-                            ? "bg-green-500/20 border-green-500/50 text-green-400"
-                            : "bg-red-500/20 border-red-500/50 text-red-400"
-                        }`}>
-                          {getStatusText(verification.status)}
-                        </span>
-                        <span className="text-sm text-gray-500 font-semibold bg-gray-800/50 px-3 py-1 rounded-full border border-gray-700">
-                          {formatDate(verification.timestamp)}
-                        </span>
-                      </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Nominal</p>
-                          <p className="text-brand-400 font-black text-xl">{formatCurrency(verification.paymentAmount)}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Driver</p>
-                          <p className="text-white font-bold">{verification.driverId}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Metode</p>
-                          <p className="text-gray-300 font-medium">{getPaymentMethodText(verification.paymentMethod)}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Order ID</p>
-                          <p className="text-gray-500 font-mono text-xs truncate max-w-[120px]">{verification.orderId}</p>
+                <div className="divide-y divide-slate-100 overflow-y-auto max-h-[600px]">
+                  {filteredVerifications.length === 0 ? (
+                    <div className="p-20 text-center">
+                       <FileText size={40} className="mx-auto text-slate-200 mb-4" />
+                       <p className="text-slate-400 font-bold italic text-sm">Tidak ada log pembayaran ditemukan.</p>
+                    </div>
+                  ) : (
+                    filteredVerifications.map((v) => (
+                      <div key={v.id} className="p-6 md:px-8 hover:bg-slate-50 transition-colors group">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                           <div className="flex items-center gap-6 flex-1">
+                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${v.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                 <CreditCard size={24} />
+                              </div>
+                              <div>
+                                 <div className="flex items-center gap-3 mb-1">
+                                    <h4 className="text-lg font-black text-slate-900">{formatCurrency(v.paymentAmount)}</h4>
+                                    <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${
+                                      v.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                      v.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-100' :
+                                      'bg-amber-50 text-amber-600 border-amber-100'
+                                    }`}>
+                                      {v.status}
+                                    </span>
+                                 </div>
+                                 <p className="text-xs font-bold text-slate-400">Driver: {v.driverId} • {formatDate(v.timestamp)}</p>
+                              </div>
+                           </div>
+
+                           <div className="flex items-center gap-4">
+                              <div className="text-right hidden sm:block">
+                                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Order ID</p>
+                                 <p className="text-[10px] font-mono text-slate-900">#{v.orderId?.substring(0, 8)}</p>
+                              </div>
+                              <button 
+                                onClick={() => setSelectedVerification(v)}
+                                className="bg-slate-900 hover:bg-black text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
+                              >
+                                Detail
+                              </button>
+                           </div>
                         </div>
                       </div>
-
-                      {verification.notes && (
-                        <div className="mt-4 p-4 bg-gray-950/50 border border-gray-800 rounded-2xl">
-                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Catatan</p>
-                          <p className="text-gray-400 text-sm italic">{verification.notes}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                       <button
-                        onClick={() => setSelectedVerification(verification)}
-                        className="flex items-center gap-2 px-4 md:px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-2xl border border-gray-700 transition-all group-hover:border-brand-500/50 active:scale-95 shadow-lg"
-                      >
-                        <Eye size={18} />
-                        Detail
-                      </button>
-                    </div>
-                  </div>
+                    ))
+                  )}
                 </div>
-              ))
-            )}
+             </div>
           </div>
+
         </div>
 
-        {/* Modal Overlay */}
+        {/* Modal Selection */}
         {selectedVerification && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-            <div 
-              className="absolute inset-0 bg-black/95 backdrop-blur-xl animate-fadeIn" 
-              onClick={() => setSelectedVerification(null)}
-            ></div>
-            
-            <div className="relative bg-gray-900 border border-gray-800 w-full max-w-4xl rounded-2xl md:rounded-[2.5rem] shadow-2xl overflow-hidden animate-zoomIn max-h-[90vh] flex flex-col">
-              <div className="p-4 sm:p-6 md:p-8 border-b border-gray-800 flex justify-between items-center bg-gray-900/50 backdrop-blur-2xl">
-                <div>
-                  <h3 className="text-2xl font-black text-white tracking-tight">Verifikasi Pembayaran</h3>
-                  <p className="text-gray-400 text-sm mt-1">Order #{selectedVerification.orderId.substring(0, 8)}...</p>
-                </div>
-                <button
-                  onClick={() => setSelectedVerification(null)}
-                  className="w-12 h-12 flex items-center justify-center rounded-2xl bg-gray-800 text-gray-400 hover:bg-red-500 hover:text-white transition-all shadow-lg"
-                >
-                  <span className="text-2xl">×</span>
-                </button>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white rounded-[2.5rem] w-full max-w-4xl shadow-2xl overflow-hidden animate-scaleUp">
+              <div className="px-10 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                 <div>
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Audit Transaksi</h3>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Report #{selectedVerification.id.substring(0, 8)}</p>
+                 </div>
+                 <button onClick={() => setSelectedVerification(null)} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors text-2xl font-black">×</button>
               </div>
 
-              <div className="p-4 sm:p-6 md:p-8 overflow-y-auto flex-grow">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
-                    <div className="space-y-6">
-                       <div className="bg-gray-800/30 p-4 sm:p-6 md:p-8 rounded-[2rem] border border-gray-800 text-center relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 p-4 opacity-10">
-                             <DollarSign size={80} className="text-brand-500" />
+              <div className="p-10">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div className="space-y-8">
+                       <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Setoran</p>
+                          <p className="text-4xl font-black text-[#990000] tracking-tighter">{formatCurrency(selectedVerification.paymentAmount)}</p>
+                       </div>
+                       
+                       <div className="space-y-4">
+                          <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Driver</span>
+                             <span className="text-sm font-black text-slate-900">{selectedVerification.driverId}</span>
                           </div>
-                          <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Total Diterima</h4>
-                          <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-brand-400 tracking-tight">{formatCurrency(selectedVerification.paymentAmount)}</p>
-                          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-brand-500/10 rounded-full border border-brand-500/20">
-                             <span className="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
-                             <span className="text-[10px] font-black text-brand-400 uppercase tracking-widest">{getPaymentMethodText(selectedVerification.paymentMethod)}</span>
+                          <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Waktu</span>
+                             <span className="text-sm font-black text-slate-900">{formatDate(selectedVerification.timestamp)}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Metode</span>
+                             <span className="text-sm font-black text-slate-500 uppercase">{selectedVerification.paymentMethod}</span>
                           </div>
                        </div>
-
-                       <div className="bg-gray-800/30 p-4 md:p-6 rounded-[2rem] border border-gray-800">
-                          <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4">Informasi Transaksi</h4>
-                          <div className="space-y-4">
-                             <div className="flex justify-between items-center">
-                                <span className="text-gray-400 text-sm">Status</span>
-                                <span className={`px-3 py-1 text-[10px] font-black rounded-full border ${
-                                   selectedVerification.status === 'approved' ? 'bg-green-500/20 border-green-500/30 text-green-400' : 
-                                   selectedVerification.status === 'pending' ? 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400' : 
-                                   'bg-red-500/20 border-red-500/30 text-red-400'
-                                }`}>
-                                   {getStatusText(selectedVerification.status).toUpperCase()}
-                                </span>
-                             </div>
-                             <div className="flex justify-between items-center">
-                                <span className="text-gray-400 text-sm">Waktu Entry</span>
-                                <span className="text-white text-sm font-bold">{formatDate(selectedVerification.timestamp)}</span>
-                             </div>
-                             <div className="flex justify-between items-center">
-                                <span className="text-gray-400 text-sm">Driver Pengirim</span>
-                                <span className="text-white text-sm font-bold">{selectedVerification.driverId}</span>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-
-                    <div className="space-y-6">
-                       <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Lampiran Bukti</h4>
-                       {selectedVerification.paymentProof ? (
-                          <div className="group relative bg-black rounded-[2rem] border border-gray-800 overflow-hidden aspect-[3/4] shadow-2xl">
-                             <div className="absolute inset-0 flex items-center justify-center p-6 sm:p-10 md:p-12 bg-gray-900/50">
-                                <div className="text-center">
-                                   <CreditCard size={64} className="text-gray-800 mx-auto mb-4" />
-                                   <p className="text-gray-400 font-bold mb-2">{selectedVerification.paymentProof.name || "Bukti_Pembayaran.jpg"}</p>
-                                   <p className="text-gray-600 text-sm">{(selectedVerification.paymentProof.size / 1024 / 1024).toFixed(2)} MB</p>
-                                   <button className="mt-6 md:mt-8 flex items-center gap-2 px-4 md:px-6 py-3 bg-gray-800 rounded-2xl text-white font-bold hover:bg-brand-600 transition-colors mx-auto">
-                                      <Download size={18} />
-                                      Unduh File
-                                   </button>
-                                </div>
-                             </div>
-                          </div>
-                       ) : (
-                          <div className="bg-gray-800/20 border-2 border-dashed border-gray-800 rounded-[2rem] p-16 text-center">
-                             <XCircle size={48} className="text-gray-800 mx-auto mb-4" />
-                             <p className="text-gray-600 font-medium italic">Tidak ada lampiran gambar</p>
-                          </div>
-                       )}
 
                        {selectedVerification.notes && (
-                          <div className="bg-brand-500/5 border border-brand-500/20 p-4 md:p-6 rounded-2xl md:rounded-3xl">
-                             <h4 className="text-[10px] font-black text-brand-400 uppercase tracking-[0.2em] mb-2">Catatan Driver</h4>
-                             <p className="text-gray-300 text-sm italic leading-relaxed">"{selectedVerification.notes}"</p>
-                          </div>
+                         <div className="p-6 bg-red-50/50 border border-red-100 rounded-2xl">
+                            <p className="text-[10px] font-bold text-[#990000] uppercase tracking-widest mb-1 italic">Catatan Driver:</p>
+                            <p className="text-sm text-slate-600 font-medium italic">"{selectedVerification.notes}"</p>
+                         </div>
+                       )}
+                    </div>
+
+                    <div>
+                       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Lampiran Bukti</p>
+                       {selectedVerification.paymentProof ? (
+                         <div className="bg-slate-100 rounded-[2rem] overflow-hidden aspect-[3/4] border border-slate-200 shadow-inner group relative">
+                            <img src={selectedVerification.paymentProof} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Proof" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-6">
+                               <a href={selectedVerification.paymentProof} target="_blank" rel="noreferrer" className="bg-white text-slate-900 px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-xl flex items-center gap-2">
+                                  <Eye size={16} /> Buka Gambar
+                               </a>
+                            </div>
+                         </div>
+                       ) : (
+                         <div className="bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 h-80 flex flex-col items-center justify-center text-slate-300">
+                            <FileText size={48} className="mb-4" />
+                            <p className="text-xs font-bold uppercase">No Image Provided</p>
+                         </div>
                        )}
                     </div>
                  </div>
@@ -387,6 +235,7 @@ export default function AdminPaymentVerifications() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

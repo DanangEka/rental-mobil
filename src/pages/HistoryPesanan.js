@@ -1,19 +1,41 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+
 import {
   collection,
-  getDocs,
   updateDoc,
   doc,
-  getDoc,
   query,
   where,
   orderBy,
   onSnapshot,
-  addDoc
+  addDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import axios from "axios";
-import { Calendar, Edit, X, AlertTriangle, Clock, CheckCircle, RefreshCw, Filter, Check, FileText, CreditCard, Upload } from "lucide-react";
+import { 
+  Calendar, 
+  Edit, 
+  X, 
+  AlertTriangle, 
+  Clock, 
+  CheckCircle, 
+  RefreshCw, 
+  Filter, 
+  Check, 
+  FileText, 
+  CreditCard, 
+  Upload, 
+  History,
+  Search, 
+  ChevronRight, 
+  MapPin, 
+  Car, 
+  User, 
+  ArrowRight,
+  Info
+} from "lucide-react";
 import InvoiceGenerator from "../components/InvoiceGenerator";
 
 export default function HistoryPesanan() {
@@ -40,27 +62,36 @@ export default function HistoryPesanan() {
   const [balancePaymentProof, setBalancePaymentProof] = useState(null);
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      alert("Anda belum login.");
-      setLoading(false);
-      return;
-    }
+    let unsubscribeSnapshot = null;
 
-    const q = query(
-      collection(db, "pemesanan"),
-      where("uid", "==", user.uid),
-      orderBy("tanggal", "desc")
-    );
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setLoading(false);
+        setPemesanan([]);
+        return;
+      }
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const pemesananData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setPemesanan(pemesananData);
-      setLoading(false);
-      setRefreshing(false);
+      const q = query(
+        collection(db, "pemesanan"),
+        where("uid", "==", user.uid),
+        orderBy("tanggal", "desc")
+      );
+
+      unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
+        const pemesananData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setPemesanan(pemesananData);
+        setLoading(false);
+        setRefreshing(false);
+      }, (error) => {
+        console.error("Firestore snapshot error:", error);
+        setLoading(false);
+      });
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
+    };
   }, []);
 
   // Filter and sort orders
@@ -107,8 +138,6 @@ export default function HistoryPesanan() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // The onSnapshot will automatically update the data
-    // This is just for user feedback
     setTimeout(() => setRefreshing(false), 1000);
   };
 
@@ -145,7 +174,6 @@ export default function HistoryPesanan() {
       const diffTime = Math.abs(endDate - startDate);
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      // Update order with edit request
       await updateDoc(doc(db, "pemesanan", selectedOrder.id), {
         editRequest: {
           tanggalMulai: editForm.tanggalMulai,
@@ -179,7 +207,6 @@ export default function HistoryPesanan() {
     }
 
     try {
-      // Update the main order with approved edit details
       await updateDoc(doc(db, "pemesanan", order.id), {
         tanggalMulai: order.editRequest.tanggalMulai,
         tanggalSelesai: order.editRequest.tanggalSelesai,
@@ -209,14 +236,12 @@ export default function HistoryPesanan() {
 
   const addNotification = async (message) => {
     try {
-      console.log("Adding notification for user:", auth.currentUser.uid, "message:", message);
       await addDoc(collection(db, "notifications"), {
         userId: auth.currentUser.uid,
         message,
-        timestamp: new Date(),
+        timestamp: serverTimestamp(),
         read: false,
       });
-      console.log("Notification added successfully");
     } catch (error) {
       console.error("Failed to add notification:", error);
     }
@@ -227,10 +252,9 @@ export default function HistoryPesanan() {
       await addDoc(collection(db, "notifications"), {
         userId: "admin",
         message,
-        timestamp: new Date(),
+        timestamp: serverTimestamp(),
         read: false,
       });
-      console.log("Admin notification added successfully");
     } catch (error) {
       console.error("Failed to add admin notification:", error);
     }
@@ -247,7 +271,6 @@ export default function HistoryPesanan() {
     }
 
     try {
-      // 1. Upload gambar ke Cloudinary
       const formData = new FormData();
       formData.append("file", paymentProof[order.id]);
       formData.append("upload_preset", process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET);
@@ -259,7 +282,6 @@ export default function HistoryPesanan() {
 
       const paymentProofURL = cloudinaryRes.data.secure_url;
 
-      // 2. Update data pemesanan di Firestore
       const orderDocRef = doc(db, "pemesanan", order.id);
       await updateDoc(orderDocRef, {
         paymentMethod: paymentMethod[order.id] || order.paymentMethod,
@@ -268,18 +290,9 @@ export default function HistoryPesanan() {
         waktuUpload: new Date().toISOString(),
       });
 
-      // 3. Update state lokal
       await addNotification("Bukti Pembayaran Telah Terkirim");
       await addAdminNotification(`Pembayaran diterima dari ${order.email}: ${order.namaMobil}`);
-      setPemesanan((prev) =>
-        prev.map((o) =>
-          o.id === order.id
-            ? { ...o, paymentStatus: "submitted", paymentProof: paymentProofURL }
-            : o
-        )
-      );
 
-      // 4. Generate DP Invoice
       try {
         const updatedOrder = {
           ...order,
@@ -292,9 +305,10 @@ export default function HistoryPesanan() {
       } catch (invoiceError) {
         console.error("Error generating DP invoice:", invoiceError);
       }
+      alert("Bukti pembayaran berhasil dikirim.");
     } catch (err) {
       console.error("Gagal mengirim bukti pembayaran:", err);
-      alert("Terjadi kesalahan saat mengirim bukti pembayaran. Error: " + err.message);
+      alert("Terjadi kesalahan saat mengirim bukti pembayaran.");
     }
   };
 
@@ -305,7 +319,6 @@ export default function HistoryPesanan() {
     }
 
     try {
-      // Update data pemesanan untuk cash payment tanpa upload bukti
       const orderDocRef = doc(db, "pemesanan", order.id);
       await updateDoc(orderDocRef, {
         paymentMethod: paymentMethod[order.id] || order.paymentMethod,
@@ -313,18 +326,9 @@ export default function HistoryPesanan() {
         waktuUpload: new Date().toISOString(),
       });
 
-      // Update state lokal
       await addNotification("Permintaan pembayaran cash telah diajukan");
       await addAdminNotification(`Permintaan pembayaran cash dari ${order.email}: ${order.namaMobil}`);
-      setPemesanan((prev) =>
-        prev.map((o) =>
-          o.id === order.id
-            ? { ...o, paymentStatus: "cash_submitted" }
-            : o
-        )
-      );
 
-      // Generate DP Invoice for cash payment request
       try {
         const updatedOrder = {
           ...order,
@@ -336,9 +340,10 @@ export default function HistoryPesanan() {
       } catch (invoiceError) {
         console.error("Error generating DP invoice for cash payment:", invoiceError);
       }
+      alert("Permintaan pembayaran cash berhasil diajukan.");
     } catch (err) {
       console.error("Gagal mengajukan pembayaran cash:", err);
-      alert("Terjadi kesalahan saat mengajukan pembayaran cash. Error: " + err.message);
+      alert("Terjadi kesalahan saat mengajukan pembayaran cash.");
     }
   };
 
@@ -370,7 +375,6 @@ export default function HistoryPesanan() {
     try {
       let balancePaymentProofURL = null;
 
-      // Upload payment proof if not cash
       if (balancePaymentMethod !== "Cash" && balancePaymentProof) {
         const formData = new FormData();
         formData.append("file", balancePaymentProof);
@@ -384,7 +388,6 @@ export default function HistoryPesanan() {
         balancePaymentProofURL = cloudinaryRes.data.secure_url;
       }
 
-      // Update order with balance payment request
       const orderRef = doc(db, "pemesanan", selectedOrderForBalance.id);
       await updateDoc(orderRef, {
         balancePaymentRequest: {
@@ -392,58 +395,33 @@ export default function HistoryPesanan() {
           paymentProof: balancePaymentProofURL,
           status: "pending",
           requestedAt: new Date().toISOString(),
-          amount: selectedOrderForBalance.perkiraanHarga * 0.5 // 50% balance
+          amount: selectedOrderForBalance.perkiraanHarga * 0.5 
         }
       });
 
-      // Add notifications
       await addNotification(`Permintaan pembayaran pelunasan telah diajukan untuk ${selectedOrderForBalance.namaMobil}`);
       await addAdminNotification(`Permintaan pembayaran pelunasan dari ${selectedOrderForBalance.email}: ${selectedOrderForBalance.namaMobil} - ${balancePaymentMethod}`);
 
-      // Update local state
-      setPemesanan((prev) =>
-        prev.map((o) =>
-          o.id === selectedOrderForBalance.id
-            ? {
-                ...o,
-                balancePaymentRequest: {
-                  paymentMethod: balancePaymentMethod,
-                  paymentProof: balancePaymentProofURL,
-                  status: "pending",
-                  requestedAt: new Date().toISOString(),
-                  amount: o.perkiraanHarga * 0.5
-                }
-              }
-            : o
-        )
-      );
-
-      // Close modal and reset state
       setShowBalancePaymentModal(false);
       setSelectedOrderForBalance(null);
       setBalancePaymentMethod("");
       setBalancePaymentProof(null);
 
       alert("Permintaan pembayaran pelunasan telah diajukan. Menunggu konfirmasi admin.");
-
     } catch (error) {
       console.error("Error submitting balance payment:", error);
-      alert("Terjadi kesalahan saat mengajukan pembayaran pelunasan. Silakan coba lagi.");
+      alert("Terjadi kesalahan saat mengajukan pembayaran pelunasan.");
     }
   };
-
-
 
   const handleCancelSubmit = async () => {
     if (!selectedOrder) return;
 
     try {
-      // Update order status to cancelled
       await updateDoc(doc(db, "pemesanan", selectedOrder.id), {
         status: "dibatalkan"
       });
 
-      // Make car available again
       await updateDoc(doc(db, "mobil", selectedOrder.mobilId), {
         tersedia: true,
         status: "normal"
@@ -464,114 +442,99 @@ export default function HistoryPesanan() {
 
   const canEditOrder = (order) => {
     if (!order.tanggalMulai) return false;
-
-    // Cannot edit if there's already a pending edit request
-    if (order.editRequest && order.editRequest.status === "pending") {
-      return false;
-    }
+    if (order.editRequest && order.editRequest.status === "pending") return false;
 
     const startDate = new Date(order.tanggalMulai);
     const today = new Date();
     const oneDayBefore = new Date(startDate);
     oneDayBefore.setDate(oneDayBefore.getDate() - 1);
 
-    // Cannot edit if today is H-1 or later (same day or after start date)
     return today < oneDayBefore;
   };
 
-  const getDaysUntilStart = (order) => {
-    if (!order.tanggalMulai) return null;
-
-    const startDate = new Date(order.tanggalMulai);
-    const today = new Date();
-    const diffTime = startDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    return diffDays;
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "diproses": return "bg-yellow-100 text-yellow-800";
-      case "disetujui": return "bg-green-100 text-green-800";
-      case "menunggu pembayaran": return "bg-orange-100 text-orange-800";
-      case "pembayaran berhasil": return "bg-blue-100 text-blue-800";
-      case "selesai": return "bg-purple-100 text-purple-800";
-      case "lunas": return "bg-emerald-100 text-emerald-800";
-      case "ditolak": return "bg-red-100 text-red-800";
-      case "dibatalkan": return "bg-gray-100 text-gray-800";
-      case "approve sewa": return "bg-purple-100 text-purple-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "diproses": return "bg-amber-100 text-amber-700 border-amber-200";
+      case "disetujui": return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      case "menunggu pembayaran": return "bg-orange-100 text-orange-700 border-orange-200";
+      case "pembayaran berhasil": return "bg-blue-100 text-blue-700 border-blue-200";
+      case "selesai": return "bg-violet-100 text-violet-700 border-violet-200";
+      case "lunas": return "bg-teal-100 text-teal-700 border-teal-200";
+      case "ditolak": return "bg-red-100 text-red-700 border-red-200";
+      case "dibatalkan": return "bg-slate-100 text-slate-700 border-slate-200";
+      case "approve sewa": return "bg-purple-100 text-purple-700 border-purple-200";
+      default: return "bg-slate-100 text-slate-700 border-slate-200";
     }
   };
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
-        <div className="flex flex-col justify-center items-center h-64 space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-          <p className="text-lg text-gray-600">Memuat data pesanan...</p>
-        </div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center pt-[100px]">
+        <div className="w-12 h-12 border-4 border-slate-200 border-t-[#990000] rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 bg-gradient-to-br from-gray-50 to-red-50 min-h-screen">
-      <section className="bg-white p-4 sm:p-8 rounded-2xl shadow-xl border border-gray-100">
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">History Pesanan</h1>
-              <p className="text-gray-600 text-sm sm:text-base">Kelola dan lihat semua pesanan Anda</p>
+    <div className="min-h-screen bg-slate-50 pt-[100px] pb-20 px-4 md:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+          <div>
+            <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-[0.2em] mb-2">
+              <History size={14} />
+              <span>Log Perjalanan Anda</span>
             </div>
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="mt-4 sm:mt-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-              {refreshing ? 'Memperbarui...' : 'Perbarui'}
-            </button>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">History Pesanan</h1>
+            <p className="text-slate-500 mt-1">Kelola reservasi, pembayaran, dan dokumen perjalanan Anda.</p>
           </div>
+          <button
+            onClick={handleRefresh}
+            className="group flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-6 py-3.5 rounded-2xl transition-all font-bold shadow-sm"
+          >
+            <RefreshCw size={18} className={`text-[#990000] transition-transform duration-500 ${refreshing ? "rotate-180" : "group-hover:rotate-45"}`} />
+            Refresh Data
+          </button>
+        </div>
 
-          {/* Search and Filter Controls */}
-          <div className="flex flex-col lg:flex-row gap-4 p-4 bg-gray-50 rounded-xl">
+        {/* Search & Statistics Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
+          {/* Filters Card */}
+          <div className="lg:col-span-8 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8 flex flex-col md:flex-row gap-6">
             <div className="flex-1">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Cari mobil atau plat nomor..."
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Cari Reservasi</label>
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#990000] transition-colors" size={18} />
+                <input 
+                  type="text" 
+                  placeholder="Nama mobil atau plat nomor..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-12 pr-6 py-3 focus:border-[#990000] outline-none transition-all font-semibold placeholder:text-slate-400"
                 />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Filter size={16} className="text-gray-400" />
-                </div>
               </div>
             </div>
-
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="md:w-1/3">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Status</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold appearance-none cursor-pointer"
               >
                 <option value="all">Semua Status</option>
-                <option value="ongoing">Sedang Berlangsung</option>
+                <option value="ongoing">Berjalan</option>
                 <option value="selesai">Selesai</option>
                 <option value="lunas">Lunas</option>
                 <option value="dibatalkan">Dibatalkan</option>
-                <option value="ditolak">Ditolak</option>
-                <option value="approve sewa">Approve Sewa (Cash)</option>
-                <option value="edit_approved">Edit Disetujui</option>
               </select>
-
+            </div>
+            <div className="md:w-1/3">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Urutkan</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold appearance-none cursor-pointer"
               >
                 <option value="newest">Terbaru</option>
                 <option value="oldest">Terlama</option>
@@ -580,411 +543,283 @@ export default function HistoryPesanan() {
               </select>
             </div>
           </div>
-        </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div className="bg-blue-50 p-4 sm:p-6 rounded-xl border border-blue-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm sm:text-lg font-semibold text-blue-900">Total Pesanan</h3>
-                <p className="text-2xl sm:text-3xl font-bold text-blue-600">{filteredPemesanan.length}</p>
-              </div>
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Calendar className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-green-50 p-4 sm:p-6 rounded-xl border border-green-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm sm:text-lg font-semibold text-green-900">Selesai</h3>
-                <p className="text-2xl sm:text-3xl font-bold text-green-600">
-                  {filteredPemesanan.filter(p => p.status === "selesai").length}
-                </p>
-              </div>
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+          {/* Quick Stats */}
+          <div className="lg:col-span-4 bg-[#990000] rounded-3xl p-6 md:p-8 text-white relative overflow-hidden shadow-xl shadow-red-900/20">
+            <div className="relative z-10">
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Total Transaksi</p>
+              <p className="text-4xl font-black mb-4 tracking-tight">{filteredPemesanan.length} <span className="text-xl font-normal opacity-60">Order</span></p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/10 rounded-2xl p-3 border border-white/10 backdrop-blur-sm">
+                  <p className="text-[8px] font-black uppercase tracking-widest mb-1">Ongoing</p>
+                  <p className="text-lg font-black">{filteredPemesanan.filter(p => isOngoingOrder(p.status)).length}</p>
+                </div>
+                <div className="bg-white/10 rounded-2xl p-3 border border-white/10 backdrop-blur-sm">
+                  <p className="text-[8px] font-black uppercase tracking-widest mb-1">Success</p>
+                  <p className="text-lg font-black">{filteredPemesanan.filter(p => p.status === "lunas" || p.status === "selesai").length}</p>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="bg-yellow-50 p-4 sm:p-6 rounded-xl border border-yellow-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm sm:text-lg font-semibold text-yellow-900">Sedang Berlangsung</h3>
-                <p className="text-2xl sm:text-3xl font-bold text-yellow-600">
-                  {filteredPemesanan.filter(p => isOngoingOrder(p.status)).length}
-                </p>
-              </div>
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-red-50 p-4 sm:p-6 rounded-xl border border-red-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm sm:text-lg font-semibold text-red-900">Dibatalkan</h3>
-                <p className="text-2xl sm:text-3xl font-bold text-red-600">
-                  {filteredPemesanan.filter(p => p.status === "dibatalkan").length}
-                </p>
-              </div>
-              <div className="p-2 bg-red-100 rounded-lg">
-                <X className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-emerald-50 p-4 sm:p-6 rounded-xl border border-emerald-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm sm:text-lg font-semibold text-emerald-900">Lunas</h3>
-                <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
-                  {filteredPemesanan.filter(p => p.status === "lunas").length}
-                </p>
-              </div>
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <CheckCircle className="h-6 w-6 text-emerald-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-green-50 p-4 sm:p-6 rounded-xl border border-green-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm sm:text-lg font-semibold text-green-900">Edit Disetujui</h3>
-                <p className="text-2xl sm:text-3xl font-bold text-green-600">
-                  {filteredPemesanan.filter(p => p.editRequest && p.editRequest.status === 'approved').length}
-                </p>
-              </div>
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Check className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
+            <div className="absolute top-[-10%] right-[-10%] w-[150px] h-[150px] bg-white/5 rounded-full blur-[40px]"></div>
           </div>
         </div>
 
-        {/* Orders List */}
-        <div className="space-y-4 sm:space-y-6">
+        {/* Order Cards List */}
+        <div className="grid grid-cols-1 gap-6">
           {filteredPemesanan.length === 0 ? (
-            <div className="text-center py-8 md:py-12">
-              <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <div className="text-gray-500 text-lg">
-                {pemesanan.length === 0 ? "Belum ada pesanan" : "Tidak ada pesanan yang sesuai filter"}
+            <div className="bg-white rounded-3xl border border-dashed border-slate-200 py-32 text-center">
+              <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-6">
+                <FileText size={32} />
               </div>
-              <p className="text-gray-400">
-                {pemesanan.length === 0 ? "Pesanan Anda akan muncul di sini" : "Coba ubah filter atau pencarian"}
-              </p>
+              <h3 className="text-xl font-black text-slate-900 mb-2 tracking-tight">Tidak Ada Data</h3>
+              <p className="text-slate-400 font-medium italic">Belum ada transaksi yang sesuai dengan filter Anda.</p>
             </div>
           ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">
-                  Menampilkan {filteredPemesanan.length} dari {pemesanan.length} pesanan
-                </p>
-              </div>
-              {filteredPemesanan.map((p) => (
-              <div key={p.id} className="border border-gray-200 rounded-xl p-4 md:p-6 bg-white shadow-md">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">Mobil</span>
-                    <p className="text-lg font-semibold text-gray-900">{p.namaMobil}</p>
-                    <p className="text-sm text-gray-600">Plat: {p.platNomor}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">Periode Sewa</span>
-                    <p className="text-gray-900">
-                      {p.tanggalMulai ? new Date(p.tanggalMulai).toLocaleDateString() : 'N/A'}
-                    </p>
-                    <p className="text-gray-900">
-                      {p.tanggalSelesai ? new Date(p.tanggalSelesai).toLocaleDateString() : 'N/A'}
-                    </p>
-                    <p className="text-sm text-gray-600">{p.durasiHari || 1} hari</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">Tipe Sewa</span>
-                    <p className="text-gray-900">{p.rentalType || "Lepas Kunci"}</p>
-                    <span className="text-sm font-medium text-gray-500">Tanggal Pesan</span>
-                    <p className="text-gray-900">{new Date(p.tanggal).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">Status</span>
-                    <div className="flex flex-col gap-2">
-                      <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(p.status)}`}>
-                        {p.status}
-                      </span>
-                      {p.editRequest && (
-                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ml-2 ${
-                          p.editRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          p.editRequest.status === 'approved' ? 'bg-green-100 text-green-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {p.editRequest.status === 'approved' ? 'Edit telah disetujui' : `Edit: ${p.editRequest.status}`}
-                        </span>
-                      )}
-                      <span className="text-sm font-medium text-gray-500">Total Biaya</span>
-                      <p className="text-xl font-bold text-green-600">Rp {p.perkiraanHarga?.toLocaleString()}</p>
-
-                      {/* Show approved edit details */}
-                      {p.editRequest && p.editRequest.status === 'approved' && (
-                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-sm font-medium text-green-800 mb-2">Detail Edit yang Disetujui:</p>
-                          <div className="text-xs text-green-700 space-y-1">
-                            <p>Tanggal Mulai: {new Date(p.editRequest.tanggalMulai).toLocaleDateString()}</p>
-                            <p>Tanggal Selesai: {new Date(p.editRequest.tanggalSelesai).toLocaleDateString()}</p>
-                            <p>Durasi: {p.editRequest.durasiHari} hari</p>
-                            <p>Total Baru: Rp {p.editRequest.perkiraanHarga?.toLocaleString()}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons for Ongoing Orders */}
-                {isOngoingOrder(p.status) && (
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="flex flex-wrap gap-3">
-                      {/* Show edit button only if no approved edit request */}
-                      {canEditOrder(p) && (!p.editRequest || p.editRequest.status !== "approved") ? (
-                        <button
-                          onClick={() => handleRequestEdit(p)}
-                          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-                        >
-                          <Edit size={16} />
-                          Ajukan Edit
-                        </button>
-                      ) : p.editRequest && p.editRequest.status === "pending" ? (
-                        <div className="flex items-center gap-2 text-yellow-600">
-                          <Edit size={16} />
-                          <span className="text-sm">Permintaan edit menunggu persetujuan admin</span>
-                        </div>
-                      ) : p.editRequest && p.editRequest.status === "approved" ? (
-                        <button
-                          onClick={() => handleApplyApprovedEdit(p)}
-                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-                        >
-                          <Check size={16} />
-                          Terapkan Edit yang Disetujui
-                        </button>
-                      ) : (
-                        <div className="flex items-center gap-2 text-gray-500">
-                          <Edit size={16} className="text-gray-400" />
-                          <span className="text-sm">
-                            Edit tidak tersedia (H-{getDaysUntilStart(p) <= 1 ? '1' : getDaysUntilStart(p) - 1})
+            filteredPemesanan.map((p) => (
+              <div key={p.id} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all group animate-fadeInUp">
+                <div className="p-6 md:p-10">
+                  {/* Card Header */}
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10 pb-8 border-b border-slate-50">
+                    <div className="flex items-center gap-6">
+                      <div className="w-20 h-20 bg-red-50 text-[#990000] rounded-3xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-sm">
+                        <Car size={36} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-3 flex-wrap mb-1">
+                          <h3 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">{p.namaMobil}</h3>
+                          <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusColor(p.status)}`}>
+                            {p.status}
                           </span>
                         </div>
+                        <div className="flex items-center gap-4 text-slate-400 font-bold text-[11px] uppercase tracking-wider">
+                          <span>Order #{p.id.substring(0, 8).toUpperCase()}</span>
+                          <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                          <span className="text-[#990000]">{p.rentalType || "Lepas Kunci"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                      <div className="text-left md:text-right">
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Total Biaya</p>
+                        <p className="text-3xl font-black text-[#990000] tracking-tighter">Rp {p.perkiraanHarga?.toLocaleString()}</p>
+                      </div>
+                      <ChevronRight className="text-slate-200 hidden lg:block" size={32} />
+                    </div>
+                  </div>
+
+                  {/* Card Main Info */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+                    {/* Period */}
+                    <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 transition-colors hover:bg-white hover:border-slate-200">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <Calendar size={12} className="text-[#990000]" /> Periode Sewa
+                      </p>
+                      <div className="space-y-1">
+                        <p className="text-sm font-black text-slate-900">{p.tanggalMulai ? new Date(p.tanggalMulai).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}</p>
+                        <div className="h-4 w-px bg-slate-200 ml-2"></div>
+                        <p className="text-sm font-black text-slate-900">{p.tanggalSelesai ? new Date(p.tanggalSelesai).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}</p>
+                      </div>
+                      <p className="text-[10px] font-black text-[#990000] mt-3 uppercase tracking-widest">{p.durasiHari || 1} Hari Sewa</p>
+                    </div>
+
+                    {/* Pickup Point */}
+                    <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 transition-colors hover:bg-white hover:border-slate-200">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <MapPin size={12} className="text-[#990000]" /> Penyerahan
+                      </p>
+                      <p className="text-sm font-black text-slate-900 mb-1 leading-tight">{p.lokasiPenyerahan || "Antar ke Alamat"}</p>
+                      {p.titikTemuAddress && (
+                        <p className="text-[10px] font-bold text-slate-400 italic line-clamp-2 mt-1">"{p.titikTemuAddress}"</p>
+                      )}
+                    </div>
+
+                    {/* Payment Info */}
+                    <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 transition-colors hover:bg-white hover:border-slate-200">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <CreditCard size={12} className="text-[#990000]" /> Transaksi
+                      </p>
+                      <p className="text-sm font-black text-slate-900">{p.paymentMethod || "Belum dipilih"}</p>
+                      <p className={`text-[10px] font-black uppercase tracking-widest mt-2 ${p.paymentStatus === 'completed' || p.paymentStatus === 'fully_paid' ? 'text-emerald-500' : 'text-orange-500'}`}>
+                        {p.paymentStatus === 'completed' || p.paymentStatus === 'fully_paid' ? 'Verified' : p.paymentStatus || 'Pending'}
+                      </p>
+                    </div>
+
+                    {/* Vehicle Info */}
+                    <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 transition-colors hover:bg-white hover:border-slate-200">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <Info size={12} className="text-[#990000]" /> Plat Nomor
+                      </p>
+                      <div className="bg-white border border-slate-200 px-4 py-2 rounded-xl inline-block">
+                        <p className="text-sm font-black text-slate-900 tracking-widest">{p.platNomor || "TBA"}</p>
+                      </div>
+                      {p.editRequest && (
+                        <div className="mt-4 flex items-center gap-2 text-[9px] font-black text-amber-600 uppercase tracking-widest">
+                           <AlertTriangle size={12} /> Edit Diajukan
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card Actions Bottom */}
+                  <div className="flex flex-wrap items-center justify-between gap-6 pt-8 border-t border-slate-50">
+                    <div className="flex flex-wrap gap-4">
+                      {isOngoingOrder(p.status) && (
+                        <>
+                          {canEditOrder(p) && (!p.editRequest || p.editRequest.status !== "approved") ? (
+                            <button onClick={() => handleRequestEdit(p)} className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-lg active:scale-95">
+                              <Edit size={14} /> Ajukan Edit
+                            </button>
+                          ) : p.editRequest && p.editRequest.status === "approved" ? (
+                            <button onClick={() => handleApplyApprovedEdit(p)} className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg active:scale-95">
+                              <Check size={14} /> Konfirmasi Edit
+                            </button>
+                          ) : null}
+
+                          {(!p.editRequest || p.editRequest.status !== "approved") && (
+                            <button onClick={() => handleCancel(p)} className="flex items-center gap-2 bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-100 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">
+                              <X size={14} /> Batalkan
+                            </button>
+                          )}
+                        </>
                       )}
 
-                      {/* Show cancel button only if no approved edit request */}
-                      {(!p.editRequest || p.editRequest.status !== "approved") && (
-                        <button
-                          onClick={() => handleCancel(p)}
-                          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-                        >
-                          <X size={16} />
-                          Batalkan
+                      {/* Payment Action */}
+                      {isOngoingOrder(p.status) && p.status !== "pembayaran berhasil" && (
+                        <button onClick={() => togglePaymentSection(p.id)} className="flex items-center gap-2 bg-[#990000] text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-800 transition-all shadow-xl shadow-red-900/10 active:scale-95">
+                          <CreditCard size={14} /> {showPaymentSection[p.id] ? 'Tutup Form' : 'Kirim Pembayaran'}
                         </button>
                       )}
 
-                      {/* Payment Section Toggle Button */}
-                      <button
-                        onClick={() => togglePaymentSection(p.id)}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-                      >
-                        <CreditCard size={16} />
-                        {showPaymentSection[p.id] ? 'Tutup Pembayaran' : 'Bayar Sekarang'}
-                      </button>
-                    </div>
-                    {getDaysUntilStart(p) <= 1 && getDaysUntilStart(p) > 0 && (!p.editRequest || p.editRequest.status !== "approved") && (
-                      <p className="text-sm text-orange-600 mt-2 flex items-center gap-1">
-                        <AlertTriangle size={14} />
-                        Edit tanggal tidak dapat dilakukan H-1 sebelum tanggal sewa
-                      </p>
-                    )}
+                      {/* Invoice Downloads */}
+                      {p.status === "pembayaran berhasil" && (
+                        <button onClick={() => InvoiceGenerator.generateDPInvoice(p, auth.currentUser)} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg active:scale-95">
+                          <Download size={14} /> Invoice DP (50%)
+                        </button>
+                      )}
+                      
+                      {(p.status === "selesai" || p.status === "lunas") && (
+                        <button onClick={() => InvoiceGenerator.generateFullInvoice(p, auth.currentUser)} className="flex items-center gap-2 bg-teal-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg active:scale-95">
+                          <FileText size={14} /> Download Invoice Full
+                        </button>
+                      )}
 
-                    {/* Payment Section */}
-                    {showPaymentSection[p.id] && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Pembayaran</h4>
-                        <div className="space-y-4">
-                          {/* Payment Method Selection */}
+                      {p.status === "selesai" && (
+                        <button onClick={() => handleBalancePaymentClick(p)} className="flex items-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all shadow-lg active:scale-95">
+                          <CreditCard size={14} /> Bayar Pelunasan
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
+                       <Clock size={12} />
+                       Reservasi: {new Date(p.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                    </div>
+                  </div>
+
+                  {/* Expanded Payment Section */}
+                  {showPaymentSection[p.id] && (
+                    <div className="mt-10 p-8 md:p-10 bg-slate-50 rounded-[2.5rem] border border-slate-100 animate-fadeInUp">
+                      <div className="flex items-center gap-3 mb-8">
+                        <div className="w-1.5 h-6 bg-[#990000] rounded-full"></div>
+                        <h4 className="text-xl font-black text-slate-900 tracking-tight uppercase">Detail Konfirmasi Pembayaran</h4>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-6">
                           <div>
-                            <label className="text-sm text-gray-700 font-medium block mb-2">
-                              Metode Pembayaran
-                            </label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Pilih Metode</label>
                             <select
                               value={paymentMethod[p.id] || p.paymentMethod || ""}
-                              onChange={(e) =>
-                                setPaymentMethod((prev) => ({
-                                  ...prev,
-                                  [p.id]: e.target.value,
-                                }))
-                              }
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              onChange={(e) => setPaymentMethod((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                              className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl px-5 py-4 focus:border-[#990000] outline-none transition-all font-semibold appearance-none"
                             >
                               <option value="">Pilih metode pembayaran</option>
                               <option value="Transfer Bank">Transfer Bank</option>
                               <option value="E-Wallet">E-Wallet</option>
-                              <option value="Cash">Cash</option>
+                              <option value="Cash">Cash (Bayar di Kantor)</option>
                             </select>
                           </div>
 
-                          {/* Payment Proof Upload - Hide for Cash */}
                           {((paymentMethod[p.id] || p.paymentMethod) !== "Cash") && (
                             <div>
-                              <label className="text-sm text-gray-700 font-medium block mb-2">
-                                Bukti Pembayaran
-                              </label>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) =>
-                                  setPaymentProof((prev) => ({
-                                    ...prev,
-                                    [p.id]: e.target.files[0],
-                                  }))
-                                }
-                                className="w-full bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg p-3 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-red-600 file:text-white hover:file:bg-red-700 transition-colors"
-                              />
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Unggah Bukti Transfer</label>
+                              <div className="relative group">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => setPaymentProof((prev) => ({ ...prev, [p.id]: e.target.files[0] }))}
+                                  className="w-full bg-white border border-slate-200 text-slate-600 text-xs rounded-2xl p-4 file:mr-6 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-[#990000] file:text-white hover:file:bg-red-800 transition-colors cursor-pointer"
+                                />
+                              </div>
                             </div>
                           )}
+                        </div>
 
-                          {/* Submit Payment Button */}
+                        <div className="flex flex-col justify-end">
                           <button
-                            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-sm shadow-md hover:shadow-lg"
                             onClick={() => {
-                              if ((paymentMethod[p.id] || p.paymentMethod) === "Cash") {
-                                handleCashPayment(p);
-                              } else {
-                                handlePaymentSubmit(p);
-                              }
-                              setShowPaymentSection((prev) => ({
-                                ...prev,
-                                [p.id]: false
-                              }));
+                              if ((paymentMethod[p.id] || p.paymentMethod) === "Cash") handleCashPayment(p);
+                              else handlePaymentSubmit(p);
+                              setShowPaymentSection(prev => ({ ...prev, [p.id]: false }));
                             }}
+                            className="w-full bg-slate-900 text-white font-black py-5 rounded-2xl transition-all hover:bg-black shadow-xl text-[11px] uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95"
                           >
-                            {(paymentMethod[p.id] || p.paymentMethod) === "Cash" ? "Ajukan Pembayaran Cash" : "Kirim Bukti Pembayaran"}
+                            <Upload size={16} />
+                            {(paymentMethod[p.id] || p.paymentMethod) === "Cash" ? "Kirim Permintaan Cash" : "Kirim Bukti & Selesaikan"}
                           </button>
+                          <p className="text-[10px] text-slate-400 font-bold text-center mt-4 italic uppercase tracking-widest">Pastikan data sudah benar sebelum mengirim.</p>
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Invoice Buttons for Completed Orders */}
-                {p.status === "selesai" && (
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={() => InvoiceGenerator.generateFullInvoice(p, auth.currentUser)}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-                      >
-                        <FileText size={16} />
-                        Invoice Pembayaran Penuh
-                      </button>
-                      <button
-                        onClick={() => handleBalancePaymentClick(p)}
-                        className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors"
-                      >
-                        <CreditCard size={16} />
-                        Bayar Pelunasan
-                      </button>
                     </div>
-                  </div>
-                )}
-
-                {/* Invoice Button for Payment Confirmed Orders */}
-                {p.status === "pembayaran berhasil" && (
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={() => InvoiceGenerator.generateDPInvoice(p, auth.currentUser)}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-                      >
-                        <FileText size={16} />
-                        Invoice Down Payment (50%)
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Invoice Button for Lunas Orders */}
-                {p.status === "lunas" && (
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={() => InvoiceGenerator.generateFullInvoice(p, auth.currentUser)}
-                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors"
-                      >
-                        <FileText size={16} />
-                        Invoice Pembayaran Lunas
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Invoice Button for Cash Payment Approved Orders */}
-                {p.status === "approve sewa" && (
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={() => InvoiceGenerator.generateDPInvoice(p, auth.currentUser)}
-                        className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
-                      >
-                        <FileText size={16} />
-                        Invoice Down Payment (Cash)
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            ))}
-            </>
+            ))
           )}
         </div>
-      </section>
+      </div>
 
-      {/* Edit Modal */}
+      {/* Modals are kept with standard premium styling but updated buttons/spacing */}
       {editModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-4 md:p-6 w-full max-w-md mx-4">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Ajukan Edit Tanggal Sewa</h3>
-            <div className="space-y-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[150] p-4">
+          <div className="bg-white rounded-[2.5rem] p-8 md:p-12 w-full max-w-lg shadow-2xl animate-popIn">
+            <h3 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Edit Reservasi</h3>
+            <p className="text-slate-500 mb-8 font-medium leading-relaxed">Sesuaikan tanggal perjalanan Anda. Mohon tunggu persetujuan admin setelah pengajuan.</p>
+            
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tanggal Mulai
-                </label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Mulai Sewa</label>
                 <input
                   type="date"
                   value={editForm.tanggalMulai}
                   onChange={(e) => setEditForm({...editForm, tanggalMulai: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:border-[#990000] focus:ring-4 focus:ring-red-50 outline-none transition-all font-semibold"
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tanggal Selesai
-                </label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Berakhir Sewa</label>
                 <input
                   type="date"
                   value={editForm.tanggalSelesai}
                   onChange={(e) => setEditForm({...editForm, tanggalSelesai: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:border-[#990000] focus:ring-4 focus:ring-red-50 outline-none transition-all font-semibold"
                   min={editForm.tanggalMulai || new Date().toISOString().split('T')[0]}
                 />
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
+
+            <div className="grid grid-cols-2 gap-4 mt-10">
               <button
                 onClick={handleEditSubmit}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-[#990000] text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-900/10 hover:bg-red-800 transition-all"
               >
-                Ajukan Permintaan
+                Kirim Update
               </button>
               <button
                 onClick={() => setEditModal(false)}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+                className="bg-slate-100 text-slate-500 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
               >
                 Batal
               </button>
@@ -995,103 +830,92 @@ export default function HistoryPesanan() {
 
       {/* Cancel Modal */}
       {cancelModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-4 md:p-6 w-full max-w-md mx-4">
-            <div className="flex items-center gap-3 mb-4">
-              <AlertTriangle className="h-6 w-6 text-red-500" />
-              <h3 className="text-xl font-bold text-gray-900">Batalkan Pesanan</h3>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[150] p-4">
+          <div className="bg-white rounded-[2.5rem] p-8 md:p-12 w-full max-w-lg shadow-2xl animate-popIn text-center border border-red-50">
+            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertTriangle size={36} />
             </div>
-            <p className="text-gray-600 mb-6">
-              Apakah Anda yakin ingin membatalkan pesanan <strong>{selectedOrder.namaMobil}</strong>?
-              Tindakan ini tidak dapat dibatalkan.
+            <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Batalkan Pesanan?</h3>
+            <p className="text-slate-500 mb-8 font-medium leading-relaxed italic">
+              "Pesanan mobil <strong>{selectedOrder.namaMobil}</strong> akan dihapus dari sistem."
             </p>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={handleCancelSubmit}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-red-600 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-red-700 transition-all"
               >
                 Ya, Batalkan
               </button>
               <button
                 onClick={() => setCancelModal(false)}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+                className="bg-slate-100 text-slate-500 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
               >
-                Tidak
+                Tidak, Kembali
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Balance Payment Modal */}
+      {/* Balance Modal */}
       {showBalancePaymentModal && selectedOrderForBalance && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-4 md:p-6 w-full max-w-md mx-4">
-            <div className="flex items-center gap-3 mb-4">
-              <CreditCard className="h-6 w-6 text-orange-500" />
-              <h3 className="text-xl font-bold text-gray-900">Bayar Pelunasan</h3>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[150] p-4">
+          <div className="bg-white rounded-[2.5rem] p-8 md:p-12 w-full max-w-xl shadow-2xl animate-popIn">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="bg-orange-100 text-orange-600 p-3 rounded-2xl shrink-0">
+                <CreditCard size={24} />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Pelunasan Reservasi</h3>
             </div>
-            <p className="text-gray-600 mb-6">
-              Pembayaran pelunasan untuk <strong>{selectedOrderForBalance.namaMobil}</strong>
-              <br />
-              <span className="text-sm text-gray-500">
-                Jumlah: Rp {(selectedOrderForBalance.perkiraanHarga * 0.5).toLocaleString()}
-              </span>
-            </p>
-
-            <div className="space-y-4">
-              {/* Payment Method Selection */}
+            <div className="bg-slate-50 rounded-3xl p-6 mb-8 border border-slate-100 flex items-center justify-between">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Metode Pembayaran
-                </label>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Jumlah Pelunasan (50%)</p>
+                <p className="text-2xl font-black text-[#990000]">Rp {(selectedOrderForBalance.perkiraanHarga * 0.5).toLocaleString()}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Unit Mobil</p>
+                <p className="text-sm font-black text-slate-900 uppercase">{selectedOrderForBalance.namaMobil}</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Metode Pembayaran</label>
                 <select
                   value={balancePaymentMethod}
                   onChange={(e) => setBalancePaymentMethod(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl px-5 py-4 focus:border-orange-500 outline-none transition-all font-semibold"
                 >
                   <option value="">Pilih metode pembayaran</option>
                   <option value="Transfer Bank">Transfer Bank</option>
                   <option value="E-Wallet">E-Wallet</option>
-                  <option value="Cash">Cash</option>
+                  <option value="Cash">Cash (Bayar di Kantor)</option>
                 </select>
               </div>
 
-              {/* Payment Proof Upload - Hide for Cash */}
               {balancePaymentMethod !== "Cash" && balancePaymentMethod && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bukti Pembayaran
-                  </label>
+                <div className="animate-fadeInUp">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Bukti Pelunasan</label>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={(e) => setBalancePaymentProof(e.target.files[0])}
-                    className="w-full bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg p-3 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-600 file:text-white hover:file:bg-orange-700 transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-600 text-xs rounded-2xl p-4 file:mr-6 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-orange-600 file:text-white transition-all cursor-pointer"
                   />
-                </div>
-              )}
-
-              {/* Cash Payment Info */}
-              {balancePaymentMethod === "Cash" && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-700">
-                    Pembayaran cash akan diverifikasi langsung oleh admin tanpa perlu upload bukti pembayaran.
-                  </p>
                 </div>
               )}
             </div>
 
-            <div className="flex gap-3 mt-6">
+            <div className="grid grid-cols-2 gap-4 mt-10">
               <button
                 onClick={handleBalancePaymentSubmit}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-slate-900 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-black transition-all active:scale-95"
               >
-                Ajukan Pembayaran
+                Proses Pelunasan
               </button>
               <button
                 onClick={() => setShowBalancePaymentModal(false)}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+                className="bg-slate-100 text-slate-500 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
               >
                 Batal
               </button>
@@ -1100,5 +924,26 @@ export default function HistoryPesanan() {
         </div>
       )}
     </div>
+  );
+}
+
+function Download(props) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" x2="12" y1="15" y2="3" />
+    </svg>
   );
 }
