@@ -11,8 +11,10 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 import axios from "axios";
-import { Search, Filter, RefreshCw, Download, Eye, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, Car, User, MapPin, Calendar, ArrowRight, ShieldCheck, FileText } from "lucide-react";
+import { Search, Filter, RefreshCw, Download, Eye, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, Car, User, MapPin, Calendar, ArrowRight, ShieldCheck, FileText, Calendar as CalendarIcon } from "lucide-react";
 import InvoiceGenerator from "../components/InvoiceGenerator";
+import * as XLSX from 'xlsx';
+import { initGoogleClient, syncOrderToCalendar } from "../services/googleCalendar";
 
 export default function ManajemenPesanan() {
   const [pemesanan, setPemesanan] = useState([]);
@@ -24,6 +26,9 @@ export default function ManajemenPesanan() {
   const [refreshing, setRefreshing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [isGapiLoaded, setIsGapiLoaded] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -54,6 +59,11 @@ export default function ManajemenPesanan() {
       setLoading(false);
     };
     checkAdminStatus();
+
+    // Initialize Google API
+    initGoogleClient().then(() => {
+      setIsGapiLoaded(true);
+    }).catch(err => console.error("GAPI failure", err));
   }, []);
 
   useEffect(() => {
@@ -220,6 +230,58 @@ export default function ManajemenPesanan() {
     }
   };
 
+  const handleSyncToCalendar = async (order) => {
+    try {
+      if (!isGapiLoaded) {
+        alert("Google API belum siap. Silakan refresh.");
+        return;
+      }
+      await syncOrderToCalendar(order);
+      alert("Pesanan berhasil disinkronkan ke Google Calendar.");
+    } catch (error) {
+      console.error(error);
+      alert("Gagal sinkronisasi. Pastikan Anda sudah login Google.");
+    }
+  };
+
+  const exportToExcel = () => {
+    const dataToExport = filteredPemesanan.map(p => {
+      const user = users.find(u => u.id === p.uid);
+      
+      // Determine delivery address based on user requirements
+      let alamatLengkap = "-";
+      if (p.lokasiPenyerahan === "Rumah" || p.lokasiPenyerahan === "Titik Temu") {
+        alamatLengkap = p.titikTemuAddress || "-";
+      } else if (p.lokasiPenyerahan === "Garasi") {
+        alamatLengkap = "Garasi Cakra Lima Tujuh";
+      }
+
+      return {
+        "ID Pesanan": p.id.substring(0, 8).toUpperCase(),
+        "Pelanggan": user?.nama || p.email,
+        "Email": p.email,
+        "Telepon": user?.nomorTelepon || p.noTelepon || "-",
+        "Mobil": p.namaMobil,
+        "Tujuan Pengiriman": p.lokasiPenyerahan || "Ambil di Garasi",
+        "Alamat Lengkap": alamatLengkap,
+        "Sewa Dari": p.tanggalMulai ? new Date(p.tanggalMulai).toLocaleDateString('id-ID') : "-",
+        "Sewa Sampai": p.tanggalSelesai ? new Date(p.tanggalSelesai).toLocaleDateString('id-ID') : "-",
+        "Durasi (Hari)": p.durasiHari || 0,
+        "Total Harga": p.perkiraanHarga || 0,
+        "Status": p.status,
+        "Tgl Dibuat": new Date(p.tanggal).toLocaleDateString('id-ID')
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Pesanan");
+    
+    // Generate filename based on filters
+    const dateStr = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `Laporan_Pesanan_${dateStr}.xlsx`);
+  };
+
   const filteredPemesanan = pemesanan
     .filter(p => {
       const user = users.find(u => u.id === p.uid);
@@ -232,7 +294,18 @@ export default function ManajemenPesanan() {
         p.namaMobil?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
         p.email?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
         user?.nama?.toLowerCase().includes(searchPemesanan.toLowerCase());
-      return matchesStatus && matchesRentalType && matchesSearch;
+      
+      // Date Range Filter
+      let matchesDate = true;
+      if (startDate && endDate) {
+        const orderDate = new Date(p.tanggal);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59); // End of day
+        matchesDate = orderDate >= start && orderDate <= end;
+      }
+
+      return matchesStatus && matchesRentalType && matchesSearch && matchesDate;
     })
     .sort((a, b) => {
       const dateA = a.tanggal ? new Date(a.tanggal) : new Date(0);
@@ -284,19 +357,28 @@ export default function ManajemenPesanan() {
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Manajemen Pesanan</h1>
             <p className="text-slate-500 mt-1">Konfirmasi pembayaran, monitor durasi, dan kelola logistik persewaan.</p>
           </div>
-          <button
-            onClick={handleRefresh}
-            className="group flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-6 py-3.5 rounded-2xl transition-all font-bold shadow-sm"
-          >
-            <RefreshCw size={18} className={`text-[#990000] transition-transform duration-500 ${refreshing ? "rotate-180" : "group-hover:rotate-45"}`} />
-            Refresh Data
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={exportToExcel}
+              className="group flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 px-6 py-3.5 rounded-2xl transition-all font-bold shadow-sm"
+            >
+              <Download size={18} className="transition-transform group-hover:-translate-y-1" />
+              Export Excel
+            </button>
+            <button
+              onClick={handleRefresh}
+              className="group flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-6 py-3.5 rounded-2xl transition-all font-bold shadow-sm"
+            >
+              <RefreshCw size={18} className={`text-[#990000] transition-transform duration-500 ${refreshing ? "rotate-180" : "group-hover:rotate-45"}`} />
+              Refresh Data
+            </button>
+          </div>
         </div>
 
         {/* Dynamic Filters Section */}
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8 mb-10">
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="flex flex-col gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Status Transaksi</label>
                 <select
@@ -326,7 +408,41 @@ export default function ManajemenPesanan() {
                   <option value="Driver">Dengan Driver</option>
                 </select>
               </div>
-              <div className="relative">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Rentang Awal</label>
+                <input 
+                  type="date" 
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Rentang Akhir</label>
+                <input 
+                  type="date" 
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
+                />
+              </div>
+            </div>
+            
+            <div className="flex flex-col lg:flex-row gap-6 border-t border-slate-100 pt-6">
+              <div className="flex-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Pencarian Cepat</label>
+                <div className="relative group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#990000] transition-colors" size={18} />
+                  <input 
+                    type="text" 
+                    placeholder="Nama client, mobil, atau email..."
+                    value={searchPemesanan}
+                    onChange={(e) => setSearchPemesanan(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-12 pr-6 py-3 focus:border-[#990000] outline-none transition-all font-semibold placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+              <div className="lg:w-1/4">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Urutkan</label>
                 <select
                   value={sortBy}
@@ -338,19 +454,6 @@ export default function ManajemenPesanan() {
                   <option value="price-high">Harga Tertinggi</option>
                   <option value="price-low">Harga Terendah</option>
                 </select>
-              </div>
-            </div>
-            <div className="lg:w-1/3">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Pencarian Cepat</label>
-              <div className="relative group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#990000] transition-colors" size={18} />
-                <input 
-                  type="text" 
-                  placeholder="Nama client, mobil, atau email..."
-                  value={searchPemesanan}
-                  onChange={(e) => setSearchPemesanan(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-12 pr-6 py-3 focus:border-[#990000] outline-none transition-all font-semibold placeholder:text-slate-400"
-                />
               </div>
             </div>
           </div>
@@ -508,6 +611,15 @@ export default function ManajemenPesanan() {
                            <Download size={16} className="text-[#990000] group-hover:scale-110 transition-transform" /> 
                            Cetak Invoice Full
                         </button>
+                        {(p.status === "pembayaran berhasil" || p.status === "lunas" || p.status === "disetujui") && (
+                           <button 
+                            onClick={() => handleSyncToCalendar(p)}
+                            className="flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-600 hover:bg-blue-100 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all group"
+                           >
+                            <CalendarIcon size={16} className="group-hover:scale-110 transition-transform" />
+                            Sync Calendar
+                           </button>
+                        )}
                       </div>
 
                     </div>

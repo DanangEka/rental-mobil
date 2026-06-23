@@ -6,6 +6,7 @@ import { CheckCircle, Clock, MapPin, Phone, Calendar, DollarSign, UserPlus, Car,
 import InvoiceGenerator from "../components/InvoiceGenerator";
 import { useToast } from "../components/Toast";
 import { serverTimestamp } from "firebase/firestore";
+import { sendWhatsApp } from "../services/fonnte";
 
 export default function DriverOrders() {
   const [user, setUser] = useState(null);
@@ -217,8 +218,40 @@ export default function DriverOrders() {
             timestamp: serverTimestamp()
           });
         }
+
+        // Fonnte WhatsApp Notification for Driver
+        const isDelivery = orderData.lokasiPenyerahan === "Rumah" || orderData.lokasiPenyerahan === "Titik Temu";
+        if (isDelivery) {
+          const driverPhone = user.phone || user.nomorTelepon;
+          const client = users.find(u => u.id === orderData.uid);
+          
+          if (driverPhone) {
+            const message = `*🔔 REMINDER TUGAS PENGANTARAN*
+            
+Halo, Driver Cakra Lima Tujuh!
+Anda telah menerima tugas baru untuk pengantaran unit.
+
+*DETAIL PESANAN:*
+🚗 *Mobil:* ${orderData.namaMobil}
+👤 *Customer:* ${client?.nama || orderData.email}
+📞 *Telp Customer:* ${client?.nomorTelepon || orderData.noTelepon || '-'}
+
+*LOKASI PENYERAHAN:*
+📍 *Tipe:* ${orderData.lokasiPenyerahan}
+🏠 *Alamat:* ${getFullAddress(orderData)}
+
+*JAM MULAI:*
+⏰ ${orderData.tanggalMulai ? new Date(orderData.tanggalMulai).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+
+Mohon hubungi customer sebelum berangkat dan pastikan unit dalam keadaan prima.
+
+_Terima kasih, selamat bertugas!_`;
+
+            await sendWhatsApp(driverPhone, message);
+          }
+        }
       } catch (notifErr) {
-        console.error("Notification error:", notifErr);
+        console.error("Notification/WA error:", notifErr);
       }
 
       toast.success("Order Diterima", "Berhasil menerima order. Silakan cek Tugas Aktif.");
