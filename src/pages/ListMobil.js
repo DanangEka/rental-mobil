@@ -402,29 +402,57 @@ export default function ListMobil() {
 
   return (
     <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800">
-      {/* Hero Header - Clean & Enterprise */}
-      <div className="relative bg-white border-b border-slate-200 overflow-hidden">
-        {/* Subtle decorative elements */}
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-red-50/50 to-transparent pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-red-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
+      {/* Hero Header - Red Dynamic Style */}
+      <div className="relative bg-[#990000] overflow-hidden min-h-[400px] flex items-center">
+        {/* Decorative elements similar to Landing Page */}
+        <div className="absolute top-0 right-0 w-[40vw] h-[40vw] bg-white/5 rounded-full blur-[100px] -mr-20 -mt-20 z-0 pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-[30vw] h-[30vw] bg-black/10 rounded-full blur-[80px] -ml-10 -mb-10 z-0 pointer-events-none"></div>
         
-        <div className="max-w-7xl mx-auto px-6 py-16 md:py-24 relative z-10">
+        {/* Car silhouette decoration */}
+        <div className="absolute right-[-5%] bottom-[-10%] z-0 opacity-10 pointer-events-none transform -rotate-12">
+          <Car size={600} strokeWidth={0.5} className="text-white" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 py-16 md:py-24 relative z-10 w-full">
           <div className="max-w-3xl animate-fadeInUp">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-100 text-[#990000] text-[10px] font-black uppercase tracking-widest mb-6">
-              <Car size={12} />
-              <span>{serviceType === "driver" ? "Layanan Premium Dengan Driver" : serviceType === "lepas" ? "Kebebasan Lepas Kunci" : "Armada Cakra Lima Tujuh"}</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/90 text-[10px] font-black uppercase tracking-widest mb-8 backdrop-blur-sm">
+              <span className="w-2 h-2 rounded-full bg-red-300 animate-pulse" />
+              <span>{serviceType === "driver" ? "Premium Chauffeur Service" : serviceType === "lepas" ? "Self Drive Liberty" : "Armada Cakra Lima Tujuh"}</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter mb-6 leading-[0.9]">
+            
+            <h1 className="text-4xl md:text-7xl font-black text-white tracking-tighter mb-8 leading-[0.85]">
               {serviceType === "driver" ? "Sewa Dengan Driver" : serviceType === "lepas" ? "Sewa Lepas Kunci" : "Pilih Armada Terbaik"}
-              <span className="text-[#990000]">.</span>
+              <span className="text-red-300">.</span>
             </h1>
-            <p className="text-lg text-slate-500 leading-relaxed max-w-2xl">
+            
+            <p className="text-lg md:text-xl text-white/80 leading-relaxed max-w-2xl font-medium">
               {serviceType === "driver" 
-                ? "Nikmati perjalanan tanpa lelah dengan driver profesional kami yang ramah dan mengenal rute terbaik untuk kenyamanan Anda." 
+                ? "Nikmati kenyamanan berkelas dengan driver profesional yang handal, memastikan setiap perjalanan Anda aman dan menyenangkan." 
                 : serviceType === "lepas" 
-                ? "Kebebasan berkendara penuh dengan armada pilihan yang selalu dalam kondisi prima dan terawat melalui standar tinggi kami."
-                : "Solusi mobilitas terpercaya dengan berbagai pilihan armada mumpuni untuk mendukung segala kebutuhan perjalanan Anda."}
+                ? "Kendali penuh di tangan Anda. Nikmati kebebasan mengeksplorasi setiap sudut kota dengan unit pilihan terbaik kami."
+                : "Solusi mobilitas modern dengan armada pilihan yang mumpuni untuk mendukung setiap langkah perjalanan berharga Anda."}
             </p>
+
+            <div className="mt-12 flex flex-wrap gap-6 border-t border-white/10 pt-10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white backdrop-blur-sm border border-white/10">
+                  <CheckCircle size={24} />
+                </div>
+                <div>
+                  <p className="text-white font-black text-xs uppercase tracking-widest">Unit Prima</p>
+                  <p className="text-white/50 text-[10px] font-bold uppercase tracking-tighter">Standar QC Tinggi</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white backdrop-blur-sm border border-white/10">
+                  <Star size={24} />
+                </div>
+                <div>
+                  <p className="text-white font-black text-xs uppercase tracking-widest">Layanan Bintang</p>
+                  <p className="text-white/50 text-[10px] font-bold uppercase tracking-tighter">Customer Priority</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

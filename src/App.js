@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import Login from "./pages/Login"; // Ganti dari LoginClient/LoginAdmin jadi satu Login.jsx
 import LandingPage from "./pages/LandingPage";
 import ListMobil from "./pages/ListMobil";
@@ -30,18 +31,19 @@ import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ToastProvider } from "./components/Toast";
 
-function App() {
+function AnimatedRoutes() {
+  const location = useLocation();
+
   return (
-    <ToastProvider>
-    <Router>
-      <Navbar />
-      <Routes>
-        <Route path="/login" element={<Login />} />
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+        {/* ... other routes wrapped in PageTransition ... */}
         <Route
           path="/manajemen-pesanan"
           element={
             <ProtectedRoute role="admin">
-              <ManajemenPesanan />
+              <PageTransition><ManajemenPesanan /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -49,7 +51,7 @@ function App() {
           path="/car-management"
           element={
             <ProtectedRoute role="admin">
-              <CarManagement />
+              <PageTransition><CarManagement /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -57,7 +59,7 @@ function App() {
           path="/client-management"
           element={
             <ProtectedRoute role="admin">
-              <ClientManagement />
+              <PageTransition><ClientManagement /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -65,7 +67,7 @@ function App() {
           path="/admin-dashboard"
           element={
             <ProtectedRoute role="admin">
-              <AdminDashboard />
+              <PageTransition><AdminDashboard /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -73,7 +75,7 @@ function App() {
           path="/profil"
           element={
             <ProtectedRoute role="client">
-              <Profile />
+              <PageTransition><Profile /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -81,17 +83,17 @@ function App() {
           path="/history-pesanan"
           element={
             <ProtectedRoute role="client">
-              <HistoryPesanan />
+              <PageTransition><HistoryPesanan /></PageTransition>
             </ProtectedRoute>
           }
         />
-        <Route path="/company-profile" element={<CompanyProfile />} />
-        <Route path="/signup" element={<SignUp />} />
+        <Route path="/company-profile" element={<PageTransition><CompanyProfile /></PageTransition>} />
+        <Route path="/signup" element={<PageTransition><SignUp /></PageTransition>} />
         <Route
           path="/home"
           element={
             <ProtectedRoute role={["client", "admin"]}>
-              <ListMobil />
+              <PageTransition><ListMobil /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -99,7 +101,7 @@ function App() {
           path="/open-trip"
           element={
             <ProtectedRoute role={["client", "admin"]}>
-              <OpenTrip />
+              <PageTransition><OpenTrip /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -107,7 +109,7 @@ function App() {
           path="/admin/open-trip"
           element={
             <ProtectedRoute role="admin">
-              <AdminOpenTrip />
+              <PageTransition><AdminOpenTrip /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -115,7 +117,7 @@ function App() {
           path="/tour-packages"
           element={
             <ProtectedRoute role={["client", "admin"]}>
-              <TourPackages />
+              <PageTransition><TourPackages /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -123,7 +125,7 @@ function App() {
           path="/admin-tour-packages"
           element={
             <ProtectedRoute role="admin">
-              <AdminTourPackages />
+              <PageTransition><AdminTourPackages /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -133,7 +135,7 @@ function App() {
           path="/driver-dashboard"
           element={
             <ProtectedRoute role="driver">
-              <DriverDashboard />
+              <PageTransition><DriverDashboard /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -141,7 +143,7 @@ function App() {
           path="/driver-orders"
           element={
             <ProtectedRoute role="driver">
-              <DriverOrders />
+              <PageTransition><DriverOrders /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -149,7 +151,7 @@ function App() {
           path="/vehicle-verification"
           element={
             <ProtectedRoute role="driver">
-              <VehicleVerification />
+              <PageTransition><VehicleVerification /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -157,7 +159,7 @@ function App() {
           path="/payment-verification"
           element={
             <ProtectedRoute role="driver">
-              <PaymentVerification />
+              <PageTransition><PaymentVerification /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -165,7 +167,7 @@ function App() {
           path="/driver-profile"
           element={
             <ProtectedRoute role="driver">
-              <DriverProfile />
+              <PageTransition><DriverProfile /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -175,7 +177,7 @@ function App() {
           path="/admin-driver-management"
           element={
             <ProtectedRoute role="admin">
-              <AdminDriverManagement />
+              <PageTransition><AdminDriverManagement /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -183,7 +185,7 @@ function App() {
           path="/admin-vehicle-verifications"
           element={
             <ProtectedRoute role="admin">
-              <AdminVehicleVerifications />
+              <PageTransition><AdminVehicleVerifications /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -191,7 +193,7 @@ function App() {
           path="/admin-payment-verifications"
           element={
             <ProtectedRoute role="admin">
-              <AdminPaymentVerifications />
+              <PageTransition><AdminPaymentVerifications /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -199,7 +201,7 @@ function App() {
           path="/admin-driver-profiles"
           element={
             <ProtectedRoute role="admin">
-              <AdminDriverProfiles />
+              <PageTransition><AdminDriverProfiles /></PageTransition>
             </ProtectedRoute>
           }
         />
@@ -207,14 +209,35 @@ function App() {
           path="/admin-add-driver"
           element={
             <ProtectedRoute role="admin">
-              <AdminAddDriver />
+              <PageTransition><AdminAddDriver /></PageTransition>
             </ProtectedRoute>
           }
         />
 
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
       </Routes>
-    </Router>
+    </AnimatePresence>
+  );
+}
+
+const PageTransition = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -10 }}
+    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+  >
+    {children}
+  </motion.div>
+);
+
+function App() {
+  return (
+    <ToastProvider>
+      <Router>
+        <Navbar />
+        <AnimatedRoutes />
+      </Router>
     </ToastProvider>
   );
 }
