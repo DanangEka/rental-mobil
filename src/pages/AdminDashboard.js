@@ -276,7 +276,7 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 pt-[100px] pb-12">
+      <div className="min-h-screen bg-slate-50 pt-[160px] pb-12">
         <div className="max-w-7xl mx-auto px-6">
           <div className="animate-pulse space-y-8">
             <div className="h-10 bg-gray-200 rounded-lg w-1/4"></div>
@@ -292,7 +292,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[100px] pb-12 text-slate-800">
+    <div className="min-h-screen bg-slate-50 pt-[160px] pb-12 text-slate-800">
       <div className="max-w-7xl mx-auto px-6">
         
         {/* Header */}

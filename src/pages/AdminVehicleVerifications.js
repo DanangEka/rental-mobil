@@ -49,7 +49,7 @@ export default function AdminVehicleVerifications() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[100px] pb-20 text-slate-800">
+    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800">
       <div className="max-w-7xl mx-auto px-6">
         
         {/* Header */}

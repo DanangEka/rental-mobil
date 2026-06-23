@@ -188,7 +188,7 @@ export default function Profile() {
 
   if (dataLoading) {
     return (
-      <div className="min-h-screen pt-[72px] pb-12 bg-gray-50 p-4 md:p-8 flex items-center justify-center">
+      <div className="min-h-screen pt-[160px] pb-12 bg-gray-50 p-4 md:p-8 flex items-center justify-center">
         <div className="w-full max-w-5xl space-y-8 animate-pulse">
            <div className="h-64 bg-gray-200 rounded-2xl w-full"></div>
            <div className="h-96 bg-gray-200 rounded-2xl w-full"></div>
@@ -198,7 +198,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen pt-[72px] pb-12 bg-gray-50 flex flex-col items-center">
+    <div className="min-h-screen pt-[160px] pb-12 bg-gray-50 flex flex-col items-center">
       {/* Dynamic Header Background */}
       <div className="w-full bg-brand-900 absolute top-0 left-0 h-64 z-0">
          <div className="absolute inset-0 bg-gradient-to-t from-gray-50 to-transparent"></div>

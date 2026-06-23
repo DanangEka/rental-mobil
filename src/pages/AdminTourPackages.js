@@ -139,14 +139,14 @@ export default function AdminTourPackages() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 pt-[100px] flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-slate-200 border-t-[#990000] rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (!isAdmin) return (
-    <div className="min-h-screen bg-slate-50 pt-[120px] flex items-center justify-center p-6 text-center">
+    <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center p-6 text-center">
        <div className="bg-white p-10 rounded-3xl shadow-xl shadow-red-900/5 max-w-md w-full border border-red-50">
           <div className="w-20 h-20 bg-red-50 text-[#990000] rounded-full flex items-center justify-center mx-auto mb-6">
             <Settings size={40} />

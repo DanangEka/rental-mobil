@@ -477,7 +477,7 @@ export default function HistoryPesanan() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[100px] pb-20 px-4 md:px-8">
+    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 px-4 md:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">

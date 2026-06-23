@@ -60,7 +60,7 @@ export default function AdminPaymentVerifications() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[100px] pb-20 text-slate-800 font-sans">
+    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800 font-sans">
       <div className="max-w-7xl mx-auto px-6">
         
         {/* Header */}

@@ -401,7 +401,7 @@ export default function ListMobil() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[80px] pb-20 text-slate-800">
+    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800">
       {/* Hero Header - Clean & Enterprise */}
       <div className="relative bg-white border-b border-slate-200 overflow-hidden">
         {/* Subtle decorative elements */}

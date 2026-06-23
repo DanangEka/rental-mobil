@@ -240,7 +240,7 @@ export default function PaymentVerification() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[100px] pb-12 text-slate-800">
+    <div className="min-h-screen bg-slate-50 pt-[160px] pb-12 text-slate-800">
       {/* Background decoration */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
         <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-red-100 mix-blend-multiply filter blur-[100px]"></div>

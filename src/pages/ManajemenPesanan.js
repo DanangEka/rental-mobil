@@ -324,7 +324,7 @@ export default function ManajemenPesanan() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 pt-[100px] flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-slate-200 border-t-[#990000] rounded-full animate-spin"></div>
       </div>
     );
@@ -332,7 +332,7 @@ export default function ManajemenPesanan() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-slate-50 pt-[100px] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center p-6">
         <div className="bg-white p-10 rounded-3xl shadow-xl max-w-md w-full border border-red-50 text-center">
           <AlertTriangle className="mx-auto h-16 w-16 text-red-500 mb-6" />
           <h2 className="text-2xl font-black text-slate-900 mb-2">Akses Ditolak</h2>
@@ -344,7 +344,7 @@ export default function ManajemenPesanan() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[100px] pb-20 text-slate-800">
+    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800">
       <div className="max-w-7xl mx-auto px-6">
         
         {/* Header */}

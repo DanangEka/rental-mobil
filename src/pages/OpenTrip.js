@@ -3,7 +3,7 @@ import { Timer, Map, Sparkles, Send, Bell } from "lucide-react";
 
 export default function OpenTrip() {
   return (
-    <div className="min-h-screen bg-[#070707] text-white pt-40 pb-20 px-4 sm:px-6 lg:px-8 flex flex-col items-center relative overflow-hidden">
+    <div className="min-h-screen bg-[#070707] text-white pt-52 pb-20 px-4 sm:px-6 lg:px-8 flex flex-col items-center relative overflow-hidden">
       {/* Decorative Background Elements */}
       <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-brand-600/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-purple-900/10 rounded-full blur-[100px] pointer-events-none" />
