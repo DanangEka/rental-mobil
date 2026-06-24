@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from "firebase/firestore";
-import { User, Mail, Phone, MapPin, Calendar, Car, Star, DollarSign, Edit, Eye, ShieldCheck, ArrowRight, Clock } from "lucide-react";
+import { User, Phone, MapPin, Star, DollarSign, ArrowRight } from "lucide-react";
 
 export default function AdminDriverProfiles() {
   const [user, setUser] = useState(null);

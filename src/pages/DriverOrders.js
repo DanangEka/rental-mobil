@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, getDocs, addDoc } from "firebase/firestore";
 import axios from "axios";
-import { CheckCircle, Clock, MapPin, Phone, Calendar, DollarSign, UserPlus, Car, FileText, Upload, CreditCard, Building, ExternalLink, AlertCircle, Camera, Search, Filter, ClipboardList } from "lucide-react";
+import { CheckCircle, Clock, MapPin, Phone, Calendar, DollarSign, Car, FileText, Upload, CreditCard, AlertCircle, Camera, Search, ClipboardList } from "lucide-react";
 import InvoiceGenerator from "../components/InvoiceGenerator";
 import { useToast } from "../components/Toast";
 import { serverTimestamp } from "firebase/firestore";
@@ -23,23 +23,21 @@ export default function DriverOrders() {
   const [showPaymentSection, setShowPaymentSection] = useState({});
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+    const unsubscribeAuth = auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        fetchUsers();
+        fetchCompanyProfile();
+      }
     });
 
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // Try to fetch users, but handle permission errors gracefully
         const usersSnapshot = await getDocs(collection(db, "users"));
         const usersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setUsers(usersData);
       } catch (error) {
         console.error("Error fetching users:", error);
-        // If permission denied, set empty array and continue
         setUsers([]);
       }
     };
@@ -56,12 +54,8 @@ export default function DriverOrders() {
       }
     };
 
-    // Only fetch users if we have a user and it's a driver
-    if (user) {
-      fetchUsers();
-      fetchCompanyProfile();
-    }
-  }, [user]);
+    return () => unsubscribeAuth();
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -192,7 +186,6 @@ export default function DriverOrders() {
         return;
       }
 
-      const now = new Date();
       await updateDoc(orderRef, {
         driverId: user.uid,
         status: "disetujui", // Ensure it goes to active tasks

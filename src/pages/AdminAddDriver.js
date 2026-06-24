@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { auth, db } from "../services/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import { UserPlus, Mail, Phone, MapPin, Calendar, CreditCard, Eye, EyeOff, ShieldCheck, Lock, StickyNote, ArrowLeft } from "lucide-react";
+import { UserPlus, Mail, Phone, MapPin, Calendar, ShieldCheck, Lock, ArrowLeft } from "lucide-react";
 import { useToast } from "../components/Toast";
 
 export default function AdminAddDriver() {
@@ -18,8 +18,6 @@ export default function AdminAddDriver() {
     confirmPassword: "",
     notes: ""
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
@@ -167,7 +165,7 @@ export default function AdminAddDriver() {
                   <div className="relative group">
                     <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200 group-focus-within:text-[#990000] transition-colors" size={18} />
                     <input
-                      type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={handleInputChange} required
+                      type="password" name="password" value={formData.password} onChange={handleInputChange} required
                       placeholder="Password Baru"
                       className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl px-4 py-3.5 focus:border-[#990000] outline-none transition-all placeholder:text-slate-300"
                     />
@@ -175,7 +173,7 @@ export default function AdminAddDriver() {
                   <div className="relative group">
                     <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200 group-focus-within:text-[#990000] transition-colors" size={18} />
                     <input
-                      type={showConfirmPassword ? "text" : "password"} name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} required
+                      type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} required
                       placeholder="Konfirmasi Password"
                       className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl px-4 py-3.5 focus:border-[#990000] outline-none transition-all placeholder:text-slate-300"
                     />

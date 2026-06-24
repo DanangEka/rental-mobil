@@ -3,12 +3,14 @@ import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { DollarSign, Send, Map, Sparkles, ChevronRight, Info } from "lucide-react";
 
+import { PackageSkeleton, PageHeaderSkeleton } from "../components/SkeletonLoader";
+
 export default function TourPackages() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, "tour_packages"), orderBy("timestamp", "desc"));
+    const q = query(collection(db, "paket_wisata"), orderBy("timestamp", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setPackages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -27,15 +29,11 @@ export default function TourPackages() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="flex flex-col items-center gap-6 animate-pulse">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-[#990000]/20 border-t-[#990000] rounded-full animate-spin"></div>
-            <Map className="absolute inset-0 m-auto text-[#990000] opacity-50" size={24} />
-          </div>
-          <div className="flex flex-col items-center">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Cakra Lima Tujuh</p>
-            <p className="text-xs font-bold text-slate-500 italic">Mempersiapkan petualangan Anda...</p>
+      <div className="min-h-screen bg-white pt-32 md:pt-48 pb-24 px-6 md:px-8">
+        <div className="max-w-7xl mx-auto">
+          <PageHeaderSkeleton />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
+            {[1, 2, 3].map(i => <PackageSkeleton key={i} />)}
           </div>
         </div>
       </div>
@@ -43,11 +41,11 @@ export default function TourPackages() {
   }
 
   return (
-    <div className="min-h-screen bg-white pt-48 pb-24 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white pt-28 md:pt-48 pb-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         
         {/* Hero Section */}
-        <div className="relative rounded-[3rem] overflow-hidden bg-slate-900 mb-20 aspect-[21/9] flex items-center px-8 md:px-16">
+        <div className="relative rounded-[2.5rem] md:rounded-[3rem] overflow-hidden bg-slate-900 mb-12 md:mb-20 min-h-[300px] md:aspect-[21/9] flex items-center px-6 md:px-16">
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1600&q=80')] bg-cover bg-center opacity-40"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/60 to-transparent"></div>
           

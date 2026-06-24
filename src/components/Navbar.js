@@ -20,9 +20,6 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isLandingPage = location.pathname === "/";
-  const navPadding = scrolled ? "py-3" : "py-4";
-
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
@@ -179,10 +176,10 @@ export default function Navbar() {
              </>
            ) : (
              <>
-               <Link to="/home" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/home' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Layanan</Link>
-               <Link to="/open-trip" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/open-trip' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Open Trip</Link>
+               <Link to={user ? "/home" : "/login"} onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/home' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Layanan</Link>
+               <Link to={user ? "/open-trip" : "/login"} onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/open-trip' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Open Trip</Link>
                <Link to="/company-profile" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/company-profile' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Company</Link>
-               <Link to="/tour-packages" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/tour-packages' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Paket Wisata</Link>
+               <Link to={user ? "/tour-packages" : "/login"} onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/tour-packages' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>Paket Wisata</Link>
                {user && role === 'client' && (
                  <Link to="/history-pesanan" onClick={() => setSidebarOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors ${location.pathname === '/history-pesanan' ? 'bg-red-50 text-[#990000]' : 'hover:bg-slate-50'}`}>
                    <History size={16} /> History Pesanan
@@ -295,37 +292,37 @@ export default function Navbar() {
                ) : (
                  /* Public / Client center nav */
                  <>
-                   <div className="relative" onMouseEnter={() => setLayananDropdownOpen(true)} onMouseLeave={() => setLayananDropdownOpen(false)}>
-                      <Link to="/home" className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider flex items-center gap-2.5 transition-all ${location.pathname === '/home' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>
-                        Layanan <ChevronDown size={16} className={layananDropdownOpen ? 'rotate-180 transition-transform text-[#990000]' : 'transition-transform'} />
-                      </Link>
-                      {layananDropdownOpen && (
-                        <div className="absolute top-[calc(100%+12px)] left-0 w-80 bg-white border border-slate-100 shadow-[0_25px_50px_rgba(0,0,0,0.15)] rounded-[2.5rem] p-4 animate-fadeInUp z-[100]">
-                           <Link to="/home?type=lepas" className="flex items-center gap-5 p-5 hover:bg-red-50/50 rounded-3xl transition-all group/item">
-                              <div className="w-12 h-12 bg-[#990000] text-white rounded-2xl flex items-center justify-center group-hover/item:scale-110 transition-transform shadow-lg shadow-red-900/20">
-                                 <Key size={22} />
-                              </div>
-                              <div>
-                                 <p className="text-[11px] font-black uppercase tracking-widest text-slate-900">Sewa Lepas Kunci</p>
-                                 <p className="text-[10px] font-bold text-slate-500 mt-1">Explore mandiri tanpa sopir</p>
-                              </div>
-                           </Link>
-                           <Link to="/home?type=driver" className="flex items-center gap-5 p-5 hover:bg-red-50/50 rounded-3xl transition-all group/item border-t border-slate-50 mt-1">
-                              <div className="w-12 h-12 bg-[#990000] text-white rounded-2xl flex items-center justify-center group-hover/item:scale-110 transition-transform shadow-lg shadow-red-900/20">
-                                 <Users size={22} />
-                              </div>
-                              <div>
-                                 <p className="text-[11px] font-black uppercase tracking-widest text-slate-900">Dengan Driver</p>
-                                 <p className="text-[10px] font-bold text-slate-500 mt-1">Layanan sopir profesional</p>
-                              </div>
-                           </Link>
-                        </div>
-                      )}
-                   </div>
+                    <div className="relative" onMouseEnter={() => setLayananDropdownOpen(true)} onMouseLeave={() => setLayananDropdownOpen(false)}>
+                       <Link to={user ? "/home" : "/login"} className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider flex items-center gap-2.5 transition-all ${location.pathname === '/home' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>
+                         Layanan <ChevronDown size={16} className={layananDropdownOpen ? 'rotate-180 transition-transform text-[#990000]' : 'transition-transform'} />
+                       </Link>
+                       {layananDropdownOpen && user && (
+                         <div className="absolute top-[calc(100%+12px)] left-0 w-80 bg-white border border-slate-100 shadow-[0_25px_50px_rgba(0,0,0,0.15)] rounded-[2.5rem] p-4 animate-fadeInUp z-[100]">
+                            <Link to="/home?type=lepas" className="flex items-center gap-5 p-5 hover:bg-red-50/50 rounded-3xl transition-all group/item">
+                               <div className="w-12 h-12 bg-[#990000] text-white rounded-2xl flex items-center justify-center group-hover/item:scale-110 transition-transform shadow-lg shadow-red-900/20">
+                                  <Key size={22} />
+                               </div>
+                               <div>
+                                  <p className="text-[11px] font-black uppercase tracking-widest text-slate-900">Sewa Lepas Kunci</p>
+                                  <p className="text-[10px] font-bold text-slate-500 mt-1">Explore mandiri tanpa sopir</p>
+                               </div>
+                            </Link>
+                            <Link to="/home?type=driver" className="flex items-center gap-5 p-5 hover:bg-red-50/50 rounded-3xl transition-all group/item border-t border-slate-50 mt-1">
+                               <div className="w-12 h-12 bg-[#990000] text-white rounded-2xl flex items-center justify-center group-hover/item:scale-110 transition-transform shadow-lg shadow-red-900/20">
+                                  <Users size={22} />
+                               </div>
+                               <div>
+                                  <p className="text-[11px] font-black uppercase tracking-widest text-slate-900">Dengan Driver</p>
+                                  <p className="text-[10px] font-bold text-slate-500 mt-1">Layanan sopir profesional</p>
+                               </div>
+                            </Link>
+                         </div>
+                       )}
+                    </div>
 
-                   <Link to="/open-trip" className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider transition-all ${location.pathname === '/open-trip' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>Open Trip</Link>
-                   <Link to="/company-profile" className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider transition-all ${location.pathname === '/company-profile' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>Company</Link>
-                   <Link to="/tour-packages" className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider transition-all ${location.pathname === '/tour-packages' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>Paket Wisata</Link>
+                    <Link to={user ? "/open-trip" : "/login"} className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider transition-all ${location.pathname === '/open-trip' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>Open Trip</Link>
+                    <Link to="/company-profile" className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider transition-all ${location.pathname === '/company-profile' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>Company</Link>
+                    <Link to={user ? "/tour-packages" : "/login"} className={`px-7 py-3 rounded-full text-[13px] font-black uppercase tracking-wider transition-all ${location.pathname === '/tour-packages' ? 'text-[#990000] bg-white shadow-md shadow-red-900/5' : 'text-slate-700 hover:text-[#990000]'}`}>Paket Wisata</Link>
                  </>
                )}
             </div>
@@ -361,28 +358,48 @@ export default function Navbar() {
                               <p className="text-xs font-bold text-slate-400 italic">Belum ada notifikasi untuk Anda.</p>
                             </div>
                           ) : (
-                            notifications.map(n => (
-                              <div 
-                                key={n.id} 
-                                onClick={() => !n.read && handleMarkAsRead(n.id)}
-                                className={`p-5 rounded-3xl transition-all cursor-pointer border ${n.read ? 'bg-slate-50/50 border-transparent opacity-60' : 'bg-red-50/40 border-red-100 hover:bg-red-50 shadow-sm'}`}
-                              >
-                                <div className="flex gap-4">
-                                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${n.read ? 'bg-slate-200 text-slate-500' : 'bg-[#990000] text-white'}`}>
-                                    <Bell size={18} />
-                                  </div>
-                                  <div>
-                                    <p className={`text-[11px] leading-relaxed mb-2 ${n.read ? 'text-slate-500 font-medium' : 'text-slate-900 font-black'}`}>
-                                      {n.message}
-                                    </p>
-                                    <div className="flex items-center gap-2 text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                                      <Clock size={10} />
-                                      {n.timestamp?.toDate ? n.timestamp.toDate().toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) : 'Baru saja'}
+                            notifications.map(n => {
+                              const getNotifRoute = (notif) => {
+                                if (notif.link) return notif.link;
+                                const msg = (notif.message || '').toLowerCase();
+                                if (role === 'admin') {
+                                  if (msg.includes('pembayaran') || msg.includes('pesanan') || msg.includes('pemesanan') || msg.includes('mobil') || msg.includes('pelunasan') || msg.includes('cash')) return '/manajemen-pesanan';
+                                  return '/admin-dashboard';
+                                }
+                                if (msg.includes('pembayaran') || msg.includes('pesanan') || msg.includes('pemesanan') || msg.includes('mobil') || msg.includes('invoice') || msg.includes('pelunasan') || msg.includes('disetujui') || msg.includes('ditolak') || msg.includes('cash') || msg.includes('selesai') || msg.includes('lunas')) return '/history-pesanan';
+                                return '/';
+                              };
+                              return (
+                                <div 
+                                  key={n.id} 
+                                  onClick={() => {
+                                    if (!n.read) handleMarkAsRead(n.id);
+                                    const route = getNotifRoute(n);
+                                    setNotificationOpen(false);
+                                    navigate(route);
+                                  }}
+                                  className={`p-5 rounded-3xl transition-all cursor-pointer border ${n.read ? 'bg-slate-50/50 border-transparent opacity-60' : 'bg-red-50/40 border-red-100 hover:bg-red-50 shadow-sm'}`}
+                                >
+                                  <div className="flex gap-4">
+                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${n.read ? 'bg-slate-200 text-slate-500' : 'bg-[#990000] text-white'}`}>
+                                      <Bell size={18} />
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className={`text-[11px] leading-relaxed mb-2 ${n.read ? 'text-slate-500 font-medium' : 'text-slate-900 font-black'}`}>
+                                        {n.message}
+                                      </p>
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                                          <Clock size={10} />
+                                          {n.timestamp?.toDate ? n.timestamp.toDate().toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) : 'Baru saja'}
+                                        </div>
+                                        <ChevronRight size={12} className="text-slate-300" />
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))
+                              );
+                            })
                           )}
                         </div>
                       </div>

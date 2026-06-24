@@ -1,58 +1,56 @@
-import { useEffect, useState } from "react";
-import { auth, db, storage } from "../services/firebase";
+import { useEffect, useState, useCallback } from "react";
+import { auth, db } from "../services/firebase";
 import {
   collection,
   getDocs,
-  updateDoc,
   doc,
   deleteDoc,
-  addDoc
+  addDoc,
+  updateDoc
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Car, Search, Plus, Trash2, Settings, Image as ImageIcon, Luggage, BatteryCharging, Users as UsersIcon, Check } from "lucide-react";
 
 export default function CarManagement() {
   const [mobil, setMobil] = useState([]);
   const [form, setForm] = useState({ nama: "", harga: "", gambar: "", layanan: "Lepas Kunci", seats: 4, chargingPort: true, luggage: true });
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchMobil, setSearchMobil] = useState("");
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const snapM = await getDocs(collection(db, "mobil"));
       setMobil(snapM.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
       console.error("Gagal fetch data:", error);
     }
-  };
-
-  const checkAdmin = async () => {
-    const user = auth.currentUser;
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const idTokenResult = await user.getIdTokenResult();
-      if (idTokenResult.claims.admin === true) {
-        setIsAdmin(true);
-        fetchData();
-      }
-    } catch (error) {
-      console.error("Error verifikasi admin:", error.message);
-    }
-
-    setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
+    const checkAdmin = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const idTokenResult = await user.getIdTokenResult();
+        if (idTokenResult.claims.admin === true) {
+          setIsAdmin(true);
+          fetchData();
+        }
+      } catch (error) {
+        console.error("Error verifikasi admin:", error.message);
+      }
+
+      setLoading(false);
+    };
+
     checkAdmin();
-  }, []);
+  }, [fetchData]);
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -71,16 +69,30 @@ export default function CarManagement() {
 
     setIsUploading(true);
     try {
-      const storageRef = ref(storage, `mobil/${Date.now()}_${selectedFile.name}`);
-      const snapshot = await uploadBytes(storageRef, selectedFile);
-      const downloadURL = await getDownloadURL(snapshot.ref);
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("upload_preset", process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || "rental-mobil");
+      formData.append("folder", "mobil");
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || "dnfruux8d"}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) throw new Error("Gagal mengunggah ke Cloudinary");
+
+      const data = await response.json();
+      const downloadURL = data.secure_url;
 
       setForm({ ...form, gambar: downloadURL });
       setSelectedFile(null);
-      alert("Gambar berhasil diunggah!");
+      alert("Gambar armada berhasil diunggah ke Cloudinary!");
     } catch (error) {
       console.error("Gagal upload gambar:", error);
-      alert("Gagal upload gambar.");
+      alert("Gagal upload gambar: " + error.message);
     } finally {
       setIsUploading(false);
     }

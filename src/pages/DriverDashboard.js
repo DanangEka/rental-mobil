@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
-import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp, getDoc, getDocs } from "firebase/firestore";
-import { ClipboardList, CheckCircle, Clock, DollarSign, TrendingUp, UserPlus, MapPin, Search, Gauge, ChevronRight } from "lucide-react";
+import { collection, query, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp, getDoc, getDocs } from "firebase/firestore";
+import { ClipboardList, CheckCircle, Clock, DollarSign, MapPin, Gauge, ChevronRight } from "lucide-react";
 import { useToast } from "../components/Toast";
 
 export default function DriverDashboard() {
@@ -22,10 +22,6 @@ export default function DriverDashboard() {
       setUser(currentUser);
     });
 
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
     const fetchUsers = async () => {
       try {
         const usersSnapshot = await getDocs(collection(db, "users"));
@@ -51,6 +47,8 @@ export default function DriverDashboard() {
 
     fetchUsers();
     fetchCompanyProfile();
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -271,27 +269,6 @@ export default function DriverDashboard() {
     };
   }, [user]);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "disetujui":
-        return "bg-blue-100 text-blue-800";
-      case "dalam perjalanan":
-        return "bg-yellow-100 text-yellow-800";
-      case "selesai":
-        return "bg-green-100 text-green-800";
-      case "dibatalkan":
-        return "bg-red-100 text-red-800";
-      case "approve sewa":
-        return "bg-purple-100 text-purple-800";
-      case "pembayaran berhasil":
-        return "bg-blue-100 text-blue-800";
-      case "siap diambil":
-        return "bg-indigo-100 text-indigo-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
   const getStatusText = (status) => {
     switch (status) {
       case "disetujui":
@@ -365,11 +342,6 @@ export default function DriverDashboard() {
       // First, try to update the order to assign it to the current driver
       console.log("Updating order with driverId:", user.uid);
       try {
-        // Check payment method to determine status
-        const orderDoc = await getDoc(doc(db, "pemesanan", orderId));
-        const orderData = orderDoc.data();
-        const paymentMethod = orderData?.paymentMethod;
-
         // Set status to "disetujui" so order appears in "Order Aktif" and "Verifikasi Mobil"
         const newStatus = "disetujui";
         const now = new Date();
@@ -383,7 +355,6 @@ export default function DriverDashboard() {
         };
 
         console.log("Update data:", updateData);
-        console.log("Order data before update:", orderData);
 
         await updateDoc(doc(db, "pemesanan", orderId), updateData);
         console.log("✅ Order updated successfully with status:", newStatus);

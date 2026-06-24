@@ -3,9 +3,11 @@ import { auth, db } from "../services/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useToast } from "../components/Toast";
 import { 
-  User, Mail, Phone, MapPin, Map, Navigation, Edit2, 
+  User, Mail, Phone, MapPin, Edit2, 
   Save, X, Image as ImageIcon, CheckCircle, Clock, AlertTriangle, ShieldCheck
 } from "lucide-react";
+
+const javaProvinces = ["banten", "dki jakarta", "jawa barat", "jawa tengah", "jawa timur", "di yogyakarta"];
 
 export default function Profile() {
   const toast = useToast();
@@ -31,8 +33,6 @@ export default function Profile() {
   const [dataLoading, setDataLoading] = useState(true);
   const [showPenanggungJawab, setShowPenanggungJawab] = useState(false);
   const [previewKtp, setPreviewKtp] = useState(null);
-
-  const javaProvinces = ["banten", "dki jakarta", "jawa barat", "jawa tengah", "jawa timur", "di yogyakarta"];
 
   // 🔹 fungsi upload ke Cloudinary
   const uploadToCloudinary = async (file) => {

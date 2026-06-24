@@ -249,10 +249,20 @@ const InvoiceGenerator = {
     doc.setFont("helvetica", "normal");
     doc.text("Rincian Pembayaran:", summaryX, y);
     
+    const dpAmount = order.dpAmount || Math.ceil(order.perkiraanHarga * 0.5);
+    const totalSewa = order.perkiraanHarga || 0;
+    const sisaBayar = totalSewa + penaltyAmount - dpAmount;
+
     doc.text("Total Biaya Sewa:", summaryX, y + 7);
-    doc.text(formatIDR(order.perkiraanHarga), 195, y + 7, { align: "right" });
+    doc.text(formatIDR(totalSewa), 195, y + 7, { align: "right" });
     
     let currentY = y + 7;
+    
+    currentY += 7;
+    doc.setTextColor(...COLORS.SUCCESS);
+    doc.text("DP Terbayar:", summaryX, currentY);
+    doc.text(`- ${formatIDR(dpAmount)}`, 195, currentY, { align: "right" });
+
     if (penaltyAmount > 0) {
       currentY += 7;
       doc.setTextColor(...COLORS.PRIMARY);
@@ -262,11 +272,11 @@ const InvoiceGenerator = {
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.setTextColor(...COLORS.SUCCESS);
+    doc.setTextColor(...COLORS.PRIMARY);
     doc.setFillColor(...COLORS.LIGHT_GRAY);
     doc.rect(summaryX - 5, currentY + 5, 75, 12, 'F');
     doc.text("TOTAL AKHIR:", summaryX, currentY + 13);
-    doc.text(formatIDR(totalWithPenalty), 195, currentY + 13, { align: "right" });
+    doc.text(formatIDR(sisaBayar), 195, currentY + 13, { align: "right" });
 
     // Paid Stamp Effect
     doc.setDrawColor(...COLORS.SUCCESS);

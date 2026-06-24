@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
-import { Camera, Upload, FileText, AlertCircle, CheckCircle, X } from "lucide-react";
+import { Camera, FileText, AlertCircle, CheckCircle, X } from "lucide-react";
 
 export default function VehicleVerification() {
   const [user, setUser] = useState(null);

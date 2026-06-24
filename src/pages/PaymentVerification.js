@@ -1,8 +1,8 @@
 // PaymentVerification.js - Updated to fix composite index error (v2.0)
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
-import { collection, getDocs, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
-import { CreditCard, Upload, DollarSign, CheckCircle, Camera, FileText } from "lucide-react";
+import { collection, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { CreditCard, DollarSign, CheckCircle, Camera, FileText } from "lucide-react";
 import InvoiceGenerator from "../components/InvoiceGenerator";
 
 export default function PaymentVerification() {

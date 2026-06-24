@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Camera, CreditCard, User, ArrowRight, Plus, ShieldCheck, LayoutGrid } from "lucide-react";
+import { Camera, CreditCard, User, ArrowRight, Plus, LayoutGrid } from "lucide-react";
 
 export default function AdminDriverManagement() {
   const menuItems = [

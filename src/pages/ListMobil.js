@@ -252,7 +252,7 @@ export default function ListMobil() {
     }
 
     let perkiraanHarga = durasiHari * m.harga;
-    const selectedRentalType = rentalType[m.id] || "Lepas Kunci";
+    const selectedRentalType = serviceType === "driver" ? "Driver" : "Lepas Kunci";
     if (selectedRentalType === "Driver") {
       perkiraanHarga += 250000;
     }
@@ -263,6 +263,7 @@ export default function ListMobil() {
         email: auth.currentUser.email,
         mobilId: m.id,
         namaMobil: m.nama,
+        platNomor: m.platNomor || "",
         tanggal: new Date().toISOString(),
         tanggalMulai: mulai,
         tanggalSelesai: selesai,
@@ -360,6 +361,7 @@ export default function ListMobil() {
         email: finalEmail,
         mobilId: m.id,
         namaMobil: m.nama,
+        platNomor: m.platNomor || "",
         tanggal: new Date().toISOString(),
         tanggalMulai: mulai,
         tanggalSelesai: selesai,
@@ -379,10 +381,10 @@ export default function ListMobil() {
         isManualSewa: true
       };
 
-      await addDoc(collection(db, "pemesanan"), orderData);
+      const orderRef = await addDoc(collection(db, "pemesanan"), orderData);
 
       // Auto trigger print invoice
-      InvoiceGenerator.generateDPInvoice(orderData, { nama: manualClient.namaLengkap, email: finalEmail, nomorTelepon: manualClient.nomorTelepon });
+      InvoiceGenerator.generateDPInvoice({ ...orderData, id: orderRef.id }, { nama: manualClient.namaLengkap, email: finalEmail, nomorTelepon: manualClient.nomorTelepon });
 
       await updateDoc(doc(db, "mobil", m.id), {
         status: "disewa",
@@ -870,29 +872,7 @@ export default function ListMobil() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <label className="text-[10px] text-slate-400 font-black uppercase tracking-widest ml-1">Opsi Layanan</label>
-                <div className="flex bg-slate-100 p-1.5 rounded-[1.25rem] border border-slate-200">
-                  <button
-                    type="button"
-                    onClick={() => setRentalType((prev) => ({ ...prev, [selectedUserMobil.id]: "Lepas Kunci" }))}
-                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                      rentalType[selectedUserMobil.id] === "Lepas Kunci" || !rentalType[selectedUserMobil.id]
-                        ? "bg-white text-[#990000] shadow-sm"
-                        : "text-slate-400 hover:text-slate-600"
-                    }`}
-                  >Lepas Kunci</button>
-                  <button
-                    type="button"
-                    onClick={() => setRentalType((prev) => ({ ...prev, [selectedUserMobil.id]: "Driver" }))}
-                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                      rentalType[selectedUserMobil.id] === "Driver"
-                        ? "bg-white text-[#990000] shadow-sm"
-                        : "text-slate-400 hover:text-slate-600"
-                    }`}
-                  >Dengan Driver</button>
-                </div>
-              </div>
+
 
               {tanggalMulai[selectedUserMobil.id] && tanggalSelesai[selectedUserMobil.id] && (
                 <div className="bg-[#990000] rounded-[2rem] p-8 text-white shadow-xl shadow-red-900/20 relative overflow-hidden group">

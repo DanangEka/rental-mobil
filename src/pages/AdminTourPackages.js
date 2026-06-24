@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { auth, db, storage } from "../services/firebase";
+import { auth, db } from "../services/firebase";
 import {
   collection,
-  getDocs,
-  updateDoc,
+  onSnapshot,
+  query,
+  orderBy,
   doc,
   deleteDoc,
   addDoc,
   serverTimestamp
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Map, Search, Plus, Trash2, Settings, Image as ImageIcon, MapPin, Check, ListChecks } from "lucide-react";
 
 export default function AdminTourPackages() {
@@ -29,37 +29,41 @@ export default function AdminTourPackages() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const fetchData = async () => {
-    try {
-      const snap = await getDocs(collection(db, "tour_packages"));
-      setPackages(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    } catch (error) {
-      console.error("Gagal fetch data:", error);
-    }
-  };
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          const idTokenResult = await user.getIdTokenResult();
+          if (idTokenResult.claims.admin === true) {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
+        } catch (error) {
+          console.error("Error verifikasi admin:", error);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      const user = auth.currentUser;
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+    if (!isAdmin) return;
 
-      try {
-        const idTokenResult = await user.getIdTokenResult();
-        if (idTokenResult.claims.admin === true) {
-          setIsAdmin(true);
-          fetchData();
-        }
-      } catch (error) {
-        console.error("Error verifikasi admin:", error.message);
-      }
+    const q = query(collection(db, "paket_wisata"), orderBy("timestamp", "desc"));
+    const unsubscribeData = onSnapshot(q, (snapshot) => {
+      setPackages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.error("Gagal fetch data snapshot:", error);
+    });
 
-      setLoading(false);
-    };
-    checkAdminStatus();
-  }, []);
+    return () => unsubscribeData();
+  }, [isAdmin]);
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -78,16 +82,30 @@ export default function AdminTourPackages() {
 
     setIsUploading(true);
     try {
-      const storageRef = ref(storage, `packages/${Date.now()}_${selectedFile.name}`);
-      const snapshot = await uploadBytes(storageRef, selectedFile);
-      const downloadURL = await getDownloadURL(snapshot.ref);
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("upload_preset", process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || "rental-mobil");
+      formData.append("folder", "poster-promo");
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || "dnfruux8d"}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) throw new Error("Gagal mengunggah ke Cloudinary");
+
+      const data = await response.json();
+      const downloadURL = data.secure_url;
 
       setForm({ ...form, imageUrl: downloadURL });
       setSelectedFile(null);
-      alert("Gambar berhasil diunggah!");
+      alert("Gambar berhasil diunggah ke Cloudinary!");
     } catch (error) {
       console.error("Gagal upload gambar:", error);
-      alert("Gagal upload gambar.");
+      alert("Gagal upload gambar: " + error.message);
     } finally {
       setIsUploading(false);
     }
@@ -100,7 +118,7 @@ export default function AdminTourPackages() {
     }
 
     try {
-      await addDoc(collection(db, "tour_packages"), {
+      await addDoc(collection(db, "paket_wisata"), {
         ...form,
         harga: parseInt(form.harga),
         status: "Tersedia",
@@ -116,7 +134,6 @@ export default function AdminTourPackages() {
         fasilitas: "" 
       });
       setSelectedFile(null);
-      fetchData();
       alert("Paket Wisata berhasil ditambahkan!");
     } catch (error) {
       console.error("Gagal tambah paket:", error.message);
@@ -125,8 +142,7 @@ export default function AdminTourPackages() {
 
   const handleHapusPackage = async (id) => {
     if(window.confirm("Hapus paket wisata ini?")) {
-      await deleteDoc(doc(db, "tour_packages", id));
-      fetchData();
+      await deleteDoc(doc(db, "paket_wisata", id));
     }
   };
 

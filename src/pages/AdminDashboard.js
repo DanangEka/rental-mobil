@@ -197,22 +197,22 @@ export default function AdminDashboard() {
           monthlyRevenue,
         }));
 
-        setRevenueData({
+        setRevenueData((prev) => ({
           daily: {
             labels: last7Days,
             datasets: [{
-              ...revenueData.daily.datasets[0],
+              ...prev.daily.datasets[0],
               data: dailyValues,
             }],
           },
           monthly: {
             labels: last6Months,
             datasets: [{
-              ...revenueData.monthly.datasets[0],
+              ...prev.monthly.datasets[0],
               data: monthlyValues,
             }],
           },
-        });
+        }));
 
         setLoading(false);
       } catch (error) {

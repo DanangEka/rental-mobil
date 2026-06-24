@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { auth, db } from "../services/firebase";
 import {
   collection,
@@ -8,7 +8,7 @@ import {
   deleteDoc
 } from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { Search, UserCheck, UserX, Clock, Mail, Phone, MapPin, Key, Trash2, Eye, User, ShieldCheck } from "lucide-react";
+import { Search, UserCheck, UserX, Clock, Mail, Phone, Key, Trash2, User, ShieldCheck } from "lucide-react";
 
 export default function ClientManagement() {
   const [clients, setClients] = useState([]);
@@ -17,7 +17,7 @@ export default function ClientManagement() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const fetchClients = async () => {
+  const fetchClients = useCallback(async () => {
     try {
       const snapC = await getDocs(collection(db, "users"));
       const clientsData = snapC.docs.map(doc => {
@@ -31,7 +31,31 @@ export default function ClientManagement() {
     } catch (error) {
       console.error("Gagal fetch clients:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const idTokenResult = await user.getIdTokenResult();
+        if (idTokenResult.claims.admin === true) {
+          setIsAdmin(true);
+          fetchClients();
+        }
+      } catch (error) {
+        console.error("Error verifikasi admin:", error.message);
+      }
+
+      setLoading(false);
+    };
+
+    checkAdmin();
+  }, [fetchClients]);
 
   const filteredClients = clients.filter(c => {
     const matchesSearch = searchClients === "" ||
@@ -43,30 +67,6 @@ export default function ClientManagement() {
 
     return matchesSearch && matchesStatus;
   });
-
-  const checkAdmin = async () => {
-    const user = auth.currentUser;
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const idTokenResult = await user.getIdTokenResult();
-      if (idTokenResult.claims.admin === true) {
-        setIsAdmin(true);
-        fetchClients();
-      }
-    } catch (error) {
-      console.error("Error verifikasi admin:", error.message);
-    }
-
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    checkAdmin();
-  }, []);
 
   const handleDeleteClient = async (id) => {
     if (!window.confirm("Hapus client ini?")) return;

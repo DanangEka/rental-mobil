@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, Timestamp } from "firebase/firestore";
 import { db } from "../services/firebase";
-import { Plus, Edit, Trash2, Users, MapPin, Calendar, Clock, Car, CheckCircle, XCircle, ChevronRight, DollarSign, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Users, MapPin, Calendar, Car } from "lucide-react";
 import { useToast } from "../components/Toast";
 
 export default function AdminOpenTrip() {
@@ -28,7 +28,7 @@ export default function AdminOpenTrip() {
     return 6;
   };
 
-  const fetchTrips = async () => {
+  const fetchTrips = useCallback(async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "open_trips"));
       const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -40,11 +40,11 @@ export default function AdminOpenTrip() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchTrips();
-  }, []);
+  }, [fetchTrips]);
 
   const handleCreate = async () => {
     if (!formData.judul || !formData.destinasi || !formData.tanggalBerangkat || !formData.hargaPerPax) {

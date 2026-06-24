@@ -6,7 +6,6 @@ import {
   Clock,
   Star,
   MapPin,
-  Users,
   Phone,
   Mail,
   Instagram,

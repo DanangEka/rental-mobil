@@ -33,7 +33,7 @@ export default function ProtectedRoute({ children, role }) {
   }, [role]);
 
   if (allowed === null) return <div>Loading...</div>;
-  if (!allowed) return <Navigate to="/" replace />;
+  if (!allowed) return <Navigate to="/login" replace />;
 
   return children;
 }

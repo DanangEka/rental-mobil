@@ -10,8 +10,7 @@ import {
   addDoc,
   serverTimestamp
 } from "firebase/firestore";
-import axios from "axios";
-import { Search, Filter, RefreshCw, Download, Eye, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, Car, User, MapPin, Calendar, ArrowRight, ShieldCheck, FileText, Calendar as CalendarIcon } from "lucide-react";
+import { Search, RefreshCw, Download, Eye, DollarSign, Car, User, MapPin, Calendar, ArrowRight, AlertTriangle, FileText, Calendar as CalendarIcon } from "lucide-react";
 import InvoiceGenerator from "../components/InvoiceGenerator";
 import * as XLSX from 'xlsx';
 import { initGoogleClient, syncOrderToCalendar } from "../services/googleCalendar";
@@ -88,19 +87,32 @@ export default function ManajemenPesanan() {
 
       await updateDoc(doc(db, "pemesanan", id), { status });
       if (status === "disetujui") {
-        const dpAmount = Math.ceil(pemesananData.perkiraanHarga * 0.5);
-        await updateDoc(doc(db, "pemesanan", id), {
-          status: "menunggu pembayaran",
-          dpAmount: dpAmount,
-          paymentStatus: "pending"
-        });
-        await updateDoc(doc(db, "mobil", mobilId), { tersedia: false, status: "disewa" });
-        await addDoc(collection(db, "notifications"), {
-          userId,
-          message: `Pemesanan mobil ${pemesananData.namaMobil} telah disetujui. Silakan lakukan pembayaran DP sebesar Rp ${dpAmount.toLocaleString()}.`,
-          read: false,
-          timestamp: serverTimestamp()
-        });
+        if (pemesananData.paymentMethod === 'Cash') {
+          await updateDoc(doc(db, "pemesanan", id), {
+            status: "disetujui_cash",
+            paymentStatus: "waiting_dp_input"
+          });
+          await addDoc(collection(db, "notifications"), {
+            userId,
+            message: `Pengajuan pembayaran Cash untuk ${pemesananData.namaMobil} telah disetujui. Silakan masukkan nominal DP yang akan Anda bayarkan di halaman History Pesanan.`,
+            read: false,
+            timestamp: serverTimestamp()
+          });
+        } else {
+          const dpAmount = Math.ceil(pemesananData.perkiraanHarga * 0.5);
+          await updateDoc(doc(db, "pemesanan", id), {
+            status: "menunggu pembayaran",
+            dpAmount: dpAmount,
+            paymentStatus: "pending"
+          });
+          await updateDoc(doc(db, "mobil", mobilId), { tersedia: false, status: "disewa" });
+          await addDoc(collection(db, "notifications"), {
+            userId,
+            message: `Pemesanan mobil ${pemesananData.namaMobil} telah disetujui. Silakan lakukan pembayaran DP sebesar Rp ${dpAmount.toLocaleString()}.`,
+            read: false,
+            timestamp: serverTimestamp()
+          });
+        }
       } else if (status === "ditolak") {
         await updateDoc(doc(db, "mobil", mobilId), { tersedia: true, status: "normal" });
         await addDoc(collection(db, "notifications"), {
@@ -488,9 +500,10 @@ export default function ManajemenPesanan() {
                               p.status === 'diproses' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                               p.status === 'lunas' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                               p.status === 'ditolak' ? 'bg-slate-50 text-slate-400 border-slate-200' :
+                              p.status === 'disetujui_cash' ? 'bg-blue-50 text-blue-600 border-blue-100' :
                               'bg-red-50 text-[#990000] border-red-100'
                             }`}>
-                              {p.status}
+                              {p.status === 'disetujui_cash' ? 'Disetujui (Cash)' : p.status}
                             </span>
                           </div>
                           <p className="text-sm font-bold text-slate-400 mt-1">Order #{p.id.substring(0, 8).toUpperCase()} • {p.rentalType}</p>
@@ -565,11 +578,26 @@ export default function ManajemenPesanan() {
                       
                       {/* Action Group 1: Decisions */}
                       <div className="flex flex-wrap gap-3">
-                        {p.status === "diproses" && (
+                         {p.status === "diproses" && (
                           <>
                              <button onClick={() => handleStatus(p.id, "disetujui", p.mobilId)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md active:scale-95">Setujui</button>
                              <button onClick={() => handleStatus(p.id, "ditolak", p.mobilId)} className="bg-white border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all">Tolak</button>
                           </>
+                        )}
+
+                        {p.status === "disetujui_cash" && p.paymentStatus === "dp_cash_submitted" && (
+                          <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex flex-col md:flex-row items-center gap-6">
+                            <div className="flex items-center gap-3">
+                              <DollarSign size={20} className="text-amber-600" />
+                              <div>
+                                <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Nominal DP Tunai</p>
+                                <p className="text-lg font-black text-amber-700">Rp {p.dpAmount?.toLocaleString()}</p>
+                              </div>
+                            </div>
+                            <button onClick={() => handlePaymentApproval(p.id, "pembayaran berhasil")} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md active:scale-95">
+                              Konfirmasi Terima Uang
+                            </button>
+                          </div>
                         )}
 
                         {p.status === "menunggu pembayaran" && p.paymentProof && (
@@ -591,7 +619,7 @@ export default function ManajemenPesanan() {
                            </div>
                         )}
 
-                        {(p.status === "pembayaran berhasil" || p.status === "disewa") && (
+                        {(p.status === "pembayaran berhasil" || p.status === "disewa" || p.status === "tugas aktif") && (
                            <button onClick={() => handleStatus(p.id, "selesai", p.mobilId)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md">Tandai Selesai</button>
                         )}
                         
@@ -607,10 +635,12 @@ export default function ManajemenPesanan() {
                              <Download size={14} /> Invoice DP
                           </button>
                         )}
-                        <button onClick={() => generateInvoicePDF(p, user, "full")} className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all group">
-                           <Download size={16} className="text-[#990000] group-hover:scale-110 transition-transform" /> 
-                           Cetak Invoice Full
-                        </button>
+                        {(p.status === "selesai" || p.status === "tugas aktif" || p.status === "pembayaran berhasil" || p.status === "lunas") && (
+                          <button onClick={() => generateInvoicePDF(p, user, "full")} className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all group">
+                             <Download size={16} className="text-[#990000] group-hover:scale-110 transition-transform" /> 
+                             Cetak Invoice Full
+                          </button>
+                        )}
                         {(p.status === "pembayaran berhasil" || p.status === "lunas" || p.status === "disetujui") && (
                            <button 
                             onClick={() => handleSyncToCalendar(p)}

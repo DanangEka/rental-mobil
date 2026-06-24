@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
-import { CreditCard, Calendar, User, DollarSign, Eye, CheckCircle, XCircle, Download, FileText, Filter, LayoutGrid, Clock } from "lucide-react";
+import { CreditCard, DollarSign, Eye, FileText, Filter, Clock } from "lucide-react";
 
 export default function AdminPaymentVerifications() {
   const [user, setUser] = useState(null);
