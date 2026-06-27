@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "../services/firebase";
-import { DollarSign, Send, Map, Sparkles, ChevronRight, Info } from "lucide-react";
+import { Send, Map, Sparkles, ChevronRight, Info } from "lucide-react";
 
 import { PackageSkeleton, PageHeaderSkeleton } from "../components/SkeletonLoader";
 
 export default function TourPackages() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPackage, setSelectedPackage] = useState(null);
 
   useEffect(() => {
     const q = query(collection(db, "paket_wisata"), orderBy("timestamp", "desc"));
@@ -119,19 +120,27 @@ export default function TourPackages() {
                   <div className="flex flex-col space-y-4 mb-8">
                     <div className="flex items-center justify-between py-3 border-b border-slate-50">
                       <div className="flex items-center gap-3 text-slate-500">
-                        <DollarSign size={16} className="text-[#990000]" />
-                        <span className="text-xs font-bold uppercase tracking-widest">Sulai Dari</span>
+                        <span className="text-sm font-black text-[#990000] tracking-tighter">Rp</span>
+                        <span className="text-xs font-bold uppercase tracking-widest">Mulai Dari</span>
                       </div>
                       <p className="text-xl font-black text-slate-900">Rp {pkg.harga.toLocaleString()}</p>
                     </div>
                   </div>
 
-                  <button 
-                    onClick={() => handleBooking(pkg)}
-                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-[#990000] shadow-xl hover:shadow-red-900/20 active:scale-95 transition-all"
-                  >
-                    Tanya Detail <Send size={14} />
-                  </button>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => setSelectedPackage(pkg)}
+                      className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 active:scale-95 transition-all"
+                    >
+                      Detail Selengkapnya
+                    </button>
+                    <button 
+                      onClick={() => handleBooking(pkg)}
+                      className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-[#990000] shadow-xl hover:shadow-red-900/20 active:scale-95 transition-all"
+                    >
+                      Tanya Detail <Send size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
@@ -231,6 +240,82 @@ export default function TourPackages() {
         </div>
 
       </div>
+
+      {/* Detail Selengkapnya Modal */}
+      {selectedPackage && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] px-4 overflow-y-auto py-10 animate-fadeIn">
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-lg relative animate-popIn shadow-2xl border border-slate-200 my-auto">
+            <button
+              onClick={() => setSelectedPackage(null)}
+              className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-[#990000] hover:bg-red-50 transition-all font-bold text-xl z-10 shadow-sm"
+            >
+              ×
+            </button>
+
+            {/* Modal Content */}
+            <div className="flex flex-col">
+              <div className="h-48 w-full rounded-2xl overflow-hidden mb-6 relative">
+                <img 
+                  src={selectedPackage.imageUrl} 
+                  alt={selectedPackage.judul} 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                <div className="absolute bottom-4 left-4">
+                  <span className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-slate-900 shadow-md">
+                    {selectedPackage.durasi}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1 h-4 bg-[#990000] rounded-full"></div>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{selectedPackage.destinasi}</span>
+              </div>
+
+              <h3 className="text-2xl font-black text-slate-900 mb-4 leading-tight">
+                {selectedPackage.judul}
+              </h3>
+
+              <div className="border-t border-slate-100 pt-4 mb-6">
+                <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-3">Fasilitas Paket</h4>
+                <div className="bg-slate-50 p-5 rounded-[2rem] border border-slate-100 max-h-60 overflow-y-auto">
+                  <ul className="space-y-3">
+                    {(() => {
+                      const desc = selectedPackage.description || "";
+                      const regex = /(?=\d+\.\s)/g;
+                      const items = desc.split(regex).map(item => item.trim()).filter(Boolean);
+                      const displayItems = items.length > 0 ? items : [desc];
+
+                      return displayItems.map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-xs text-slate-600 font-bold leading-relaxed">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#990000] mt-1.5 shrink-0" />
+                          <span>{item}</span>
+                        </li>
+                      ));
+                    })()}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between py-3 border-t border-slate-100 mb-6">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Harga Mulai Dari</span>
+                <p className="text-2xl font-black text-slate-900">Rp {selectedPackage.harga?.toLocaleString()}</p>
+              </div>
+
+              <button 
+                onClick={() => {
+                  handleBooking(selectedPackage);
+                  setSelectedPackage(null);
+                }}
+                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-[#990000] shadow-xl hover:shadow-red-900/20 active:scale-95 transition-all"
+              >
+                Tanya Detail <Send size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

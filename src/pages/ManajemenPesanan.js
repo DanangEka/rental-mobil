@@ -481,6 +481,7 @@ export default function ManajemenPesanan() {
           ) : (
             filteredPemesanan.map((p) => {
               const user = users.find(u => u.id === p.uid);
+              const driverUser = users.find(u => u.id === p.driverId);
               const penalty = calculatePenalty(p);
               
               return (
@@ -520,7 +521,7 @@ export default function ManajemenPesanan() {
                     </div>
 
                     {/* Item Middle: Data Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+                    <div className={`grid grid-cols-1 sm:grid-cols-2 ${p.rentalType === "Dengan Driver" ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-8 mb-8`}>
                       {/* Client Info */}
                       <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -530,6 +531,34 @@ export default function ManajemenPesanan() {
                         <p className="text-xs font-bold text-slate-500 mb-1">{user?.nomorTelepon || "No Phone"}</p>
                         <p className="text-[10px] text-slate-400 truncate">{p.email}</p>
                       </div>
+
+                      {/* Driver Info */}
+                      {p.rentalType === "Dengan Driver" && (
+                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex flex-col justify-between">
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                              <User size={12} className="text-[#990000]" /> Driver Penerima
+                            </p>
+                            {p.driverId ? (
+                              <>
+                                <h4 className="text-slate-900 font-black mb-1 truncate">
+                                  {driverUser?.displayName || driverUser?.nama || driverUser?.name || 'Driver Aktif'}
+                                </h4>
+                                <p className="text-xs font-bold text-slate-500 mb-1">
+                                  ID: {p.driverId.substring(0, 12).toUpperCase()}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-xs font-bold text-amber-600 italic">Menunggu Driver</p>
+                            )}
+                          </div>
+                          {p.driverId && (driverUser?.email || p.driverEmail) && (
+                            <p className="text-[10px] text-slate-400 truncate mt-2">
+                              {driverUser?.email || p.driverEmail}
+                            </p>
+                          )}
+                        </div>
+                      )}
 
                       {/* Duration Info */}
                       <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-center">

@@ -187,6 +187,7 @@ export default function DriverDashboard() {
       let totalEarnings = 0;
       let activeCount = 0;
       let completedCount = 0;
+      let totalCount = 0;
 
       console.log("=== DRIVER DASHBOARD ORDERS ===");
       console.log("Orders fetched:", querySnapshot.size);
@@ -204,6 +205,17 @@ export default function DriverDashboard() {
       querySnapshot.forEach((doc) => {
         const order = { id: doc.id, ...doc.data() };
         console.log("📋 Order:", order.id, "Status:", order.status, "Payment Method:", order.paymentMethod, "Driver ID:", order.driverId);
+
+        // Calculate stats for logged-in driver's personal performance
+        if (order.driverId === user.uid) {
+          totalCount++;
+          if (["selesai", "lunas", "cash_submitted"].includes(order.status)) {
+            completedCount++;
+            totalEarnings += order.perkiraanHarga || 0;
+          } else if (["disetujui", "dalam perjalanan", "menunggu pembayaran"].includes(order.status)) {
+            activeCount++;
+          }
+        }
 
         // Show orders that drivers can accept based on status and location
         // Orders with "approve sewa" (cash approved) or "pembayaran berhasil" (payment successful)
@@ -226,14 +238,6 @@ export default function DriverDashboard() {
         if (needsDriver) {
           console.log("✅ Order available for driver:", order.id, "Status:", order.status, "Payment:", order.paymentMethod);
           ordersData.push(order);
-
-          // Calculate stats
-          if (order.status === "selesai") {
-            completedCount++;
-            totalEarnings += order.perkiraanHarga || 0;
-          } else if (["disetujui", "dalam perjalanan", "approve sewa", "pembayaran berhasil"].includes(order.status)) {
-            activeCount++;
-          }
         } else {
           const reason = order.driverId ? "Has driver assigned" : "Wrong status: " + order.status;
           console.log("❌ Order not available for driver:", order.id, "Reason:", reason);
@@ -251,7 +255,7 @@ export default function DriverDashboard() {
       console.log("📊 Orders data:", ordersData.map(o => ({ id: o.id, status: o.status, paymentMethod: o.paymentMethod })));
       setOrders(ordersData);
       setStats({
-        totalOrders: ordersData.length,
+        totalOrders: totalCount,
         activeOrders: activeCount,
         completedOrders: completedCount,
         totalEarnings: totalEarnings

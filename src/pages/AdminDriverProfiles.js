@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { User, Phone, MapPin, Star, DollarSign, ArrowRight } from "lucide-react";
 
 export default function AdminDriverProfiles() {
@@ -20,14 +20,18 @@ export default function AdminDriverProfiles() {
     if (!user) return;
     const q = query(
       collection(db, "users"),
-      where("role", "==", "driver"),
-      orderBy("createdAt", "desc")
+      where("role", "==", "driver")
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const driversData = [];
       querySnapshot.forEach((doc) => {
         driversData.push({ id: doc.id, ...doc.data() });
+      });
+      driversData.sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return dateB - dateA;
       });
       setDrivers(driversData);
     });
@@ -106,19 +110,19 @@ export default function AdminDriverProfiles() {
                       <User size={32} />
                     </div>
                     <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
-                      driver.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-[#990000] border-red-100'
+                      (driver.status || 'active') === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-[#990000] border-red-100'
                     }`}>
-                      {driver.status || 'Active'}
+                      {driver.status || 'active'}
                     </span>
                   </div>
                   
-                  <h3 className="text-xl font-black text-slate-900 group-hover:text-[#990000] transition-colors mb-1">{driver.displayName || driver.name || 'Anonymous Driver'}</h3>
+                  <h3 className="text-xl font-black text-slate-900 group-hover:text-[#990000] transition-colors mb-1">{driver.displayName || driver.name || driver.nama || 'Anonymous Driver'}</h3>
                   <p className="text-xs font-bold text-slate-400 mb-6">{driver.email}</p>
 
                   <div className="space-y-4 mb-8">
                     <div className="flex items-center gap-3 text-xs font-bold text-slate-600">
                        <Phone size={14} className="text-slate-300" />
-                       <span>{driver.phone || "-"}</span>
+                       <span>{driver.phone || driver.noTelepon || "-"}</span>
                     </div>
                     <div className="flex items-start gap-3 text-[10px] font-bold text-slate-400">
                        <MapPin size={14} className="text-slate-300 flex-shrink-0" />
@@ -187,9 +191,9 @@ export default function AdminDriverProfiles() {
                        <div className="space-y-6">
                           <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">Informasi Autentikasi</h4>
                           {[
-                            { label: "Nama Terdaftar", val: selectedDriver.displayName || selectedDriver.name },
-                            { label: "Email Sistem", val: selectedDriver.email },
-                            { label: "Telepon / WA", val: selectedDriver.phone || "-" },
+                             { label: "Nama Terdaftar", val: selectedDriver.displayName || selectedDriver.name || selectedDriver.nama },
+                             { label: "Email Sistem", val: selectedDriver.email },
+                             { label: "Telepon / WA", val: selectedDriver.phone || selectedDriver.noTelepon || "-" },
                             { label: "Bergabung Pada", val: formatDate(selectedDriver.createdAt) },
                           ].map((item, i) => (
                             <div key={i} className="flex justify-between items-center">

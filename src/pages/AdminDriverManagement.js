@@ -1,7 +1,77 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Camera, CreditCard, User, ArrowRight, Plus, LayoutGrid } from "lucide-react";
+import { db, auth } from "../services/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
 export default function AdminDriverManagement() {
+  const [user, setUser] = useState(null);
+  const [stats, setStats] = useState({
+    vehicleCount: 0,
+    cashCount: 0,
+    driverCount: 0
+  });
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    // 1. Vehicle Verifications Today
+    const qVehicles = query(collection(db, "vehicleVerifications"));
+    const unsubVehicles = onSnapshot(qVehicles, (snapshot) => {
+      const today = new Date().toDateString();
+      let count = 0;
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const date = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+        if (date.toDateString() === today) {
+          count++;
+        }
+      });
+      setStats((prev) => ({ ...prev, vehicleCount: count }));
+    });
+
+    // 2. Cash Transactions (Payment Verifications) Approved Today
+    const qPayments = query(collection(db, "paymentVerifications"), where("status", "==", "approved"));
+    const unsubPayments = onSnapshot(qPayments, (snapshot) => {
+      const today = new Date().toDateString();
+      let count = 0;
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const date = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+        if (date.toDateString() === today) {
+          count++;
+        }
+      });
+      setStats((prev) => ({ ...prev, cashCount: count }));
+    });
+
+    // 3. Active Drivers (Mitra Bertugas)
+    const qDrivers = query(collection(db, "users"), where("role", "==", "driver"));
+    const unsubDrivers = onSnapshot(qDrivers, (snapshot) => {
+      let count = 0;
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.status !== 'inactive') {
+          count++;
+        }
+      });
+      setStats((prev) => ({ ...prev, driverCount: count }));
+    });
+
+    return () => {
+      unsubVehicles();
+      unsubPayments();
+      unsubDrivers();
+    };
+  }, [user]);
+
   const menuItems = [
     {
       id: "vehicle-verifications",
@@ -93,9 +163,9 @@ export default function AdminDriverManagement() {
            
            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
               {[
-                { label: "Verifikasi Mobil", val: 0, suffix: "Pemeriksaan", color: "text-blue-600" },
-                { label: "Transaksi Cash", val: 0, suffix: "Disetujui", color: "text-emerald-600" },
-                { label: "Mitra Bertugas", val: 0, suffix: "Pengemudi", color: "text-[#990000]" },
+                { label: "Verifikasi Mobil", val: stats.vehicleCount, suffix: "Pemeriksaan", color: "text-blue-600" },
+                { label: "Transaksi Cash", val: stats.cashCount, suffix: "Disetujui", color: "text-emerald-600" },
+                { label: "Mitra Bertugas", val: stats.driverCount, suffix: "Pengemudi", color: "text-[#990000]" },
               ].map((stat, i) => (
                 <div key={i} className="space-y-3 group">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
@@ -104,7 +174,7 @@ export default function AdminDriverManagement() {
                      <span className={`${stat.color} text-[10px] font-bold uppercase tracking-widest group-hover:translate-x-1 transition-transform inline-block`}>{stat.suffix}</span>
                   </div>
                   <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                     <div className={`h-full opacity-30 ${stat.color === 'text-[#990000]' ? 'bg-[#990000]' : stat.color.replace('text-', 'bg-')} transition-all`} style={{ width: '0%' }}></div>
+                     <div className={`h-full opacity-30 ${stat.color === 'text-[#990000]' ? 'bg-[#990000]' : stat.color.replace('text-', 'bg-')} transition-all`} style={{ width: stat.val > 0 ? '100%' : '0%' }}></div>
                   </div>
                 </div>
               ))}

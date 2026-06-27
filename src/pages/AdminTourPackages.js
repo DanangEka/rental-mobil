@@ -319,7 +319,7 @@ export default function AdminTourPackages() {
                   <div>
                     <div className="flex justify-between items-start gap-4 mb-2">
                       <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{p.judul}</h3>
-                      <p className="text-2xl font-black text-[#990000]">Rp {(p.harga / 1000).toFixed(0)}k</p>
+                      <p className="text-2xl font-black text-[#990000] flex-shrink-0">Rp. {p.harga.toLocaleString("id-ID")}</p>
                     </div>
                     <div className="flex items-center gap-2 text-slate-400 mb-4">
                       <MapPin size={14} className="text-[#990000]" />

@@ -18,6 +18,8 @@ export default function CarManagement() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchMobil, setSearchMobil] = useState("");
+  const [editingCarId, setEditingCarId] = useState(null);
+  const [editForm, setEditForm] = useState({ nama: "", harga: "", layanan: "Lepas Kunci", seats: 4, chargingPort: true, luggage: true });
 
   const fetchData = useCallback(async () => {
     try {
@@ -138,6 +140,42 @@ export default function CarManagement() {
     fetchData();
   };
 
+  const startEdit = (car) => {
+    setEditingCarId(car.id);
+    setEditForm({
+      nama: car.nama || "",
+      harga: car.harga || "",
+      layanan: car.layanan || "Lepas Kunci",
+      seats: car.seats || 4,
+      chargingPort: car.chargingPort !== false,
+      luggage: car.luggage !== false
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingCarId(null);
+  };
+
+  const saveEdit = async (id) => {
+    try {
+      await updateDoc(doc(db, "mobil", id), {
+        nama: editForm.nama,
+        harga: parseInt(editForm.harga),
+        layanan: editForm.layanan,
+        withDriver: editForm.layanan === "Dengan Driver",
+        seats: parseInt(editForm.seats),
+        chargingPort: editForm.chargingPort,
+        luggage: editForm.luggage
+      });
+      setEditingCarId(null);
+      fetchData();
+      alert("Armada berhasil diperbarui!");
+    } catch (error) {
+      console.error("Gagal edit mobil:", error.message);
+      alert("Gagal menyimpan perubahan: " + error.message);
+    }
+  };
+
   const toggleServis = async (id, currentStatus) => {
     const newStatus = currentStatus === "servis" ? "normal" : "servis";
     const tersedia = newStatus === "normal";
@@ -235,38 +273,42 @@ export default function CarManagement() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Layanan</label>
-                    <select
-                      value={form.layanan}
-                      onChange={e => setForm({ ...form, layanan: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold appearance-none cursor-pointer"
-                    >
-                      <option value="Lepas Kunci">Lepas Kunci</option>
-                      <option value="Dengan Driver">Dengan Driver</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Kursi</label>
-                    <input
-                      type="number"
-                      value={form.seats}
-                      onChange={e => setForm({ ...form, seats: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
-                    />
-                  </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Layanan</label>
+                  <select
+                    value={form.layanan}
+                    onChange={e => setForm({ ...form, layanan: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold appearance-none cursor-pointer"
+                  >
+                    <option value="Lepas Kunci">Lepas Kunci</option>
+                    <option value="Dengan Driver">Dengan Driver</option>
+                  </select>
                 </div>
 
-                <div className="flex gap-6 py-2">
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input type="checkbox" checked={form.chargingPort} onChange={e => setForm({ ...form, chargingPort: e.target.checked })} className="w-4 h-4 accent-[#990000]" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Port</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input type="checkbox" checked={form.luggage} onChange={e => setForm({ ...form, luggage: e.target.checked })} className="w-4 h-4 accent-[#990000]" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bagasi</span>
-                  </label>
+                <div className="border border-slate-100 rounded-2xl p-4 bg-slate-50/50 space-y-4">
+                  <span className="text-[10px] font-bold text-[#990000] uppercase tracking-widest block border-b border-slate-100 pb-2">Fasilitas Armada</span>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Jumlah Kursi</label>
+                      <input
+                        type="number"
+                        value={form.seats}
+                        onChange={e => setForm({ ...form, seats: e.target.value })}
+                        className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 focus:border-[#990000] outline-none transition-all font-semibold"
+                      />
+                    </div>
+                    <div className="flex flex-col justify-center gap-3 pt-5">
+                      <label className="flex items-center gap-2 cursor-pointer group">
+                        <input type="checkbox" checked={form.chargingPort} onChange={e => setForm({ ...form, chargingPort: e.target.checked })} className="w-4 h-4 accent-[#990000] cursor-pointer" />
+                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Port Charger</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer group">
+                        <input type="checkbox" checked={form.luggage} onChange={e => setForm({ ...form, luggage: e.target.checked })} className="w-4 h-4 accent-[#990000] cursor-pointer" />
+                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Bagasi</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -310,85 +352,175 @@ export default function CarManagement() {
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 space-y-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                    <div>
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{m.nama}</h3>
-                        <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${m.tersedia ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-[#990000] border border-red-100'}`}>
-                          {m.tersedia ? 'Tersedia' : 'Disewa'}
-                        </span>
-                      </div>
-                      <p className="text-xs font-bold text-slate-400">ID: {m.id.substring(0, 10)}...</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tarif Sewa</p>
-                      <p className="text-2xl font-black text-[#990000]">Rp {(m.harga / 1000).toFixed(0)}k<span className="text-xs text-slate-400 font-bold">/hari</span></p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
-                      <UsersIcon size={14} className="text-slate-400" />
-                      <span className="text-[10px] font-bold text-slate-600">{m.seats || 4} Seat</span>
-                    </div>
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
-                      <BatteryCharging size={14} className={` ${m.chargingPort !== false ? 'text-emerald-500' : 'text-slate-300'}`} />
-                      <span className="text-[10px] font-bold text-slate-600">Port</span>
-                    </div>
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
-                      <Luggage size={14} className={` ${m.luggage !== false ? 'text-amber-500' : 'text-slate-300'}`} />
-                      <span className="text-[10px] font-bold text-slate-600">Bagasi</span>
-                    </div>
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
-                      <Settings size={14} className="text-slate-400" />
-                      <span className="text-[10px] font-bold text-[#990000] uppercase italic">{m.status}</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-100 flex flex-wrap gap-4 items-center justify-between">
-                    <div className="flex gap-2">
-                       <select
-                        value={m.layanan || "Lepas Kunci"}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          handleEditMobil(m.id, "layanan", val);
-                          handleEditMobil(m.id, "withDriver", val === "Dengan Driver");
-                        }}
-                        className="bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg outline-none focus:border-[#990000] cursor-pointer"
-                      >
-                        <option value="Lepas Kunci">Lepas Kunci</option>
-                        <option value="Dengan Driver">Dengan Driver</option>
-                      </select>
-                      <div className="flex items-center gap-2">
-                        <input 
-                          type="number"
-                          value={m.harga}
-                          onChange={(e) => handleEditMobil(m.id, "harga", parseInt(e.target.value))}
-                          className="w-24 bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg outline-none focus:border-[#990000]"
+                {editingCarId === m.id ? (
+                  <div className="flex-1 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Nama Mobil</label>
+                        <input
+                          type="text"
+                          value={editForm.nama}
+                          onChange={(e) => setEditForm({ ...editForm, nama: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#990000]"
                         />
-                        <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg" title="Auto-saved">
-                          <Check size={14} />
-                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Tarif Sewa (/hari)</label>
+                        <input
+                          type="number"
+                          value={editForm.harga}
+                          onChange={(e) => setEditForm({ ...editForm, harga: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#990000]"
+                        />
                       </div>
                     </div>
-                    
-                    <div className="flex gap-3">
-                       <button
-                        onClick={() => toggleServis(m.id, m.status)}
-                        className={`px-6 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all ${m.status === "servis" ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-amber-700'}`}
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Layanan</label>
+                        <select
+                          value={editForm.layanan}
+                          onChange={(e) => setEditForm({ ...editForm, layanan: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#990000]"
+                        >
+                          <option value="Lepas Kunci">Lepas Kunci</option>
+                          <option value="Dengan Driver">Dengan Driver</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Kursi</label>
+                        <input
+                          type="number"
+                          value={editForm.seats}
+                          onChange={(e) => setEditForm({ ...editForm, seats: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#990000]"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 pt-5">
+                        <input
+                          type="checkbox"
+                          id={`edit-port-${m.id}`}
+                          checked={editForm.chargingPort}
+                          onChange={(e) => setEditForm({ ...editForm, chargingPort: e.target.checked })}
+                          className="accent-[#990000] w-4 h-4 cursor-pointer"
+                        />
+                        <label htmlFor={`edit-port-${m.id}`} className="text-[10px] font-bold text-slate-600 uppercase tracking-widest cursor-pointer">Port Charger</label>
+                      </div>
+                      <div className="flex items-center gap-2 pt-5">
+                        <input
+                          type="checkbox"
+                          id={`edit-luggage-${m.id}`}
+                          checked={editForm.luggage}
+                          onChange={(e) => setEditForm({ ...editForm, luggage: e.target.checked })}
+                          className="accent-[#990000] w-4 h-4 cursor-pointer"
+                        />
+                        <label htmlFor={`edit-luggage-${m.id}`} className="text-[10px] font-bold text-slate-600 uppercase tracking-widest cursor-pointer">Bagasi</label>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                      <button
+                        onClick={cancelEdit}
+                        className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
                       >
-                        {m.status === "servis" ? "KEMBALI NORMAL" : "SET SERVIS"}
+                        Batal
                       </button>
                       <button
-                        onClick={() => handleHapusMobil(m.id)}
-                        className="p-2.5 bg-red-50 text-[#990000] hover:bg-[#990000] hover:text-white rounded-xl transition-all"
+                        onClick={() => saveEdit(m.id)}
+                        className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md active:scale-95"
                       >
-                        <Trash2 size={16} />
+                        Simpan
                       </button>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex-1 space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1 flex-wrap">
+                          <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight break-words">{m.nama}</h3>
+                          <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${m.tersedia ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-[#990000] border border-red-100'}`}>
+                            {m.tersedia ? 'Tersedia' : 'Disewa'}
+                          </span>
+                        </div>
+                        <p className="text-xs font-bold text-slate-400">ID: {m.id.substring(0, 10)}...</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tarif Sewa</p>
+                        <p className="text-2xl font-black text-[#990000]">Rp. {m.harga.toLocaleString("id-ID")}<span className="text-xs text-slate-400 font-bold">/hari</span></p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
+                        <UsersIcon size={14} className="text-slate-400" />
+                        <span className="text-[10px] font-bold text-slate-600">{m.seats || 4} Seat</span>
+                      </div>
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
+                        <BatteryCharging size={14} className={` ${m.chargingPort !== false ? 'text-emerald-500' : 'text-slate-300'}`} />
+                        <span className="text-[10px] font-bold text-slate-600">Port</span>
+                      </div>
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
+                        <Luggage size={14} className={` ${m.luggage !== false ? 'text-amber-500' : 'text-slate-300'}`} />
+                        <span className="text-[10px] font-bold text-slate-600">Bagasi</span>
+                      </div>
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
+                        <Settings size={14} className="text-slate-400" />
+                        <span className="text-[10px] font-bold text-[#990000] uppercase italic">{m.status}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 flex flex-wrap gap-4 items-center justify-between">
+                      <div className="flex gap-2">
+                        <select
+                          value={m.layanan || "Lepas Kunci"}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            handleEditMobil(m.id, "layanan", val);
+                            handleEditMobil(m.id, "withDriver", val === "Dengan Driver");
+                          }}
+                          className="bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg outline-none focus:border-[#990000] cursor-pointer"
+                        >
+                          <option value="Lepas Kunci">Lepas Kunci</option>
+                          <option value="Dengan Driver">Dengan Driver</option>
+                        </select>
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="number"
+                            value={m.harga}
+                            onChange={(e) => handleEditMobil(m.id, "harga", parseInt(e.target.value))}
+                            className="w-24 bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg outline-none focus:border-[#990000]"
+                          />
+                          <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg" title="Auto-saved">
+                            <Check size={14} />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => startEdit(m)}
+                          className="p-2.5 bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-white rounded-xl transition-all"
+                          title="Edit Unit"
+                        >
+                          <Settings size={16} />
+                        </button>
+                        <button
+                          onClick={() => toggleServis(m.id, m.status)}
+                          className={`px-6 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all ${m.status === "servis" ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-amber-700'}`}
+                        >
+                          {m.status === "servis" ? "KEMBALI NORMAL" : "SET SERVIS"}
+                        </button>
+                        <button
+                          onClick={() => handleHapusMobil(m.id)}
+                          className="p-2.5 bg-red-50 text-[#990000] hover:bg-[#990000] hover:text-white rounded-xl transition-all"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
 
