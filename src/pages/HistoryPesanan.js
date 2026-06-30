@@ -120,6 +120,18 @@ export default function HistoryPesanan() {
     const needsProof = !isCash;
     
     if (needsProof && !paymentForm.proof) return alert("Unggah bukti transfer");
+    
+    // Validasi DP untuk Transfer Bank & E-Wallet (minimal 50%)
+    if (paymentForm.method === "Transfer Bank" || paymentForm.method === "E-Wallet") {
+      if (!paymentForm.dpAmount) {
+        return alert("Masukkan nominal DP yang Anda bayarkan");
+      }
+      const minDp = selectedOrder.perkiraanHarga * 0.5;
+      if (parseFloat(paymentForm.dpAmount) < minDp) {
+        return alert(`Nominal DP minimal adalah 50% (Rp ${minDp.toLocaleString()})`);
+      }
+    }
+
     if (isCash && selectedOrder.status === "disetujui_cash" && !paymentForm.dpAmount) {
       return alert("Masukkan nominal DP yang akan Anda setor");
     }
@@ -274,6 +286,9 @@ export default function HistoryPesanan() {
                 <div className="bg-slate-50 p-6 rounded-3xl">
                   <p className="text-[10px] font-black text-slate-400 uppercase mb-3 flex items-center gap-2"><MapPin size={12} /> Lokasi</p>
                   <p className="text-xs font-black text-slate-700">{p.lokasiPenyerahan}</p>
+                  {(p.deliveryAddress || p.titikTemuAddress) && (
+                    <p className="text-[10px] text-slate-400 mt-1 italic line-clamp-2">{p.deliveryAddress || p.titikTemuAddress}</p>
+                  )}
                 </div>
                 <div className="bg-slate-50 p-6 rounded-3xl">
                   <p className="text-[10px] font-black text-slate-400 uppercase mb-3 flex items-center gap-2"><CreditCard size={12} /> Pembayaran</p>
@@ -335,11 +350,11 @@ export default function HistoryPesanan() {
 
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Metode Pembayaran</label>
-                <div className="grid grid-cols-2 gap-4">
-                  {["Transfer Bank", "Cash"].map(m => (
+                <div className="grid grid-cols-3 gap-4">
+                  {["Transfer Bank", "E-Wallet", "Cash"].map(m => (
                     <button 
-                      key={m} onClick={() => setPaymentForm({ ...paymentForm, method: m })}
-                      className={`py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border-2 ${paymentForm.method === m ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-slate-50 text-slate-400 border-slate-100 opacity-60'}`}
+                      key={m} onClick={() => setPaymentForm({ ...paymentForm, method: m, dpAmount: "" })}
+                      className={`py-4 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all border-2 ${paymentForm.method === m ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-slate-50 text-slate-400 border-slate-100 opacity-60'}`}
                     >{m}</button>
                   ))}
                 </div>
@@ -347,7 +362,7 @@ export default function HistoryPesanan() {
 
               {paymentForm.method === "Transfer Bank" && (
                 <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6">
-                   <p className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Tujuan Transfer</p>
+                   <p className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Tujuan Transfer Bank</p>
                    <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-bold text-slate-600">Bank BCA</span>
@@ -358,6 +373,36 @@ export default function HistoryPesanan() {
                       type="file" accept="image/*" onChange={e => setPaymentForm({ ...paymentForm, proof: e.target.files[0] })}
                       className="mt-6 w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-[#990000] file:text-white"
                    />
+                </div>
+              )}
+
+              {paymentForm.method === "E-Wallet" && (
+                <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6">
+                   <p className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Tujuan E-Wallet</p>
+                   <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-bold text-slate-600">DANA / OVO</span>
+                        <span className="text-sm font-black text-slate-900 tracking-widest">08123456789 (Cakra)</span>
+                      </div>
+                   </div>
+                   <input 
+                      type="file" accept="image/*" onChange={e => setPaymentForm({ ...paymentForm, proof: e.target.files[0] })}
+                      className="mt-6 w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-[#990000] file:text-white"
+                   />
+                </div>
+              )}
+
+              {(paymentForm.method === "Transfer Bank" || paymentForm.method === "E-Wallet") && (
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nominal Pembayaran DP (IDR)</label>
+                  <input 
+                    type="number" value={paymentForm.dpAmount} onChange={e => setPaymentForm({ ...paymentForm, dpAmount: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-black text-[#990000] focus:border-[#990000] outline-none"
+                    placeholder={`Contoh: ${(selectedOrder.perkiraanHarga * 0.5)}`}
+                  />
+                  <p className="text-[10px] text-amber-600 font-bold italic">
+                    *Minimal DP 50% dari total: Rp {(selectedOrder.perkiraanHarga * 0.5).toLocaleString()}
+                  </p>
                 </div>
               )}
 

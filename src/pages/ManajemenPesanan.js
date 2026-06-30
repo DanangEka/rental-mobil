@@ -262,9 +262,12 @@ export default function ManajemenPesanan() {
       
       // Determine delivery address based on user requirements
       let alamatLengkap = "-";
-      if (p.lokasiPenyerahan === "Rumah" || p.lokasiPenyerahan === "Titik Temu") {
+      if (p.deliveryAddress) {
+        // Prioritas utama: alamat yang diisi user saat booking
+        alamatLengkap = p.deliveryAddress;
+      } else if (p.lokasiPenyerahan === "Rumah" || p.lokasiPenyerahan === "Titik Temu") {
         alamatLengkap = p.titikTemuAddress || "-";
-      } else if (p.lokasiPenyerahan === "Garasi") {
+      } else if (p.lokasiPenyerahan === "Kantor" || p.lokasiPenyerahan === "Garasi") {
         alamatLengkap = "Garasi Cakra Lima Tujuh";
       }
 
@@ -582,8 +585,8 @@ export default function ManajemenPesanan() {
                           <MapPin size={12} /> Penyerahan
                         </p>
                         <p className="text-sm font-black text-slate-900 mb-1">{p.lokasiPenyerahan || 'Antar ke Alamat'}</p>
-                        {p.titikTemuAddress && (
-                          <p className="text-[10px] font-bold text-slate-400 leading-tight italic line-clamp-2">"{p.titikTemuAddress}"</p>
+                        {(p.deliveryAddress || p.titikTemuAddress) && (
+                          <p className="text-[10px] font-bold text-slate-400 leading-tight italic line-clamp-2">"{p.deliveryAddress || p.titikTemuAddress}"</p>
                         )}
                       </div>
 

@@ -134,7 +134,7 @@ export default function AdminPaymentVerifications() {
                               </div>
                               <div>
                                  <div className="flex items-center gap-3 mb-1">
-                                    <h4 className="text-lg font-black text-slate-900">{formatCurrency(v.paymentAmount)}</h4>
+                                    <h4 className="text-lg font-black text-slate-900">{formatCurrency(v.amount)}</h4>
                                     <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${
                                       v.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                                       v.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-100' :
@@ -184,23 +184,34 @@ export default function AdminPaymentVerifications() {
               <div className="p-10">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                     <div className="space-y-8">
-                       <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Setoran</p>
-                          <p className="text-4xl font-black text-[#990000] tracking-tighter">{formatCurrency(selectedVerification.paymentAmount)}</p>
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">DP Diterima (Client)</p>
+                             <p className="text-2xl font-black text-emerald-600 tracking-tighter">
+                               {formatCurrency(selectedVerification.dpAmount || (selectedVerification.totalAmount ? selectedVerification.totalAmount * 0.5 : 0))}
+                             </p>
+                          </div>
+                          
+                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                             <p className="text-[10px] font-bold text-[#990000] uppercase tracking-widest mb-2">Pelunasan (Driver)</p>
+                             <p className="text-2xl font-black text-[#990000] tracking-tighter">
+                               {formatCurrency(selectedVerification.amount || 0)}
+                             </p>
+                          </div>
                        </div>
                        
-                       <div className="space-y-4">
+                       <div className="space-y-4 pt-4">
                           <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Driver</span>
-                             <span className="text-sm font-black text-slate-900">{selectedVerification.driverId}</span>
+                             <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">Driver ID</span>
+                             <span className="text-xs font-semibold text-slate-700">{selectedVerification.driverId}</span>
                           </div>
                           <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Waktu</span>
+                             <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">Waktu Setor</span>
                              <span className="text-sm font-black text-slate-900">{formatDate(selectedVerification.timestamp)}</span>
                           </div>
                           <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Metode</span>
-                             <span className="text-sm font-black text-slate-500 uppercase">{selectedVerification.paymentMethod}</span>
+                             <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">Metode Pembayaran</span>
+                             <span className="text-sm font-black text-slate-500 uppercase">{selectedVerification.method || selectedVerification.paymentMethod || "Tunai (Cash)"}</span>
                           </div>
                        </div>
 

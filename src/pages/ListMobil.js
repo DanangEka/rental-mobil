@@ -18,6 +18,7 @@ export default function ListMobil() {
   const [tanggalSelesai, setTanggalSelesai] = useState({});
   const [lokasiPenyerahan, setLokasiPenyerahan] = useState({});
   const [titikTemuAddress, setTitikTemuAddress] = useState({});
+  const [deliveryAddress, setDeliveryAddress] = useState({});
   const [rentalType, setRentalType] = useState({});
   const [userOrders, setUserOrders] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -198,8 +199,14 @@ export default function ListMobil() {
       setTanggalSelesai((prev) => ({ ...prev, [id]: value }));
     } else if (type === "lokasi") {
       setLokasiPenyerahan((prev) => ({ ...prev, [id]: value }));
+      // Reset delivery address when location changes
+      if (value !== "Rumah" && value !== "Titik Temu") {
+        setDeliveryAddress((prev) => ({ ...prev, [id]: "" }));
+      }
     } else if (type === "titikTemu") {
       setTitikTemuAddress((prev) => ({ ...prev, [id]: value }));
+    } else if (type === "deliveryAddress") {
+      setDeliveryAddress((prev) => ({ ...prev, [id]: value }));
     }
   };
 
@@ -236,10 +243,26 @@ export default function ListMobil() {
 
     const mulai = tanggalMulai[m.id];
     const selesai = tanggalSelesai[m.id];
+    const selectedRentalType = serviceType === "driver" ? "Driver" : "Lepas Kunci";
+    const lokasi = lokasiPenyerahan[m.id] || "";
 
     if (!mulai || !selesai) {
       toast.warning("Pilih tanggal mulai dan selesai terlebih dahulu.");
       return;
+    }
+
+    // Validasi lokasi penyerahan
+    if (!lokasi) {
+      toast.warning("Pilih lokasi penyerahan terlebih dahulu.");
+      return;
+    }
+
+    // Validasi alamat untuk Rumah atau Titik Temu (berlaku untuk semua jenis sewa)
+    if (lokasi === "Rumah" || lokasi === "Titik Temu") {
+      if (!deliveryAddress[m.id]?.trim()) {
+        toast.warning("Isi alamat pengiriman terlebih dahulu.");
+        return;
+      }
     }
 
     const start = new Date(mulai);
@@ -252,7 +275,6 @@ export default function ListMobil() {
     }
 
     let perkiraanHarga = durasiHari * m.harga;
-    const selectedRentalType = serviceType === "driver" ? "Driver" : "Lepas Kunci";
     if (selectedRentalType === "Driver") {
       perkiraanHarga += 250000;
     }
@@ -276,13 +298,9 @@ export default function ListMobil() {
         namaClient: userData?.nama || userData?.NamaLengkap || auth.currentUser.displayName || "",
         telepon: userData?.nomorTelepon || userData?.NomorTelepon || auth.currentUser.phoneNumber || "",
         dpAmount: perkiraanHarga * 0.5,
-        lokasiPenyerahan: lokasiPenyerahan[m.id] || "",
+        lokasiPenyerahan: lokasi,
         titikTemuAddress: titikTemuAddress[m.id] || "",
-      });
-
-      await updateDoc(doc(db, "mobil", m.id), {
-        status: "disewa",
-        tersedia: false,
+        deliveryAddress: deliveryAddress[m.id] || "",
       });
 
       await addNotification("Pemesanan berhasil! Silakan tunggu konfirmasi.");
@@ -850,7 +868,10 @@ export default function ListMobil() {
                   >
                     <option value="">Pilih Lokasi...</option>
                     <option value="Rumah">Diantar ke Rumah / Hotel</option>
-                    <option value="Kantor">Ambil di Garasi</option>
+                    {/* Hanya tampilkan Ambil di Garasi jika BUKAN mode Driver */}
+                    {serviceType !== "driver" && !((selectedUserMobil.withDriver === true || selectedUserMobil.layanan === "Dengan Driver")) && (
+                      <option value="Kantor">Ambil di Garasi</option>
+                    )}
                     <option value="Titik Temu">Titik Temu Lain</option>
                   </select>
                   <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
@@ -859,15 +880,32 @@ export default function ListMobil() {
                 </div>
               </div>
 
+              {/* Form Alamat untuk Diantar ke Rumah / Hotel */}
+              {lokasiPenyerahan[selectedUserMobil.id] === "Rumah" && (
+                <div className="space-y-2 animate-fadeIn">
+                  <label className="text-[10px] text-[#990000] font-black uppercase tracking-widest ml-1">📍 Alamat Pengiriman</label>
+                  <p className="text-[10px] text-slate-400 ml-1">Driver akan mengantarkan mobil ke alamat berikut</p>
+                  <textarea
+                    rows={3}
+                    value={deliveryAddress[selectedUserMobil.id] || ""}
+                    onChange={(e) => handleTanggalChange(selectedUserMobil.id, "deliveryAddress", e.target.value)}
+                    placeholder="Contoh: Jl. Raya Darmo No. 21, Hotel Sheraton, Lt. 1 Lobby — Surabaya"
+                    className="w-full bg-red-50/30 border border-red-200 text-slate-900 text-sm rounded-2xl p-4 focus:border-[#990000] outline-none font-bold resize-none"
+                  />
+                </div>
+              )}
+
+              {/* Form Alamat untuk Titik Temu */}
               {lokasiPenyerahan[selectedUserMobil.id] === "Titik Temu" && (
                 <div className="space-y-2 animate-fadeIn">
-                  <label className="text-[10px] text-[#990000] font-black uppercase tracking-widest ml-1">Detail Titik Temu</label>
-                  <input
-                    type="text"
-                    value={titikTemuAddress[selectedUserMobil.id] || ""}
-                    onChange={(e) => handleTanggalChange(selectedUserMobil.id, "titikTemu", e.target.value)}
-                    placeholder="Contoh: Bandara Juanda Terminal 1"
-                    className="w-full bg-red-50/30 border border-red-200 text-slate-900 text-sm rounded-2xl p-4 focus:border-[#990000] outline-none font-bold"
+                  <label className="text-[10px] text-[#990000] font-black uppercase tracking-widest ml-1">📍 Titik Temu</label>
+                  <p className="text-[10px] text-slate-400 ml-1">Masukkan alamat atau nama tempat titik temu dengan driver</p>
+                  <textarea
+                    rows={3}
+                    value={deliveryAddress[selectedUserMobil.id] || ""}
+                    onChange={(e) => handleTanggalChange(selectedUserMobil.id, "deliveryAddress", e.target.value)}
+                    placeholder="Contoh: Bandara Juanda Terminal 1, Area Kedatangan — Sidoarjo"
+                    className="w-full bg-red-50/30 border border-red-200 text-slate-900 text-sm rounded-2xl p-4 focus:border-[#990000] outline-none font-bold resize-none"
                   />
                 </div>
               )}

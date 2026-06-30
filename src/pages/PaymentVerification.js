@@ -121,21 +121,44 @@ export default function PaymentVerification() {
     }
 
     const amount = parseInt(paymentAmount);
-    const expectedDP = Math.floor(selectedOrder.perkiraanHarga * 0.5);
-    if (amount !== expectedDP) {
-      alert(`Jumlah pembayaran (Rp ${amount.toLocaleString()}) tidak sesuai dengan DP 50% yang seharusnya (Rp ${expectedDP.toLocaleString()}) dari total Rp ${selectedOrder.perkiraanHarga.toLocaleString()}`);
+    const clientDP = selectedOrder.dpAmount || Math.floor(selectedOrder.perkiraanHarga * 0.5);
+    const expectedRemaining = selectedOrder.perkiraanHarga - clientDP;
+    if (amount !== expectedRemaining) {
+      alert(`Jumlah pembayaran (Rp ${amount.toLocaleString()}) tidak sesuai dengan sisa pembayaran yang harus diselesaikan (Rp ${expectedRemaining.toLocaleString()})`);
       return;
     }
 
     setIsSubmitting(true);
     try {
+      let proofUrl = null;
+      if (paymentPhotos.length > 0) {
+        const formData = new FormData();
+        formData.append("file", paymentPhotos[0]);
+        formData.append("upload_preset", process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || "rental-mobil");
+        
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || "dnfruux8d"}/image/upload`, {
+          method: "POST",
+          body: formData
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          proofUrl = data.secure_url;
+        } else {
+          console.error("Cloudinary upload failed", await res.text());
+        }
+      }
+
       // Create payment verification record
       const paymentData = {
         orderId: selectedOrder.id,
         driverId: user.uid,
         userId: selectedOrder.uid, // Add userId for reference
         amount: amount,
+        dpAmount: clientDP,
+        totalAmount: selectedOrder.perkiraanHarga,
         method: paymentMethod,
+        paymentProof: proofUrl, // Store direct image url
         photos: paymentPhotos.map(photo => ({
           name: photo.name,
           size: photo.size,
@@ -276,8 +299,9 @@ export default function PaymentVerification() {
                   key={order.id}
                   onClick={() => {
                     setSelectedOrder(order);
-                    const dpAmount = Math.floor(order.perkiraanHarga * 0.5);
-                    setPaymentAmount(dpAmount.toString());
+                    const clientDP = order.dpAmount || Math.floor(order.perkiraanHarga * 0.5);
+                    const sisaBayar = order.perkiraanHarga - clientDP;
+                    setPaymentAmount(sisaBayar.toString());
                     setPaymentMethod(order.paymentMethod || "cash");
                   }}
                   className={`p-6 rounded-[2rem] cursor-pointer transition-all duration-300 border ${
@@ -340,9 +364,9 @@ export default function PaymentVerification() {
                       </p>
                     </div>
                     <div className="md:col-span-2 pt-6 border-t border-slate-200">
-                      <span className="text-[10px] font-black text-[#990000] uppercase tracking-[0.2em] block mb-2">DP 50% Diterima (Finance)</span>
+                      <span className="text-[10px] font-black text-[#990000] uppercase tracking-[0.2em] block mb-2">DP Diterima (Finance)</span>
                       <p className="font-black text-[#990000] text-3xl md:text-4xl tracking-tighter">
-                        Rp {parseInt(paymentAmount).toLocaleString()}
+                        Rp {(selectedOrder.dpAmount || Math.floor(selectedOrder.perkiraanHarga * 0.5)).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -390,10 +414,12 @@ export default function PaymentVerification() {
                       </div>
                     </div>
 
-                    {/* Photos - Only for Cash */}
-                    {(paymentMethod === "cash" || selectedOrder?.paymentMethod === "Cash") && (
+                    {/* Photos - Selalu Ada */}
+                    {true && (
                       <div className="space-y-4">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 block">Foto Bukti Pembayaran <span className="text-brand-500">*</span></label>
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 block">
+                          Foto Bukti Pembayaran {(paymentMethod === "cash" || selectedOrder?.paymentMethod === "Cash") && <span className="text-brand-500">*</span>}
+                        </label>
                         
                         <div className="relative group">
                           <input

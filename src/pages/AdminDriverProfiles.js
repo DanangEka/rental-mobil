@@ -8,6 +8,7 @@ export default function AdminDriverProfiles() {
   const [drivers, setDrivers] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [orders, setOrders] = useState([]);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
@@ -38,6 +39,29 @@ export default function AdminDriverProfiles() {
 
     return () => unsubscribe();
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, "pemesanan"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const ordersData = [];
+      querySnapshot.forEach((doc) => {
+        ordersData.push({ id: doc.id, ...doc.data() });
+      });
+      setOrders(ordersData);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  const getDriverStats = (driverId) => {
+    const driverOrders = orders.filter((o) => o.driverId === driverId);
+    const totalOrders = driverOrders.length;
+    const completedOrders = driverOrders.filter((o) =>
+      ["selesai", "lunas", "cash_submitted"].includes(o.status)
+    );
+    const totalEarnings = completedOrders.reduce((sum, o) => sum + (o.perkiraanHarga || 0), 0);
+    return { totalOrders, totalEarnings };
+  };
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/A";
@@ -133,7 +157,7 @@ export default function AdminDriverProfiles() {
                   <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-50">
                      <div>
                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Order</p>
-                        <p className="text-lg font-black text-slate-900">{driver.totalOrders || 0} <span className="text-[10px] font-bold text-slate-400">Poin</span></p>
+                        <p className="text-lg font-black text-slate-900">{getDriverStats(driver.id).totalOrders} <span className="text-[10px] font-bold text-slate-400">Poin</span></p>
                      </div>
                      <div className="text-right">
                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rating</p>
@@ -216,7 +240,7 @@ export default function AdminDriverProfiles() {
                        <div className="grid grid-cols-2 gap-6">
                           <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-center">
                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Order</p>
-                             <p className="text-3xl font-black text-slate-900 tracking-tighter">{selectedDriver.totalOrders || 0}</p>
+                             <p className="text-3xl font-black text-slate-900 tracking-tighter">{getDriverStats(selectedDriver.id).totalOrders}</p>
                           </div>
                           <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-center">
                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Rating</p>
@@ -225,7 +249,7 @@ export default function AdminDriverProfiles() {
                           <div className="col-span-2 bg-emerald-50 p-8 rounded-3xl border border-emerald-100 text-center relative overflow-hidden group">
                              <div className="relative z-10">
                                 <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2">Total Pendapatan</p>
-                                <p className="text-4xl font-black text-emerald-700 tracking-tighter">Rp {(selectedDriver.totalEarnings || 0).toLocaleString()}</p>
+                                <p className="text-4xl font-black text-emerald-700 tracking-tighter">Rp {getDriverStats(selectedDriver.id).totalEarnings.toLocaleString()}</p>
                              </div>
                              <DollarSign size={80} className="absolute -right-8 -bottom-8 text-emerald-100 group-hover:scale-110 transition-transform" />
                           </div>

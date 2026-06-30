@@ -362,6 +362,8 @@ _Terima kasih, selamat bertugas!_`;
 
     switch (order.lokasiPenyerahan) {
       case "Rumah":
+        // Prioritaskan deliveryAddress yang diisi user saat booking
+        if (order.deliveryAddress) return order.deliveryAddress;
         if (client) {
           const addressParts = [
             client.alamat,
@@ -385,7 +387,8 @@ _Terima kasih, selamat bertugas!_`;
       case "Kantor":
         return companyProfile?.alamat || "Alamat perusahaan tidak tersedia";
       case "Titik Temu":
-        return order.titikTemuAddress || "Alamat titik temu tidak tersedia";
+        // Prioritaskan deliveryAddress yang diisi user saat booking
+        return order.deliveryAddress || order.titikTemuAddress || "Alamat titik temu tidak tersedia";
       default:
         return "Lokasi tidak ditentukan";
     }

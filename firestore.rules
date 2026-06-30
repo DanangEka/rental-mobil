@@ -2,138 +2,332 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // === USERS ===
+    // =====================================================
+    // HELPER FUNCTIONS
+    // =====================================================
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return signedIn() && (
+        request.auth.token.admin == true ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && userDoc().data.role == "admin"
+        )
+      );
+    }
+
+    function isDriver() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userDoc().data.role == "driver";
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // =====================================================
+    // USERS
+    // =====================================================
+
     match /users/{userId} {
-      // User hanya bisa baca datanya sendiri
-      allow read: if request.auth != null && request.auth.uid == userId;
+      // User membaca datanya sendiri
+      allow read: if isOwner(userId);
 
-      // Driver bisa baca semua user data untuk melihat info client (perlu untuk order management)
-      allow read: if request.auth != null
-                  && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "driver" ||
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+      // Driver & Admin membaca semua user
+      allow read: if isDriver() || isAdmin();
 
-      // Admin can list and get any user
-      allow read: if request.auth != null && (request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+      // Registrasi akun
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role in ["client", "driver"];
 
-      // User bisa create data dirinya sendiri dengan role = "client"
-      allow create: if request.auth != null
-                    && request.auth.uid == userId
-                    && (request.resource.data.role == "client" || request.resource.data.role == "driver");
+      // User update profil sendiri
+      allow update: if isOwner(userId)
+        && request.resource.data.role == resource.data.role
+        && !request.resource.data.values().hasAny([null]);
 
-      // User bisa update datanya sendiri
-      allow update: if request.auth != null
-                    && request.auth.uid == userId
-                    && request.resource.data.role == resource.data.role;
-
-      // Admin full akses
-      allow write: if request.auth != null && (request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+      // Admin bebas
+      allow write: if isAdmin();
     }
 
-    // === PEMESANAN ===
+    // =====================================================
+    // PEMESANAN
+    // =====================================================
+
     match /pemesanan/{docId} {
-      // Read
-      allow read: if request.auth != null && (
-        resource.data.uid == request.auth.uid ||        
-        request.auth.token.admin == true ||            
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "driver" ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+
+      // -------------------------
+      // READ
+      // -------------------------
+
+      allow read: if signedIn() && (
+        resource.data.uid == request.auth.uid ||
+        isDriver() ||
+        isAdmin()
       );
 
-      // Create
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      // -------------------------
+      // CREATE
+      // Wajib ada deliveryAddress jika lokasi adalah Rumah atau Titik Temu
+      // -------------------------
 
-      // Admin update/delete
-      allow update, delete: if request.auth != null && (request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+      allow create: if signedIn() && (
+        (
+          request.resource.data.uid == request.auth.uid
+          && (
+            !(request.resource.data.lokasiPenyerahan in ["Rumah", "Titik Temu"])
+            || (
+              "deliveryAddress" in request.resource.data
+              && request.resource.data.deliveryAddress is string
+              && request.resource.data.deliveryAddress != ""
+            )
+          )
+        ) ||
+        isAdmin()
+      );
 
-      // User update bukti pembayaran miliknya
-      allow update: if request.auth != null
-                    && resource.data.uid == request.auth.uid;
+      // -------------------------
+      // DELETE
+      // -------------------------
 
-      // Driver update status pesanan
-      allow update: if request.auth != null
-                    && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "driver" ||
-                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+      allow delete: if isAdmin();
+
+      // -------------------------
+      // ADMIN
+      // -------------------------
+
+      allow update: if isAdmin();
+
+      // -------------------------
+      // CLIENT
+      // Upload bukti pembayaran
+      // -------------------------
+
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).changedKeys()
+          .hasOnly([
+            "paymentMethod",
+            "paymentProof",
+            "paymentStatus",
+            "waktuUpload",
+            "dpAmount"
+          ]);
+
+      // -------------------------
+      // DRIVER
+      // -------------------------
+
+      allow update: if isDriver()
+        && (
+          // Driver menerima order yang belum memiliki driver
+          (
+            (
+              !("driverId" in resource.data) ||
+              resource.data.driverId == null
+            )
+            && 
+            request.resource.data.driverId == request.auth.uid
+          )
+          ||
+          // Driver yang sudah menerima order
+          (
+            resource.data.driverId == request.auth.uid
+            && request.resource.data.driverId == request.auth.uid
+          )
+        )
+        && request.resource.data.diff(resource.data).changedKeys()
+          .hasOnly([
+            "driverId",
+            "status",
+            "assignedAt",
+            "updatedAt",
+            "actualPaymentAmount",
+            "paymentVerifiedAt"
+          ]);
     }
 
-    // === MOBIL ===
+    // =====================================================
+    // MOBIL
+    // =====================================================
+
     match /mobil/{mobilId} {
-      // Semua user login bisa baca list mobil
-      allow read: if request.auth != null;
+      // Semua user login dapat melihat mobil
+      allow read: if signedIn();
 
-      // Write
-      allow write: if request.auth != null && (
-        request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin" ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "driver"
-      );
+      // Admin bebas
+      allow create, delete: if isAdmin();
+
+      allow update: if
+        // Admin bebas
+        isAdmin()
+        ||
+        // Client memperbarui status saat pemesanan
+        (
+          signedIn()
+          && request.resource.data.status == "disewa"
+          && request.resource.data.tersedia == false
+        )
+        ||
+        // Driver hanya boleh update status mobil
+        (
+          isDriver()
+          && request.resource.data.diff(resource.data).changedKeys()
+              .hasOnly([
+                "status",
+                "tersedia",
+                "updatedAt"
+              ])
+        );
     }
 
-    // === PAKET WISATA & TOUR PACKAGES ===
-    // Mendukung kedua penamaan untuk kompatibilitas
+    // =====================================================
+    // PAKET WISATA & TOUR PACKAGES
+    // =====================================================
+
     match /paket_wisata/{docId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
     }
+
     match /tour_packages/{docId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
     }
 
-    // === OPEN TRIP ===
+    // =====================================================
+    // OPEN TRIP
+    // =====================================================
+
     match /open_trips/{docId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
     }
 
-    // === COMPANY PROFILE ===
+    // =====================================================
+    // COMPANY PROFILE
+    // =====================================================
+
     match /company_profile/{docId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
     }
 
-    // === NOTIFICATIONS ===
+    // =====================================================
+    // NOTIFICATIONS
+    // =====================================================
+
     match /notifications/{notifId} {
-      allow read: if request.auth != null && (
+      // User membaca notif miliknya
+      allow read: if signedIn() && (
         resource.data.userId == request.auth.uid ||
-        request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+        isAdmin()
       );
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && (
-        resource.data.userId == request.auth.uid ||
-        request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
-      );
+
+      // Semua user login boleh membuat notifikasi
+      allow create: if signedIn();
+
+      // User mengubah notif miliknya
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid;
+
+      // Admin bebas
+      allow update, delete: if isAdmin();
     }
 
-    // === DRIVER VERIFICATION ===
+    // =====================================================
+    // DRIVER VERIFICATION
+    // =====================================================
+
     match /vehicleVerifications/{docId} {
-      allow create: if request.auth != null;
-      allow read, update, delete: if request.auth != null && (
-        resource.data.driverId == request.auth.uid ||
-        request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+      // Driver membuat verifikasi miliknya sendiri
+      allow create: if signedIn() && (
+        request.resource.data.driverId == request.auth.uid ||
+        isAdmin()
       );
+
+      // Driver melihat verifikasi miliknya
+      allow read: if signedIn() && (
+        resource.data.driverId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Driver mengubah verifikasi miliknya
+      allow update: if signedIn()
+        && resource.data.driverId == request.auth.uid
+        && request.resource.data.driverId == request.auth.uid;
+
+      // Admin bebas
+      allow update, delete: if isAdmin();
     }
 
-    // === PAYMENT VERIFICATION ===
+    // =====================================================
+    // PAYMENT VERIFICATION
+    // =====================================================
+
     match /paymentVerifications/{docId} {
-      allow create: if request.auth != null;
-      allow read, update, delete: if request.auth != null && (
-        resource.data.userId == request.auth.uid ||
-        resource.data.driverId == request.auth.uid ||
-        request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
-      );
+      // Client / Driver membuat data
+      allow create: if signedIn()
+        && (
+          request.resource.data.userId == request.auth.uid ||
+          request.resource.data.driverId == request.auth.uid ||
+          isAdmin()
+        );
+
+      // Melihat data
+      allow read: if signedIn()
+        && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.driverId == request.auth.uid ||
+          isAdmin()
+        );
+
+      // Update
+      allow update: if signedIn()
+        && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.driverId == request.auth.uid
+        );
+
+      // Admin bebas
+      allow update, delete: if isAdmin();
     }
 
-    // === DRIVER ASSIGNMENTS ===
+    // =====================================================
+    // DRIVER ASSIGNMENTS
+    // =====================================================
+
     match /driver_assignments/{docId} {
-      allow read, write: if request.auth != null && (
-        resource.data.driverId == request.auth.uid ||
-        request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
-      );
+      // Create
+      allow create: if signedIn()
+        && (
+          request.resource.data.driverId == request.auth.uid ||
+          isAdmin()
+        );
+
+      // Read
+      allow read: if signedIn()
+        && (
+          resource.data.driverId == request.auth.uid ||
+          isAdmin()
+        );
+
+      // Update
+      allow update: if signedIn()
+        && resource.data.driverId == request.auth.uid
+        && request.resource.data.driverId == request.auth.uid;
+
+      // Delete
+      allow delete: if isAdmin();
     }
   }
 }
