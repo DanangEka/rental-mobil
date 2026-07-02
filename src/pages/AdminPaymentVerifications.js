@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc as firestoreDoc, getDoc } from "firebase/firestore";
 import { CreditCard, DollarSign, Eye, FileText, Filter, Clock } from "lucide-react";
 
 export default function AdminPaymentVerifications() {
@@ -8,6 +8,7 @@ export default function AdminPaymentVerifications() {
   const [verifications, setVerifications] = useState([]);
   const [selectedVerification, setSelectedVerification] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [orderDataMap, setOrderDataMap] = useState({});
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
@@ -23,12 +24,31 @@ export default function AdminPaymentVerifications() {
       orderBy("timestamp", "desc")
     );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       const verificationsData = [];
-      querySnapshot.forEach((doc) => {
-        verificationsData.push({ id: doc.id, ...doc.data() });
+      querySnapshot.forEach((docSnap) => {
+        verificationsData.push({ id: docSnap.id, ...docSnap.data() });
       });
       setVerifications(verificationsData);
+
+      // Fetch linked pemesanan documents to get dpAmount & totalAmount
+      const newOrderDataMap = {};
+      const fetchPromises = verificationsData.map(async (v) => {
+        if (v.orderId && !orderDataMap[v.orderId]) {
+          try {
+            const orderDoc = await getDoc(firestoreDoc(db, "pemesanan", v.orderId));
+            if (orderDoc.exists()) {
+              newOrderDataMap[v.orderId] = orderDoc.data();
+            }
+          } catch (err) {
+            console.error("Error fetching order:", v.orderId, err);
+          }
+        }
+      });
+      await Promise.all(fetchPromises);
+      if (Object.keys(newOrderDataMap).length > 0) {
+        setOrderDataMap(prev => ({ ...prev, ...newOrderDataMap }));
+      }
     });
 
     return () => unsubscribe();
@@ -188,7 +208,12 @@ export default function AdminPaymentVerifications() {
                           <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">DP Diterima (Client)</p>
                              <p className="text-2xl font-black text-emerald-600 tracking-tighter">
-                               {formatCurrency(selectedVerification.dpAmount || (selectedVerification.totalAmount ? selectedVerification.totalAmount * 0.5 : 0))}
+                               {formatCurrency(
+                                 selectedVerification.dpAmount
+                                 || orderDataMap[selectedVerification.orderId]?.dpAmount
+                                 || (selectedVerification.totalAmount ? selectedVerification.totalAmount * 0.5 : 0)
+                                 || ((orderDataMap[selectedVerification.orderId]?.perkiraanHarga || 0) * 0.5)
+                               )}
                              </p>
                           </div>
                           
