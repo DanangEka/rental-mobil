@@ -110,7 +110,7 @@ export default function DriverOrders() {
     const processOrders = (ordersData) => {
       // Separate orders by status and driver assignment
       const available = ordersData.filter(order =>
-        (order.status === "pembayaran berhasil" || order.status === "approve sewa") &&
+        (order.status === "pembayaran berhasil" || order.status === "approve sewa" || order.status === "disetujui") &&
         !order.driverId // Only show orders without driver assigned
       );
 

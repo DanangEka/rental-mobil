@@ -54,222 +54,102 @@ export default function DriverDashboard() {
   useEffect(() => {
     if (!user) return;
 
-    // First, let's check all orders to see what's in the database
-    // Try to order by tanggal, fallback to createdAt or timestamp
-    let allOrdersQuery;
-    try {
-      allOrdersQuery = query(
-        collection(db, "pemesanan"),
-        orderBy("tanggal", "desc")
-      );
-    } catch (error) {
-      console.log("tanggal field not found, trying createdAt");
+    let unsubscribe;
+
+    const setupListener = () => {
       try {
-        allOrdersQuery = query(
-          collection(db, "pemesanan"),
-          orderBy("createdAt", "desc")
+        // Try with ordered query first
+        unsubscribe = onSnapshot(
+          query(collection(db, "pemesanan"), orderBy("tanggal", "desc")),
+          (querySnapshot) => {
+            const ordersData = [];
+            querySnapshot.forEach((doc) => {
+              ordersData.push({ id: doc.id, ...doc.data() });
+            });
+            processOrders(ordersData);
+          },
+          (error) => {
+            console.error("Error with ordered query in DriverDashboard, falling back:", error);
+            // Fallback to unordered query if ordered query fails (e.g. index missing)
+            unsubscribe = onSnapshot(
+              collection(db, "pemesanan"),
+              (querySnapshot) => {
+                const ordersData = [];
+                querySnapshot.forEach((doc) => {
+                  ordersData.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Sort by date client-side as fallback
+                ordersData.sort((a, b) => {
+                  const dateA = new Date(a.tanggal || a.createdAt || a.timestamp || 0);
+                  const dateB = new Date(b.tanggal || b.createdAt || b.timestamp || 0);
+                  return dateB - dateA;
+                });
+                processOrders(ordersData);
+              },
+              (fallbackError) => {
+                console.error("Error with fallback query in DriverDashboard:", fallbackError);
+              }
+            );
+          }
         );
-      } catch (error2) {
-        console.log("createdAt field not found, trying timestamp");
-        allOrdersQuery = query(
-          collection(db, "pemesanan"),
-          orderBy("timestamp", "desc")
-        );
+      } catch (err) {
+        console.error("Error setting up DriverDashboard listener:", err);
       }
-    }
+    };
 
-    const unsubscribeAll = onSnapshot(allOrdersQuery, (querySnapshot) => {
-      console.log("=== ALL ORDERS IN DATABASE ===");
-      console.log("Total orders in database:", querySnapshot.size);
-
-      querySnapshot.forEach((doc) => {
-        const order = { id: doc.id, ...doc.data() };
-        console.log("Order ID:", order.id, "Status:", order.status, "Payment Method:", order.paymentMethod, "Date:", order.tanggal);
-      });
-    });
-
-    // First, let's find what status values actually exist in the database
-    const statusAnalysisQuery = query(collection(db, "pemesanan"));
-    const unsubscribeStatusAnalysis = onSnapshot(statusAnalysisQuery, (querySnapshot) => {
-      console.log("🔍 === ANALYZING ALL ORDERS TO FIND CORRECT STATUSES ===");
-      const statusCounts = {};
-      const paymentMethods = {};
-      const driverIdCounts = {};
-      const allOrders = [];
-
-      querySnapshot.forEach((doc) => {
-        const order = doc.data();
-        const status = order.status;
-        const paymentMethod = order.paymentMethod;
-        const driverId = order.driverId;
-
-        statusCounts[status] = (statusCounts[status] || 0) + 1;
-        if (paymentMethod) {
-          paymentMethods[paymentMethod] = (paymentMethods[paymentMethod] || 0) + 1;
-        }
-        if (driverId !== undefined) {
-          driverIdCounts[driverId] = (driverIdCounts[driverId] || 0) + 1;
-        }
-
-        allOrders.push({
-          id: doc.id,
-          status: status,
-          paymentMethod: paymentMethod,
-          driverId: driverId,
-          uid: order.uid,
-          namaMobil: order.namaMobil,
-          tanggal: order.tanggal
-        });
-
-        console.log(`📋 Order ${doc.id}:`);
-        console.log(`   Status: "${status}"`);
-        console.log(`   Payment: "${paymentMethod}"`);
-        console.log(`   Driver ID: "${driverId}"`);
-        console.log(`   User ID: "${order.uid}"`);
-        console.log(`   Car: "${order.namaMobil}"`);
-        console.log(`   Date: "${order.tanggal}"`);
-        console.log(`   ---`);
-      });
-
-      console.log("📊 Status distribution:", statusCounts);
-      console.log("💳 Payment method distribution:", paymentMethods);
-      console.log("🚗 Driver ID distribution:", driverIdCounts);
-      console.log("📋 ALL ORDERS SUMMARY:", allOrders);
-
-      // Find orders that should be available for drivers
-      const availableOrders = allOrders.filter(order =>
-        !order.driverId && // No driver assigned
-        order.status &&
-        !["selesai", "dibatalkan", "ditolak"].includes(order.status)
-      );
-
-      console.log("💡 ORDERS THAT SHOULD BE AVAILABLE FOR DRIVERS:");
-      availableOrders.forEach(order => {
-        console.log(`   ✅ ${order.id}: Status="${order.status}", Payment="${order.paymentMethod}"`);
-      });
-
-      if (availableOrders.length === 0) {
-        console.log("❌ NO ORDERS AVAILABLE FOR DRIVERS");
-        console.log("This could mean:");
-        console.log("1. All orders have driverId assigned");
-        console.log("2. All orders have status 'selesai', 'dibatalkan', or 'ditolak'");
-        console.log("3. Firestore rules are blocking the query");
-        console.log("4. Authentication issue");
-      }
-    });
-
-    // Fetch latest orders that drivers can accept - show recent orders first
-    let ordersQuery;
-
-    console.log("🔍 Fetching latest orders for drivers...");
-
-    // Get all orders and sort by date (newest first) - we'll filter client-side
-    try {
-      ordersQuery = query(
-        collection(db, "pemesanan"),
-        orderBy("tanggal", "desc")
-      );
-      console.log("✅ Querying orders ordered by date (newest first)");
-    } catch (error) {
-      console.log("❌ Error with date query:", error);
-      try {
-        // Fallback: try to get all orders without ordering
-        ordersQuery = query(collection(db, "pemesanan"));
-        console.log("✅ Querying all orders (will sort client-side)");
-      } catch (error2) {
-        console.log("❌ Error with fallback query:", error2);
-        ordersQuery = query(collection(db, "pemesanan"));
-      }
-    }
-
-    const unsubscribe = onSnapshot(ordersQuery, (querySnapshot) => {
-      const ordersData = [];
+    const processOrders = (ordersData) => {
+      const ordersList = [];
       let totalEarnings = 0;
       let activeCount = 0;
       let completedCount = 0;
       let totalCount = 0;
 
-      console.log("=== DRIVER DASHBOARD ORDERS ===");
-      console.log("Orders fetched:", querySnapshot.size);
-      console.log("Query snapshot empty:", querySnapshot.empty);
-
-      if (querySnapshot.empty) {
-        console.log("❌ No orders found");
-        console.log("This could mean:");
-        console.log("1. No orders in database");
-        console.log("2. Firestore rules are blocking the query");
-        console.log("3. Authentication issue");
-        console.log("4. Network connectivity issue");
-      }
-
-      querySnapshot.forEach((doc) => {
-        const order = { id: doc.id, ...doc.data() };
-        console.log("📋 Order:", order.id, "Status:", order.status, "Payment Method:", order.paymentMethod, "Driver ID:", order.driverId);
-
+      ordersData.forEach((order) => {
         // Calculate stats for logged-in driver's personal performance
         if (order.driverId === user.uid) {
           totalCount++;
           if (["selesai", "lunas", "cash_submitted"].includes(order.status)) {
             completedCount++;
-            totalEarnings += order.perkiraanHarga || 0;
+            totalEarnings += order.perkiraanHarga || order.actualPaymentAmount || 0;
           } else if (["disetujui", "dalam perjalanan", "menunggu pembayaran"].includes(order.status)) {
             activeCount++;
           }
         }
 
-        // Show orders that drivers can accept based on status and location
-        // Orders with "approve sewa" (cash approved) or "pembayaran berhasil" (payment successful)
-        // Exclude orders with location "Kantor" as they are handled by admin
-        let needsDriver = false;
-
-        // Skip orders that are already completed or rejected
-        if (order.status === "lunas" || order.status === "selesai" ||
-            order.status === "ditolak" || order.status === "tolak") {
-          needsDriver = false;
-        } else {
-          // Show orders that are ready for driver assignment
-          // 1. Orders with "approve sewa" (cash rental approved) OR "pembayaran berhasil" (payment successful)
-          // 2. Location is not "Kantor" (admin handled)
-          needsDriver = !order.driverId &&
-            (order.status === "approve sewa" || order.status === "pembayaran berhasil") &&
-            order.lokasiPenyerahan !== "Kantor";
-        }
+        // Available orders to accept - orders that need a driver assigned
+        // Includes: pembayaran berhasil (DP paid), approve sewa (cash approved),
+        // disetujui (admin approved, no driver yet)
+        const needsDriver = !order.driverId &&
+          (order.status === "approve sewa" || 
+           order.status === "pembayaran berhasil" ||
+           (order.status === "disetujui" && !order.driverId));
 
         if (needsDriver) {
-          console.log("✅ Order available for driver:", order.id, "Status:", order.status, "Payment:", order.paymentMethod);
-          ordersData.push(order);
-        } else {
-          const reason = order.driverId ? "Has driver assigned" : "Wrong status: " + order.status;
-          console.log("❌ Order not available for driver:", order.id, "Reason:", reason);
+          ordersList.push(order);
         }
       });
 
-      // Sort orders by date (newest first) - client-side sorting
-      ordersData.sort((a, b) => {
+      // Sort available orders by date (newest first)
+      ordersList.sort((a, b) => {
         const dateA = new Date(a.tanggal || a.createdAt || a.timestamp || 0);
         const dateB = new Date(b.tanggal || b.createdAt || b.timestamp || 0);
         return dateB - dateA;
       });
 
-      console.log("📊 Available orders for driver:", ordersData.length);
-      console.log("📊 Orders data:", ordersData.map(o => ({ id: o.id, status: o.status, paymentMethod: o.paymentMethod })));
-      setOrders(ordersData);
+      setOrders(ordersList);
       setStats({
         totalOrders: totalCount,
         activeOrders: activeCount,
         completedOrders: completedCount,
         totalEarnings: totalEarnings
       });
-    }, (error) => {
-      console.error("❌ Error in orders query:", error);
-      console.error("❌ Error code:", error.code);
-      console.error("❌ Error message:", error.message);
-    });
+    };
+
+    setupListener();
 
     return () => {
-      unsubscribeAll();
-      unsubscribeStatusAnalysis();
-      unsubscribe();
+      if (unsubscribe) unsubscribe();
     };
   }, [user]);
 

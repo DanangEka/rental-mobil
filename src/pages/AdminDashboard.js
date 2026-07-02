@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, getDocs, doc, setDoc, getDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { Bar, Line } from "react-chartjs-2";
 import {
@@ -132,10 +132,11 @@ export default function AdminDashboard() {
       setStats((prev) => ({ ...prev, totalCustomers: usersSnapshot.size }));
     });
 
-    const fetchRevenue = async () => {
-      try {
-        const ordersSnapshot = await getDocs(collection(db, "pemesanan"));
+    // Real-time revenue listener - includes all revenue-generating statuses
+    const revenueStatuses = ["selesai", "lunas", "cash_submitted", "pembayaran berhasil", "approve sewa", "disetujui"];
 
+    const unsubscribeOrders = onSnapshot(collection(db, "pemesanan"), (ordersSnapshot) => {
+      try {
         let todayRevenue = 0;
         let monthlyRevenue = 0;
         const dailyRevenue = {};
@@ -144,29 +145,53 @@ export default function AdminDashboard() {
         const today = new Date();
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-        ordersSnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.status === "selesai" && data.perkiraanHarga) {
-            let orderDate;
-            if (data.tanggalMulai?.toDate) {
+        ordersSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          
+          // Include all orders that have generated any revenue
+          if (!revenueStatuses.includes(data.status)) return;
+          
+          // Determine the actual revenue amount
+          // Priority: actualPaymentAmount > perkiraanHarga > dpAmount
+          const revenueAmount = data.actualPaymentAmount || data.perkiraanHarga || data.dpAmount || 0;
+          if (revenueAmount <= 0) return;
+
+          // Parse order date
+          let orderDate;
+          if (data.tanggalMulai) {
+            if (data.tanggalMulai.toDate) {
               orderDate = data.tanggalMulai.toDate();
             } else if (data.tanggalMulai instanceof Date) {
               orderDate = data.tanggalMulai;
+            } else {
+              orderDate = new Date(data.tanggalMulai);
             }
-
-            if (orderDate) {
-              const dayKey = orderDate.toDateString();
-              dailyRevenue[dayKey] = (dailyRevenue[dayKey] || 0) + data.perkiraanHarga;
-
-              const monthKey = `${orderDate.getFullYear()}-${orderDate.getMonth() + 1}`;
-              monthlyRevenueData[monthKey] = (monthlyRevenueData[monthKey] || 0) + data.perkiraanHarga;
-
-              if (orderDate.toDateString() === today.toDateString()) {
-                todayRevenue += data.perkiraanHarga;
+          }
+          if (!orderDate || isNaN(orderDate.getTime())) {
+            // Fallback to tanggal (order creation date)
+            if (data.tanggal) {
+              if (data.tanggal.toDate) {
+                orderDate = data.tanggal.toDate();
+              } else if (data.tanggal instanceof Date) {
+                orderDate = data.tanggal;
+              } else {
+                orderDate = new Date(data.tanggal);
               }
-              if (orderDate >= startOfMonth) {
-                monthlyRevenue += data.perkiraanHarga;
-              }
+            }
+          }
+
+          if (orderDate && !isNaN(orderDate.getTime())) {
+            const dayKey = orderDate.toDateString();
+            dailyRevenue[dayKey] = (dailyRevenue[dayKey] || 0) + revenueAmount;
+
+            const monthKey = `${orderDate.getFullYear()}-${orderDate.getMonth() + 1}`;
+            monthlyRevenueData[monthKey] = (monthlyRevenueData[monthKey] || 0) + revenueAmount;
+
+            if (orderDate.toDateString() === today.toDateString()) {
+              todayRevenue += revenueAmount;
+            }
+            if (orderDate >= startOfMonth) {
+              monthlyRevenue += revenueAmount;
             }
           }
         });
@@ -216,16 +241,15 @@ export default function AdminDashboard() {
 
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching revenue:", error);
+        console.error("Error processing revenue data:", error);
         setLoading(false);
       }
-    };
-
-    fetchRevenue();
+    });
 
     return () => {
       unsubscribeCars();
       unsubscribeUsers();
+      unsubscribeOrders();
     };
   }, []);
 
