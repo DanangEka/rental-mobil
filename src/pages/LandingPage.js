@@ -194,7 +194,7 @@ export default function LandingPage() {
                 </div>
                 <div className="relative z-10 text-center">
                   <span className="block font-black text-slate-900 group-hover/item:text-[#990000] transition-colors mb-2 tracking-tight">{svc.label}</span>
-                  <span className="block text-[10px] font-bold text-slate-400 group-hover/item:text-slate-500 transition-colors uppercase tracking-widest">{svc.desc}</span>
+                  <span className="block text-[10px] font-bold text-slate-600 group-hover/item:text-slate-800 transition-colors uppercase tracking-widest">{svc.desc}</span>
                 </div>
               </button>
             ))}
@@ -298,14 +298,14 @@ export default function LandingPage() {
                     <Star key={j} size={16} className="text-yellow-400 fill-yellow-400" />
                   ))}
                 </div>
-                <p className="text-gray-600 text-sm leading-relaxed mb-5 italic">"{t.text}"</p>
+                <p className="text-gray-800 text-sm leading-relaxed mb-5 italic">"{t.text}"</p>
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 bg-[#990000] rounded-full flex items-center justify-center text-white font-bold text-sm">
                     {t.name.charAt(0)}
                   </div>
                   <div>
                     <p className="font-bold text-gray-900 text-sm">{t.name}</p>
-                    <p className="text-xs text-gray-400 flex items-center gap-1">
+                    <p className="text-xs text-gray-600 flex items-center gap-1">
                       <MapPin size={10} /> {t.city}
                     </p>
                   </div>

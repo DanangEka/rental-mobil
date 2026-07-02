@@ -2,10 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ==========================================
-   Inter Font — Google Fonts
-   ========================================== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+/* Google Fonts loaded via index.html link tags to eliminate render-blocking */
 
 /* ==========================================
    Base Styles

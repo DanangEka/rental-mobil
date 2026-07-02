@@ -11,8 +11,6 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 import { Search, RefreshCw, Download, Eye, DollarSign, Car, User, MapPin, Calendar, ArrowRight, AlertTriangle, FileText, Calendar as CalendarIcon } from "lucide-react";
-import InvoiceGenerator from "../components/InvoiceGenerator";
-import * as XLSX from 'xlsx';
 import { initGoogleClient, syncOrderToCalendar } from "../services/googleCalendar";
 
 export default function ManajemenPesanan() {
@@ -233,12 +231,18 @@ export default function ManajemenPesanan() {
     return { amount: penaltyPerHour * diffHours, hours: diffHours };
   };
 
-  const generateInvoicePDF = (order, user, type = "full") => {
-    if (type === "dp") {
-      InvoiceGenerator.generateDPInvoice(order, user);
-    } else {
-      const { amount, hours } = calculatePenalty(order);
-      InvoiceGenerator.generateFullInvoice(order, user, amount, hours);
+  const generateInvoicePDF = async (order, user, type = "full") => {
+    try {
+      const InvoiceGenerator = (await import("../components/InvoiceGenerator")).default;
+      if (type === "dp") {
+        InvoiceGenerator.generateDPInvoice(order, user);
+      } else {
+        const { amount, hours } = calculatePenalty(order);
+        InvoiceGenerator.generateFullInvoice(order, user, amount, hours);
+      }
+    } catch (err) {
+      console.error("Gagal memuat invoice generator:", err);
+      alert("Format cetak PDF gagal dimuat. Silakan coba lagi.");
     }
   };
 
@@ -256,45 +260,49 @@ export default function ManajemenPesanan() {
     }
   };
 
-  const exportToExcel = () => {
-    const dataToExport = filteredPemesanan.map(p => {
-      const user = users.find(u => u.id === p.uid);
+  const exportToExcel = async () => {
+    try {
+      const XLSX = await import('xlsx');
+      const dataToExport = filteredPemesanan.map(p => {
+        const user = users.find(u => u.id === p.uid);
+        
+        // Determine delivery address based on user requirements
+        let alamatLengkap = "-";
+        if (p.deliveryAddress) {
+          alamatLengkap = p.deliveryAddress;
+        } else if (user) {
+          alamatLengkap = user.alamat || user.Alamat || "-";
+        }
+
+        return {
+          "ID Pesanan": p.id,
+          "Nama Client": p.namaClient || "-",
+          "Email": p.email || "-",
+          "Telepon": p.telepon || "-",
+          "Mobil": p.namaMobil || "-",
+          "Tipe Sewa": p.rentalType || "Lepas Kunci",
+          "Tujuan Pengiriman": p.lokasiPenyerahan || "Ambil di Garasi",
+          "Alamat Lengkap": alamatLengkap,
+          "Sewa Dari": p.tanggalMulai ? new Date(p.tanggalMulai).toLocaleDateString('id-ID') : "-",
+          "Sewa Sampai": p.tanggalSelesai ? new Date(p.tanggalSelesai).toLocaleDateString('id-ID') : "-",
+          "Durasi (Hari)": p.durasiHari || 0,
+          "Total Harga": p.perkiraanHarga || 0,
+          "Status": p.status,
+          "Tgl Dibuat": new Date(p.tanggal).toLocaleDateString('id-ID')
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Pesanan");
       
-      // Determine delivery address based on user requirements
-      let alamatLengkap = "-";
-      if (p.deliveryAddress) {
-        // Prioritas utama: alamat yang diisi user saat booking
-        alamatLengkap = p.deliveryAddress;
-      } else if (p.lokasiPenyerahan === "Rumah" || p.lokasiPenyerahan === "Titik Temu") {
-        alamatLengkap = p.titikTemuAddress || "-";
-      } else if (p.lokasiPenyerahan === "Kantor" || p.lokasiPenyerahan === "Garasi") {
-        alamatLengkap = "Garasi Cakra Lima Tujuh";
-      }
-
-      return {
-        "ID Pesanan": p.id.substring(0, 8).toUpperCase(),
-        "Pelanggan": user?.nama || p.email,
-        "Email": p.email,
-        "Telepon": user?.nomorTelepon || p.noTelepon || "-",
-        "Mobil": p.namaMobil,
-        "Tujuan Pengiriman": p.lokasiPenyerahan || "Ambil di Garasi",
-        "Alamat Lengkap": alamatLengkap,
-        "Sewa Dari": p.tanggalMulai ? new Date(p.tanggalMulai).toLocaleDateString('id-ID') : "-",
-        "Sewa Sampai": p.tanggalSelesai ? new Date(p.tanggalSelesai).toLocaleDateString('id-ID') : "-",
-        "Durasi (Hari)": p.durasiHari || 0,
-        "Total Harga": p.perkiraanHarga || 0,
-        "Status": p.status,
-        "Tgl Dibuat": new Date(p.tanggal).toLocaleDateString('id-ID')
-      };
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Pesanan");
-    
-    // Generate filename based on filters
-    const dateStr = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(workbook, `Laporan_Pesanan_${dateStr}.xlsx`);
+      // Generate filename based on filters
+      const dateStr = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(workbook, `Laporan_Pesanan_${dateStr}.xlsx`);
+    } catch (err) {
+      console.error("Gagal ekspor ke Excel:", err);
+      alert("Format cetak Excel gagal dimuat. Silakan coba lagi.");
+    }
   };
 
   const filteredPemesanan = pemesanan
