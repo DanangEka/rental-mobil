@@ -1,4 +1,22 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://cakra-fifty-seven.vercel.app/sitemap.xml
+# Disallow admin and driver panel pages
+Disallow: /admin-dashboard
+Disallow: /manajemen-pesanan
+Disallow: /car-management
+Disallow: /client-management
+Disallow: /admin-driver-management
+Disallow: /admin-tour-packages
+Disallow: /admin-vehicle-verifications
+Disallow: /admin-payment-verifications
+Disallow: /admin-driver-profiles
+Disallow: /admin-add-driver
+Disallow: /admin/open-trip
+Disallow: /driver-dashboard
+Disallow: /driver-orders
+Disallow: /vehicle-verification
+Disallow: /payment-verification
+Disallow: /driver-profile
+
+Sitemap: https://www.cakra57.com/sitemap.xml

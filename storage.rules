@@ -1,16 +1,35 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+
+    // Car/fleet images — public read, admin write only
     match /mobil/{allPaths=**} {
-      allow read: if true; // Allow public read access for car images
-      allow write: if request.auth != null && request.auth.token.admin == true; // Only admins can upload/edit car images
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.auth.token.admin == true
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
     }
+
+    // Client payment proofs — admin read, authenticated write (max 5 MB, images only)
     match /paymentProofs/{allPaths=**} {
-      allow read: if request.auth != null && request.auth.token.admin == true; // only admin can read payment proofs
-      allow write: if request.auth != null; // allow authenticated users to upload payment proofs
+      allow read:  if request.auth != null && request.auth.token.admin == true;
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
     }
+
+    // Driver vehicle verification photos — driver write, admin read
+    match /vehicleVerifications/{allPaths=**} {
+      allow read:  if request.auth != null && request.auth.token.admin == true;
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Deny all other paths
     match /{allPaths=**} {
-      allow read, write: if false; // Deny all other access
+      allow read, write: if false;
     }
   }
 }

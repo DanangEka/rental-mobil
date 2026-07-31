@@ -45,10 +45,11 @@ service cloud.firestore {
       // Driver & Admin membaca semua user
       allow read: if isDriver() || isAdmin();
 
-      // Registrasi akun
-      allow create: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.data.role in ["client", "driver"];
+      // Registrasi akun & admin pembuatan guest user
+      allow create: if signedIn() && (
+        (request.auth.uid == userId && request.resource.data.role in ["client", "driver"]) ||
+        isAdmin()
+      );
 
       // User update profil sendiri
       allow update: if isOwner(userId)
@@ -77,21 +78,11 @@ service cloud.firestore {
 
       // -------------------------
       // CREATE
-      // Wajib ada deliveryAddress jika lokasi adalah Rumah atau Titik Temu
+      // Client membuat pesanan miliknya sendiri, Admin membuat pesanan manual
       // -------------------------
 
       allow create: if signedIn() && (
-        (
-          request.resource.data.uid == request.auth.uid
-          && (
-            !(request.resource.data.lokasiPenyerahan in ["Rumah", "Titik Temu"])
-            || (
-              "deliveryAddress" in request.resource.data
-              && request.resource.data.deliveryAddress is string
-              && request.resource.data.deliveryAddress != ""
-            )
-          )
-        ) ||
+        request.resource.data.uid == request.auth.uid ||
         isAdmin()
       );
 
@@ -157,7 +148,7 @@ service cloud.firestore {
     }
 
     // =====================================================
-    // MOBIL
+    // MOBIL & SUBCOLLECTION BOOKINGS
     // =====================================================
 
     match /mobil/{mobilId} {
@@ -171,12 +162,8 @@ service cloud.firestore {
         // Admin bebas
         isAdmin()
         ||
-        // Client memperbarui status saat pemesanan
-        (
-          signedIn()
-          && request.resource.data.status == "disewa"
-          && request.resource.data.tersedia == false
-        )
+        // Client/user memperbarui status saat pemesanan
+        signedIn()
         ||
         // Driver hanya boleh update status mobil
         (
@@ -188,6 +175,24 @@ service cloud.firestore {
                 "updatedAt"
               ])
         );
+
+      // Subcollection bookings di bawah mobil
+      match /bookings/{bookingId} {
+        allow read: if signedIn();
+        allow create: if signedIn();
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    match /units/{unitId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+
+      match /bookings/{bookingId} {
+        allow read: if signedIn();
+        allow create: if signedIn();
+        allow update, delete: if isAdmin();
+      }
     }
 
     // =====================================================

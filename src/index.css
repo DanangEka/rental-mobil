@@ -2,11 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Google Fonts loaded via index.html link tags to eliminate render-blocking */
+/* C57 Design System Tokens — Crimson Red + Navy Dark + Warm Gold Accent */
+:root {
+  --c57-red:            #990000;
+  --c57-red-dark:       #7A0000;
+  --c57-red-light:      #C00000;
+  --c57-red-soft:       #FFF1F1;
+  --c57-charcoal:       #0f172a;
+  --c57-charcoal-soft:  #1e2d45;
+  --c57-slate:          #2d4061;
+  --c57-gold:           #C5A059;
+  --c57-gold-light:     #E5C88A;
+  --c57-gold-dark:      #9E7B3B;
+  --c57-cream:          #FAF8F5;
+  --c57-ivory:          #F8FAFC;
+}
 
 /* ==========================================
    Base Styles
    ========================================== */
+html {
+  overflow-x: hidden;
+}
+
 * {
   box-sizing: border-box;
   scroll-behavior: smooth;
@@ -33,14 +51,14 @@ code {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: #0f172a;
 }
 ::-webkit-scrollbar-thumb {
-  background: #990000;
+  background: var(--c57-red);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #c00000;
+  background: var(--c57-red-light);
 }
 
 /* ==========================================
@@ -125,7 +143,7 @@ code {
    Gradient text
    ========================================== */
 .gradient-text {
-  background: linear-gradient(135deg, #ff6b6b 0%, #990000 50%, #c00000 100%);
+  background: linear-gradient(135deg, var(--c57-red-light) 0%, var(--c57-red) 50%, var(--c57-gold) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -135,7 +153,7 @@ code {
    Shimmer skeleton loading
    ========================================== */
 .skeleton {
-  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+  background: linear-gradient(90deg, #0f172a 25%, #1e2d45 50%, #0f172a 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -158,6 +176,15 @@ code {
   pointer-events: none;
   max-width: 360px;
   width: calc(100% - 32px);
+}
+@media (max-width: 640px) {
+  #toast-container {
+    top: 72px;
+    right: 8px;
+    left: 8px;
+    width: calc(100% - 16px);
+    max-width: 100%;
+  }
 }
 #toast-container > * {
   pointer-events: all;
@@ -189,7 +216,7 @@ code {
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  background: linear-gradient(135deg, #990000, #ff6b6b);
+  background: linear-gradient(135deg, var(--c57-red), var(--c57-gold));
   z-index: -1;
 }
 
@@ -197,14 +224,37 @@ code {
    Button base (shared style)
    ========================================== */
 .btn-brand {
-  @apply bg-brand-800 hover:bg-brand-700 active:bg-brand-900 text-white font-semibold
-         py-3 px-6 rounded-xl transition-all duration-200 shadow-brand hover:shadow-brand-lg
-         focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+  background-color: var(--c57-red);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(153, 0, 0, 0.3);
+}
+.btn-brand:hover {
+  background-color: var(--c57-red-dark);
+  box-shadow: 0 8px 30px rgba(153, 0, 0, 0.4);
+}
+.btn-brand:focus {
+  outline: 2px solid var(--c57-red-light);
+  outline-offset: 2px;
 }
 .btn-outline {
-  @apply bg-transparent border-2 border-white text-white hover:bg-white hover:text-brand-800
-         font-semibold py-3 px-6 rounded-xl transition-all duration-200
-         focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2;
+  background: transparent;
+  border: 2px solid white;
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s;
+}
+.btn-outline:hover {
+  background: white;
+  color: var(--c57-red);
+}
+.btn-outline:focus {
+  outline: none;
 }
 
 /* ==========================================

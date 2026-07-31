@@ -12,14 +12,20 @@ import { Car, Search, Plus, Trash2, Settings, Image as ImageIcon, Luggage, Batte
 
 export default function CarManagement() {
   const [mobil, setMobil] = useState([]);
-  const [form, setForm] = useState({ nama: "", harga: "", gambar: "", layanan: "Lepas Kunci", seats: 4, chargingPort: true, luggage: true });
+  const [form, setForm] = useState({
+    nama: "", rental_fee_per_day: "", driver_fee_per_day: "",
+    gambar: "", layanan: "Lepas Kunci", seats: 4, chargingPort: true, luggage: true
+  });
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchMobil, setSearchMobil] = useState("");
   const [editingCarId, setEditingCarId] = useState(null);
-  const [editForm, setEditForm] = useState({ nama: "", harga: "", layanan: "Lepas Kunci", seats: 4, chargingPort: true, luggage: true });
+  const [editForm, setEditForm] = useState({
+    nama: "", rental_fee_per_day: "", driver_fee_per_day: "",
+    layanan: "Lepas Kunci", seats: 4, chargingPort: true, luggage: true
+  });
 
   const fetchData = useCallback(async () => {
     try {
@@ -101,7 +107,7 @@ export default function CarManagement() {
   };
 
   const handleTambahMobil = async () => {
-    if (!form.nama || !form.harga || !form.gambar) {
+    if (!form.nama || !form.rental_fee_per_day || !form.gambar) {
       alert("Lengkapi data mobil!");
       return;
     }
@@ -109,7 +115,9 @@ export default function CarManagement() {
     try {
       await addDoc(collection(db, "mobil"), {
         nama: form.nama,
-        harga: parseInt(form.harga),
+        harga: parseInt(form.rental_fee_per_day) + (form.layanan === "Dengan Driver" ? parseInt(form.driver_fee_per_day || 0) : 0),
+        rental_fee_per_day: parseInt(form.rental_fee_per_day),
+        driver_fee_per_day: form.layanan === "Dengan Driver" ? parseInt(form.driver_fee_per_day || 0) : 0,
         gambar: form.gambar,
         layanan: form.layanan,
         withDriver: form.layanan === "Dengan Driver",
@@ -119,7 +127,7 @@ export default function CarManagement() {
         tersedia: true,
         status: "normal"
       });
-      setForm({ nama: "", harga: "", gambar: "", layanan: "Lepas Kunci", seats: 4, chargingPort: true, luggage: true });
+      setForm({ nama: "", rental_fee_per_day: "", driver_fee_per_day: "", gambar: "", layanan: "Lepas Kunci", seats: 4, chargingPort: true, luggage: true });
       setSelectedFile(null);
       fetchData();
       alert("Mobil berhasil ditambahkan!");
@@ -144,7 +152,8 @@ export default function CarManagement() {
     setEditingCarId(car.id);
     setEditForm({
       nama: car.nama || "",
-      harga: car.harga || "",
+      rental_fee_per_day: car.rental_fee_per_day || car.harga || "",
+      driver_fee_per_day: car.driver_fee_per_day || "",
       layanan: car.layanan || "Lepas Kunci",
       seats: car.seats || 4,
       chargingPort: car.chargingPort !== false,
@@ -160,7 +169,9 @@ export default function CarManagement() {
     try {
       await updateDoc(doc(db, "mobil", id), {
         nama: editForm.nama,
-        harga: parseInt(editForm.harga),
+        harga: parseInt(editForm.rental_fee_per_day) + (editForm.layanan === "Dengan Driver" ? parseInt(editForm.driver_fee_per_day || 0) : 0),
+        rental_fee_per_day: parseInt(editForm.rental_fee_per_day),
+        driver_fee_per_day: editForm.layanan === "Dengan Driver" ? parseInt(editForm.driver_fee_per_day || 0) : 0,
         layanan: editForm.layanan,
         withDriver: editForm.layanan === "Dengan Driver",
         seats: parseInt(editForm.seats),
@@ -263,15 +274,41 @@ export default function CarManagement() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Tarif Per Hari (Rp)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Tarif Sewa / Hari (Rp)</label>
                   <input
                     type="number"
-                    placeholder="000.000"
-                    value={form.harga}
-                    onChange={e => setForm({ ...form, harga: e.target.value })}
+                    placeholder="1.100.000"
+                    value={form.rental_fee_per_day}
+                    onChange={e => setForm({ ...form, rental_fee_per_day: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
                   />
                 </div>
+
+                {/* Biaya Driver — hanya tampil saat Dengan Driver */}
+                <div className={form.layanan === "Dengan Driver" ? "" : "opacity-40 pointer-events-none"}>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
+                    Biaya Driver / Hari (Rp)
+                    {form.layanan !== "Dengan Driver" && <span className="ml-2 text-slate-300">— N/A untuk Lepas Kunci</span>}
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="200.000"
+                    value={form.driver_fee_per_day}
+                    onChange={e => setForm({ ...form, driver_fee_per_day: e.target.value })}
+                    disabled={form.layanan !== "Dengan Driver"}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold disabled:bg-slate-100"
+                  />
+                </div>
+
+                {/* Preview Total */}
+                {form.rental_fee_per_day && (
+                  <div className="bg-[#0f172a] text-white rounded-xl px-4 py-3 flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Total / Hari</span>
+                    <span className="font-black text-[#C5A059]">
+                      Rp {(parseInt(form.rental_fee_per_day || 0) + (form.layanan === "Dengan Driver" ? parseInt(form.driver_fee_per_day || 0) : 0)).toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Layanan</label>
@@ -368,11 +405,33 @@ export default function CarManagement() {
                         <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Tarif Sewa (/hari)</label>
                         <input
                           type="number"
-                          value={editForm.harga}
-                          onChange={(e) => setEditForm({ ...editForm, harga: e.target.value })}
+                          value={editForm.rental_fee_per_day}
+                          onChange={(e) => setEditForm({ ...editForm, rental_fee_per_day: e.target.value })}
                           className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#990000]"
                         />
                       </div>
+                    </div>
+
+                    {/* Biaya Driver di form edit */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className={editForm.layanan === "Dengan Driver" ? "" : "opacity-40"}>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Biaya Driver (/hari)</label>
+                        <input
+                          type="number"
+                          value={editForm.driver_fee_per_day}
+                          onChange={(e) => setEditForm({ ...editForm, driver_fee_per_day: e.target.value })}
+                          disabled={editForm.layanan !== "Dengan Driver"}
+                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#990000] disabled:bg-slate-100"
+                        />
+                      </div>
+                      {editForm.rental_fee_per_day && (
+                        <div className="bg-[#0f172a] text-white rounded-lg px-3 py-2 flex flex-col justify-center">
+                          <span className="text-[8px] font-black uppercase tracking-widest opacity-50">Total / Hari</span>
+                          <span className="font-black text-[#C5A059] text-xs">
+                            Rp {(parseInt(editForm.rental_fee_per_day || 0) + (editForm.layanan === "Dengan Driver" ? parseInt(editForm.driver_fee_per_day || 0) : 0)).toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -447,7 +506,12 @@ export default function CarManagement() {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tarif Sewa</p>
-                        <p className="text-2xl font-black text-[#990000]">Rp. {m.harga.toLocaleString("id-ID")}<span className="text-xs text-slate-400 font-bold">/hari</span></p>
+                        <p className="text-2xl font-black text-[#990000]">Rp. {(m.rental_fee_per_day || m.harga || 0).toLocaleString("id-ID")}<span className="text-xs text-slate-400 font-bold">/hari</span></p>
+                        {m.layanan === "Dengan Driver" && (m.driver_fee_per_day > 0 || m.withDriver) && (
+                          <p className="text-[10px] text-slate-500 font-bold mt-0.5">
+                            +Rp {(m.driver_fee_per_day || 250000).toLocaleString("id-ID")} driver = <span className="text-[#0f172a] font-black">Rp {((m.rental_fee_per_day || m.harga || 0) + (m.driver_fee_per_day || 250000)).toLocaleString("id-ID")}/hari</span>
+                          </p>
+                        )}
                       </div>
                     </div>
 

@@ -2,9 +2,11 @@ import { collection, doc, updateDoc, addDoc, query, where, onSnapshot, getDoc, T
 import { db, auth } from "../services/firebase";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Car, Users, Search, RefreshCw, Star, CheckCircle, Zap, Briefcase, CreditCard, ChevronRight, Key, UserCheck } from "lucide-react";
+import { Car, Users, Search, RefreshCw, Star, CheckCircle, Zap, Briefcase, CreditCard, ChevronRight, Key, UserCheck, User, Calendar as CalendarIcon } from "lucide-react";
 import InvoiceGenerator from "../components/InvoiceGenerator";
 import { useToast } from "../components/Toast";
+import { createUnitBooking, subscribeUnitBookings, getNextAvailableDate } from "../services/bookingService";
+import UnitCalendarPicker from "../components/UnitCalendarPicker";
 
 export default function ListMobil() {
   const navigate = useNavigate();
@@ -98,13 +100,12 @@ export default function ListMobil() {
 
     // Realtime listener mobil
     const unsubscribeMobil = onSnapshot(collection(db, "mobil"), (snapshot) => {
-      setMobil(
-        snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          status: doc.data().status || "tersedia",
-        }))
-      );
+      const mobilData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        status: doc.data().status || "tersedia",
+      }));
+      setMobil(mobilData);
     });
 
     // Cek admin role
@@ -119,6 +120,72 @@ export default function ListMobil() {
       unsubscribeMobil();
     };
   }, [navigate]);
+
+  // Realtime listener subcollection bookings per mobil
+  const [unitBookings, setUnitBookings] = useState({});
+
+  useEffect(() => {
+    if (mobil.length === 0) return;
+    const unsubs = mobil.map((m) =>
+      subscribeUnitBookings(m.id, (bookings) => {
+        setUnitBookings((prev) => ({ ...prev, [m.id]: bookings }));
+      })
+    );
+    return () => unsubs.forEach((unsub) => unsub && unsub());
+  }, [mobil]);
+
+  // Helper render price breakdown
+  const getMobilPriceInfo = (m) => {
+    const isDriver = m.withDriver === true || m.layanan === "Dengan Driver" || serviceType === "driver";
+    const rentalFee = m.rental_fee_per_day || m.harga || 0;
+    const driverFee = m.driver_fee_per_day || (isDriver ? 250000 : 0);
+    const totalPerDay = isDriver ? rentalFee + driverFee : rentalFee;
+    return { isDriver, rentalFee, driverFee, totalPerDay };
+  };
+
+  // Helper availability info matching Mockup 2
+  const getAvailabilityInfo = (m) => {
+    const statusLower = m.status?.toLowerCase();
+    if (["servis", "service", "maintenance"].includes(statusLower)) {
+      return {
+        badgeText: "Maintenance",
+        badgeStyle: "bg-amber-100 text-amber-700 border-amber-200/60",
+        descText: "Unit sedang dalam perawatan (maintenance)",
+      };
+    }
+
+    const bookings = unitBookings[m.id] || [];
+    const nextDate = getNextAvailableDate(bookings);
+
+    if (nextDate) {
+      const formattedEn = nextDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const formattedId = nextDate.toLocaleDateString("id-ID", { day: "numeric", month: "long" });
+
+      const activeBookings = bookings
+        .filter((b) => b.end && b.end > new Date())
+        .sort((a, b) => b.end - a.end);
+
+      let untilStr = "";
+      if (activeBookings.length > 0) {
+        untilStr = activeBookings[0].end.toLocaleDateString("id-ID", { day: "numeric", month: "long" });
+      }
+
+      return {
+        badgeText: `Available ${formattedEn}`,
+        badgeStyle: "bg-blue-100 text-blue-600 border-blue-200/60",
+        descText: untilStr
+          ? `Terpakai sampai ${untilStr} · tersedia mulai ${formattedId}`
+          : `Tersedia mulai ${formattedId}`,
+      };
+    }
+
+    return {
+      badgeText: "Available",
+      badgeStyle: "bg-blue-100 text-blue-600 border-blue-200/60",
+      descText: "Tersedia untuk disewa sekarang",
+    };
+  };
+
 
   // Realtime listener pemesanan user or all orders if admin
   useEffect(() => {
@@ -280,10 +347,14 @@ export default function ListMobil() {
     }
 
     try {
-      await addDoc(collection(db, "pemesanan"), {
+      // Validasi overlap & simpan ke subcollection units/{unitId}/bookings
+      const bookingDocId = await createUnitBooking(m.id, start, end, "online");
+
+      const orderRef = await addDoc(collection(db, "pemesanan"), {
         uid: auth.currentUser.uid,
         email: auth.currentUser.email,
         mobilId: m.id,
+        bookingId: bookingDocId,
         namaMobil: m.nama,
         platNomor: m.platNomor || "",
         tanggal: new Date().toISOString(),
@@ -311,7 +382,7 @@ export default function ListMobil() {
       setSelectedUserMobil(null);
     } catch (err) {
       console.error("Gagal menyewa:", err);
-      toast.error("Terjadi kesalahan saat menyewa. Error: " + err.message);
+      toast.error(err.message || "Terjadi kesalahan saat menyewa.");
     }
   };
 
@@ -360,6 +431,9 @@ export default function ListMobil() {
         return;
       }
 
+      // Validasi overlap & simpan ke subcollection units/{unitId}/bookings
+      const bookingDocId = await createUnitBooking(m.id, start, end, "manual_offline");
+
       const finalEmail = manualClient.email || `guest_${Date.now()}@rent.local`;
       
       const userRef = await addDoc(collection(db, "users"), {
@@ -378,6 +452,7 @@ export default function ListMobil() {
         uid: userRef.id,
         email: finalEmail,
         mobilId: m.id,
+        bookingId: bookingDocId,
         namaMobil: m.nama,
         platNomor: m.platNomor || "",
         tanggal: new Date().toISOString(),
@@ -416,7 +491,7 @@ export default function ListMobil() {
 
     } catch (err) {
       console.error(err);
-      toast.error("Gagal Sewa Manual", err.message);
+      toast.error("Gagal Sewa Manual", err.message || "Terjadi kesalahan.");
     }
   };
 
@@ -618,85 +693,75 @@ export default function ListMobil() {
               const statusLower = m.status?.toLowerCase();
               const order = getUserOrderForCar(m.id);
               const orderStatus = order?.status?.toLowerCase();
+              const info = getAvailabilityInfo(m);
+              const isDriverLayanan = m.withDriver === true || m.layanan === "Dengan Driver" || serviceType === "driver";
+              const startPicked = tanggalMulai[m.id];
 
               return (
                 <div
                   key={m.id}
-                  className="bg-white rounded-[2.5rem] overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group flex flex-col h-full animate-fadeInUp"
+                  className="bg-white rounded-[2rem] p-6 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group flex flex-col h-full animate-fadeInUp"
                   style={{ animationDelay: `${0.1 + i * 0.05}s` }}
                 >
-                  {/* Image Container */}
-                  <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
+                  {/* Top Bar matching Mockup 2 */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="text-xs font-semibold text-slate-500">
+                      {isDriverLayanan ? "Sewa mobil dengan driver" : "Sewa mobil lepas kunci"}
+                    </span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 shrink-0 ${info.badgeStyle}`}>
+                      <CalendarIcon size={13} />
+                      {info.badgeText}
+                    </span>
+                  </div>
+
+                  {/* Image Box */}
+                  <div className="relative aspect-[16/10] bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden mb-4 p-4 flex items-center justify-center">
                     <img
                       src={m.gambar}
                       alt={m.nama}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
                     />
-                    
-                    {/* Status Badge */}
-                    <div className="absolute top-6 right-6">
-                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border backdrop-blur-md ${
-                        ["servis", "service", "maintenance"].includes(statusLower)
-                          ? "bg-amber-500/90 text-white border-amber-400"
-                          : ["disewa", "rented", "booked"].includes(statusLower)
-                          ? "bg-[#990000]/90 text-white border-red-800"
-                          : "bg-emerald-500/90 text-white border-emerald-400"
-                      }`}>
-                        {["servis", "service", "maintenance"].includes(statusLower)
-                          ? "Maintenance"
-                          : ["disewa", "rented", "booked"].includes(statusLower)
-                          ? "Booked"
-                          : "Available"}
-                      </span>
-                    </div>
-
-
                   </div>
 
-                  <div className="p-8 flex flex-col flex-grow">
-                    <div className="mb-6 flex-grow">
-                      <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight group-hover:text-[#990000] transition-colors">{m.nama}</h3>
-                      
-                      <div className="grid grid-cols-1 gap-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 text-slate-500">
-                            <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                              <Users size={16} />
-                            </div>
-                            <span className="text-[11px] font-bold uppercase tracking-widest">{m.seats || 4} Passengers</span>
-                          </div>
-                          
-                          {/* Service Badges */}
-                          <div className="flex gap-2">
-                             <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border ${ (m.withDriver === true || m.layanan === "Dengan Driver") ? 'bg-red-50 border-red-100 text-[#990000]' : 'bg-slate-50 border-slate-100 text-slate-300 opacity-50'} transition-all`} title="Dengan Driver">
-                               <UserCheck size={12} />
-                               <span className="text-[9px] font-black uppercase tracking-tighter">Driver</span>
-                             </div>
-                             <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border ${ (m.withDriver !== true && m.layanan !== "Dengan Driver") ? 'bg-red-50 border-red-100 text-[#990000]' : 'bg-slate-50 border-slate-100 text-slate-300 opacity-50'} transition-all`} title="Lepas Kunci">
-                               <Key size={12} />
-                               <span className="text-[9px] font-black uppercase tracking-tighter">Lepas</span>
-                             </div>
-                          </div>
-                        </div>
+                  {/* Car Title (NO PRICE DISPLAY) & Availability Subtext */}
+                  <div className="mb-3">
+                    <h3 className="text-lg font-bold text-slate-900 leading-snug tracking-tight group-hover:text-[#990000] transition-colors mb-1">
+                      {m.nama}
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                      {info.descText}
+                    </p>
+                  </div>
 
-                        <div className="flex items-center gap-3 text-slate-500">
-                          <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                            <Zap size={16} />
-                          </div>
-                          <span className="text-[11px] font-bold uppercase tracking-widest">{m.chargingPort !== false ? 'Usb Charging' : 'No Charging'}</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-slate-500">
-                          <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                            <Briefcase size={16} />
-                          </div>
-                          <span className="text-[11px] font-bold uppercase tracking-widest">{m.luggage !== false ? 'Standard Luggage' : 'Small Trunk'}</span>
-                        </div>
-                      </div>
+                  {/* Amenities Row matching Mockup 2 */}
+                  <div className="flex items-center gap-4 text-xs font-bold text-slate-600 mb-4 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <Users size={14} className="text-slate-400" />
+                      <span>{m.seats || 4} passengers</span>
                     </div>
+                    <div className="flex items-center gap-1.5">
+                      <Zap size={14} className="text-slate-400" />
+                      <span>{m.chargingPort !== false ? "USB charging" : "No charging"}</span>
+                    </div>
+                  </div>
 
-                    {/* Booking Logic UI */}
-                    <div className="pt-6 border-t border-slate-100 mt-auto">
+                  {/* Divider & Inline Mini Calendar */}
+                  <div className="border-t border-slate-100 pt-4 mt-auto">
+                    <p className="text-xs font-bold text-slate-800 mb-2">Pilih tanggal sewa</p>
+                    <UnitCalendarPicker
+                      compact={true}
+                      bookings={unitBookings[m.id] || []}
+                      startDate={tanggalMulai[m.id] || ""}
+                      endDate={tanggalSelesai[m.id] || ""}
+                      onChange={({ start, end }) => {
+                        handleTanggalChange(m.id, "mulai", start ? `${start}T08:00` : "");
+                        handleTanggalChange(m.id, "selesai", end ? `${end}T08:00` : "");
+                      }}
+                    />
+
+                    {/* Booking Action Button */}
+                    <div className="mt-4">
                       {(() => {
                         if (order && !isAdmin) {
                           if (orderStatus === "diproses") {
@@ -710,48 +775,52 @@ export default function ListMobil() {
                             return (
                               <button 
                                 onClick={() => navigate('/history-pesanan')}
-                                className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20"
+                                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md"
                               >
                                 Upload Payment Proof
                               </button>
                             );
                           } else if (orderStatus === "pembayaran berhasil") {
                             return (
-                              <div className="flex items-center justify-center gap-2 py-3 bg-blue-50 text-blue-600 rounded-2xl">
+                              <div className="flex items-center justify-center gap-2 py-3 bg-blue-50 text-blue-600 rounded-xl">
                                 <CheckCircle size={16} />
-                                <span className="text-xs font-black uppercase tracking-widest">Order Confirmed</span>
+                                <span className="text-xs font-bold uppercase tracking-widest">Order Confirmed</span>
                               </div>
                             );
                           }
                         }
 
-                        if (["tersedia", "available", "ready", "normal"].includes(statusLower) || m.tersedia === true) {
+                        if (["servis", "service", "maintenance"].includes(statusLower)) {
                           return (
-                            <div className="flex flex-col gap-3">
-                              {!isAdmin && (
-                                <button
-                                  onClick={() => openUserSewaModal(m)}
-                                  className="w-full py-4 bg-[#990000] hover:bg-[#7a0000] text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-red-900/10 flex items-center justify-center gap-2"
-                                >
-                                  {serviceType === "driver" ? "Hire With Driver" : "Rent This Unit"}
-                                  <ChevronRight size={14} />
-                                </button>
-                              )}
-                              {isAdmin && (
-                                <button
-                                  onClick={() => openSewaManualModal(m)}
-                                  className="w-full py-4 bg-slate-900 hover:bg-[#990000] text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2"
-                                >
-                                  Manual Order (Cashier)
-                                </button>
-                              )}
+                            <div className="text-center py-3 bg-amber-50 text-amber-600 rounded-xl text-xs font-bold">
+                              Under Maintenance
                             </div>
                           );
                         }
 
+                        const defaultText = isDriverLayanan ? "Rent With Driver →" : "Rent This Unit →";
+                        const buttonText = startPicked
+                          ? `Book for ${new Date(startPicked).toLocaleDateString("en-US", { month: "short", day: "numeric" })} →`
+                          : defaultText;
+
                         return (
-                          <div className="text-center py-3 bg-slate-50 rounded-2xl border border-slate-100">
-                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Currently Unavailable</p>
+                          <div className="flex flex-col gap-2">
+                            {!isAdmin && (
+                              <button
+                                onClick={() => openUserSewaModal(m)}
+                                className="w-full py-3.5 bg-slate-900 hover:bg-[#990000] text-white rounded-xl font-bold text-xs transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5"
+                              >
+                                {buttonText}
+                              </button>
+                            )}
+                            {isAdmin && (
+                              <button
+                                onClick={() => openSewaManualModal(m)}
+                                className="w-full py-3.5 bg-slate-900 hover:bg-[#990000] text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-1.5"
+                              >
+                                Manual Order (Cashier)
+                              </button>
+                            )}
                           </div>
                         );
                       })()}
@@ -815,31 +884,52 @@ export default function ListMobil() {
 
       {/* User Sewa Modal */}
       {showUserModal && selectedUserMobil && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] px-4 overflow-y-auto py-10">
-          <div className="bg-white rounded-[3rem] p-8 md:p-12 w-full max-w-xl relative animate-popIn shadow-2xl border border-slate-200 my-auto">
-            <button
-              onClick={() => setShowUserModal(false)}
-              className="absolute top-8 right-8 w-12 h-12 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-[#990000] hover:bg-red-50 transition-all font-bold text-xl"
-            >
-              ×
-            </button>
+        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md flex items-center justify-center z-[100] p-4 sm:p-6 overflow-hidden">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-xl max-h-[90vh] flex flex-col relative animate-popIn shadow-2xl border border-slate-100 overflow-hidden">
             
-            <div className="mb-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-100 text-[#990000] text-[10px] font-black uppercase tracking-widest mb-4">
+            {/* Fixed Header */}
+            <div className="p-6 sm:px-8 sm:pt-8 sm:pb-5 border-b border-slate-100 flex-shrink-0 relative bg-white z-10">
+              <button
+                onClick={() => setShowUserModal(false)}
+                className="absolute top-6 right-6 sm:top-8 sm:right-8 w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:text-white hover:bg-[#990000] transition-all font-bold text-lg shadow-sm"
+                title="Tutup Modal"
+              >
+                ✕
+              </button>
+              
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-100 text-[#990000] text-[10px] font-black uppercase tracking-widest mb-3">
                 Pemesanan Armada
               </div>
-              <h3 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">
+              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pr-10">
                 Konfirmasi Sewa
               </h3>
-              <p className="text-slate-500 font-medium mt-2">
+              <p className="text-xs sm:text-sm font-semibold text-slate-500 mt-1">
                 Lengkapi detail perjalanan Anda untuk unit <span className="text-[#990000] font-black">{selectedUserMobil.nama}</span>.
               </p>
             </div>
 
-            <div className="space-y-8 mb-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] text-slate-400 font-black uppercase tracking-widest ml-1">Mulai Sewa</label>
+            {/* Scrollable Form Body */}
+            <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6">
+              {/* Kalender Ketersediaan Unit */}
+              <div className="space-y-2">
+                <label className="text-[10px] text-[#990000] font-black uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <CalendarIcon size={14} /> Kalender Ketersediaan Unit
+                </label>
+                <UnitCalendarPicker
+                  bookings={unitBookings[selectedUserMobil.id] || []}
+                  startDate={tanggalMulai[selectedUserMobil.id] || ""}
+                  endDate={tanggalSelesai[selectedUserMobil.id] || ""}
+                  onChange={({ start, end }) => {
+                    handleTanggalChange(selectedUserMobil.id, "mulai", start ? `${start}T08:00` : "");
+                    handleTanggalChange(selectedUserMobil.id, "selesai", end ? `${end}T08:00` : "");
+                  }}
+                />
+              </div>
+
+              {/* Tanggal Sewa */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] text-slate-400 font-black block mb-2 uppercase tracking-widest ml-1">Mulai Sewa</label>
                   <input
                     type="datetime-local"
                     value={tanggalMulai[selectedUserMobil.id] || ""}
@@ -954,127 +1044,201 @@ export default function ListMobil() {
 
       {/* Sewa Manual Modal (Cashier) */}
       {showManualModal && manualMobil && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] px-4 overflow-y-auto py-10">
-          <div className="bg-white rounded-[3rem] p-8 md:p-12 w-full max-w-4xl relative animate-popIn shadow-2xl border border-slate-200 my-auto">
-            <button
-              onClick={() => setShowManualModal(false)}
-              className="absolute top-8 right-8 w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-[#990000] hover:bg-red-50 transition-all font-bold"
-            >
-              ×
-            </button>
-            <div className="mb-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-100 text-[#990000] text-[10px] font-black uppercase tracking-widest mb-4">
-                Admin Control Panel
+        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md flex items-center justify-center z-[110] p-4 sm:p-6 overflow-hidden">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-4xl max-h-[90vh] flex flex-col relative animate-popIn shadow-2xl border border-slate-100 overflow-hidden">
+            
+            {/* Fixed Modal Header */}
+            <div className="px-6 pt-6 pb-5 sm:px-10 sm:pt-8 sm:pb-6 border-b border-slate-100 flex-shrink-0 relative bg-white z-10">
+              <button
+                onClick={() => setShowManualModal(false)}
+                className="absolute top-6 right-6 sm:top-8 sm:right-8 w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:text-white hover:bg-[#990000] transition-all font-bold text-lg shadow-sm"
+                title="Tutup Modal"
+              >
+                ✕
+              </button>
+
+              <div className="flex items-center gap-3 mb-2.5">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#990000]/10 text-[#990000] text-[10px] font-black uppercase tracking-widest border border-[#990000]/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#990000] animate-pulse" />
+                  Kasir Admin Panel
+                </span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Mode Transaksi Offline
+                </span>
               </div>
-              <h3 className="text-3xl font-black text-slate-900 tracking-tighter">
-                Sewa Manual (Offline)
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3 pr-12">
+                <Car size={24} className="text-[#990000] flex-shrink-0" />
+                Sewa Manual — {manualMobil.nama}
               </h3>
-              <p className="text-slate-500 font-medium mt-2">
-                Input data penyewa secara langsung untuk unit <span className="font-black text-slate-900">{manualMobil.nama}</span>.
+              <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                Input data penyewa secara langsung dan atur jadwal pemesanan unit.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
-              <div className="space-y-6">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-100">Informasi Pelanggan</h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-[10px] text-slate-400 font-black block mb-2 uppercase tracking-widest">Nama Lengkap</label>
-                    <input
-                      type="text"
-                      value={manualClient.namaLengkap}
-                      onChange={(e) => setManualClient({ ...manualClient, namaLengkap: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl p-4 focus:border-[#990000] outline-none font-bold"
-                      placeholder="Input nama customer..."
-                    />
+            {/* Scrollable Form Body */}
+            <div className="px-6 py-6 sm:px-10 sm:py-8 overflow-y-auto flex-1">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                
+                {/* Left Column: Customer Information Card */}
+                <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center gap-2 pb-3 border-b border-slate-200/60">
+                    <User size={18} className="text-[#990000]" />
+                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">
+                      Informasi Pelanggan
+                    </h4>
                   </div>
-                   <div>
-                    <label className="text-[10px] text-slate-400 font-black block mb-2 uppercase tracking-widest">NIK Penyewa</label>
-                    <input
-                      type="text"
-                      value={manualClient.nik}
-                      onChange={(e) => setManualClient({ ...manualClient, nik: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl p-4 focus:border-[#990000] outline-none font-bold"
-                      placeholder="Masukkan NIK sesuai KTP..."
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-400 font-black block mb-2 uppercase tracking-widest">Kontak (WA)</label>
-                    <input
-                      type="text"
-                      value={manualClient.nomorTelepon}
-                      onChange={(e) => setManualClient({ ...manualClient, nomorTelepon: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl p-4 focus:border-[#990000] outline-none font-bold"
-                      placeholder="0812..."
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-400 font-black block mb-2 uppercase tracking-widest">Alamat Lengkap</label>
-                    <textarea
-                      value={manualClient.alamat}
-                      onChange={(e) => setManualClient({ ...manualClient, alamat: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl p-4 focus:border-[#990000] outline-none h-24 resize-none font-bold"
-                      placeholder="Input alamat domisili..."
-                    />
+
+                  <div className="space-y-4">
+                    {/* Nama Lengkap */}
+                    <div>
+                      <label className="text-[10px] text-slate-500 font-bold block mb-1.5 uppercase tracking-wider">
+                        Nama Lengkap Customer
+                      </label>
+                      <input
+                        type="text"
+                        value={manualClient.namaLengkap}
+                        onChange={(e) => setManualClient({ ...manualClient, namaLengkap: e.target.value })}
+                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-xl p-3.5 focus:border-[#990000] focus:ring-2 focus:ring-[#990000]/10 outline-none font-bold transition-all shadow-sm"
+                        placeholder="Contoh: Budi Santoso"
+                      />
+                    </div>
+
+                    {/* NIK */}
+                    <div>
+                      <label className="text-[10px] text-slate-500 font-bold block mb-1.5 uppercase tracking-wider">
+                        NIK Penyewa (KTP)
+                      </label>
+                      <input
+                        type="text"
+                        value={manualClient.nik}
+                        onChange={(e) => setManualClient({ ...manualClient, nik: e.target.value })}
+                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-xl p-3.5 focus:border-[#990000] focus:ring-2 focus:ring-[#990000]/10 outline-none font-bold transition-all shadow-sm"
+                        placeholder="Masukkan 16 digit NIK KTP..."
+                      />
+                    </div>
+
+                    {/* WhatsApp */}
+                    <div>
+                      <label className="text-[10px] text-slate-500 font-bold block mb-1.5 uppercase tracking-wider">
+                        Nomor Telepon / WhatsApp
+                      </label>
+                      <input
+                        type="text"
+                        value={manualClient.nomorTelepon}
+                        onChange={(e) => setManualClient({ ...manualClient, nomorTelepon: e.target.value })}
+                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-xl p-3.5 focus:border-[#990000] focus:ring-2 focus:ring-[#990000]/10 outline-none font-bold transition-all shadow-sm"
+                        placeholder="08123456789"
+                      />
+                    </div>
+
+                    {/* Alamat */}
+                    <div>
+                      <label className="text-[10px] text-slate-500 font-bold block mb-1.5 uppercase tracking-wider">
+                        Alamat Lengkap Domisili
+                      </label>
+                      <textarea
+                        value={manualClient.alamat}
+                        onChange={(e) => setManualClient({ ...manualClient, alamat: e.target.value })}
+                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-xl p-3.5 focus:border-[#990000] focus:ring-2 focus:ring-[#990000]/10 outline-none h-24 resize-none font-bold transition-all shadow-sm"
+                        placeholder="Input alamat lengkap domisili penyewa..."
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-6">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-100">Konfigurasi Sewa</h4>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                       <label className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Mulai</label>
-                       <input
-                         type="datetime-local"
-                         value={tanggalMulai[manualMobil.id] || ""}
-                         onChange={(e) => handleTanggalChange(manualMobil.id, "mulai", e.target.value)}
-                         className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:border-[#990000] outline-none font-bold"
-                       />
+                {/* Right Column: Booking Configuration Card */}
+                <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center gap-2 pb-3 border-b border-slate-200/60">
+                    <CalendarIcon size={18} className="text-[#990000]" />
+                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">
+                      Konfigurasi Sewa Unit
+                    </h4>
+                  </div>
+
+                  {/* Calendar */}
+                  <div className="bg-white p-3 rounded-2xl border border-slate-200/60 shadow-sm">
+                    <label className="text-[10px] text-[#990000] font-black uppercase tracking-wider flex items-center gap-1.5 mb-2 px-1">
+                      <CalendarIcon size={13} /> Kalender Ketersediaan Armada
+                    </label>
+                    <UnitCalendarPicker
+                      bookings={unitBookings[manualMobil.id] || []}
+                      startDate={tanggalMulai[manualMobil.id] || ""}
+                      endDate={tanggalSelesai[manualMobil.id] || ""}
+                      onChange={({ start, end }) => {
+                        handleTanggalChange(manualMobil.id, "mulai", start ? `${start}T08:00` : "");
+                        handleTanggalChange(manualMobil.id, "selesai", end ? `${end}T08:00` : "");
+                      }}
+                    />
+                  </div>
+
+                  {/* Datetime Pickers */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] text-slate-500 font-bold block mb-1 uppercase tracking-wider">Tgl Mulai</label>
+                      <input
+                        type="datetime-local"
+                        value={tanggalMulai[manualMobil.id] || ""}
+                        onChange={(e) => handleTanggalChange(manualMobil.id, "mulai", e.target.value)}
+                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:border-[#990000] outline-none font-bold shadow-sm"
+                      />
                     </div>
-                    <div className="space-y-2">
-                       <label className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Selesai</label>
-                       <input
-                         type="datetime-local"
-                         value={tanggalSelesai[manualMobil.id] || ""}
-                         onChange={(e) => handleTanggalChange(manualMobil.id, "selesai", e.target.value)}
-                         className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:border-[#990000] outline-none font-bold"
-                       />
+                    <div>
+                      <label className="text-[10px] text-slate-500 font-bold block mb-1 uppercase tracking-wider">Tgl Selesai</label>
+                      <input
+                        type="datetime-local"
+                        value={tanggalSelesai[manualMobil.id] || ""}
+                        onChange={(e) => handleTanggalChange(manualMobil.id, "selesai", e.target.value)}
+                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:border-[#990000] outline-none font-bold shadow-sm"
+                      />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Nominal DP (Min 50%)</label>
+                  {/* DP Amount */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                        Nominal DP (Min 50%)
+                      </label>
+                      {manualMobil && tanggalMulai[manualMobil.id] && tanggalSelesai[manualMobil.id] && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const dur = Math.max(1, Math.ceil((new Date(tanggalSelesai[manualMobil.id]) - new Date(tanggalMulai[manualMobil.id])) / (1000 * 60 * 60 * 24)));
+                            const minDp = Math.ceil(dur * manualMobil.harga * 0.5);
+                            setManualClient({ ...manualClient, dpAmount: minDp });
+                          }}
+                          className="text-[9px] font-black text-[#990000] hover:underline uppercase tracking-tight"
+                        >
+                          + Set DP Minimal 50%
+                        </button>
+                      )}
+                    </div>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 font-black text-xs">Rp</div>
+                      <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 font-black text-xs">Rp</div>
                       <input
                         type="number"
                         value={manualClient.dpAmount}
                         onChange={(e) => setManualClient({ ...manualClient, dpAmount: e.target.value })}
-                        className="w-full bg-white border-2 border-slate-100 text-slate-900 text-sm rounded-xl py-4 pl-12 pr-4 focus:border-[#990000] outline-none font-black shadow-inner"
+                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-xl py-3 pl-10 pr-3 focus:border-[#990000] outline-none font-black shadow-sm"
                         placeholder="0"
                       />
                     </div>
-                    {manualMobil && tanggalMulai[manualMobil.id] && tanggalSelesai[manualMobil.id] && (
-                      <p className="text-[9px] font-bold text-slate-400 mt-1">
-                        Saran DP: Rp {(Math.ceil((new Date(tanggalSelesai[manualMobil.id]) - new Date(tanggalMulai[manualMobil.id])) / (1000 * 60 * 60 * 24)) * manualMobil.harga * 0.5).toLocaleString()}
-                      </p>
-                    )}
                   </div>
 
-                  <div className="bg-slate-900 rounded-2xl p-6 text-white border border-slate-800">
-                    <div className="flex justify-between mb-3">
-                      <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Durasi</span>
-                      <span className="text-sm font-black">
+                  {/* Summary Card */}
+                  <div className="bg-[#0f172a] rounded-2xl p-5 text-white shadow-md border border-slate-800 space-y-3">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Estimasi Durasi</span>
+                      <span className="font-black text-amber-400">
                         {tanggalMulai[manualMobil.id] && tanggalSelesai[manualMobil.id] ? 
                           Math.max(1, Math.ceil((new Date(tanggalSelesai[manualMobil.id]) - new Date(tanggalMulai[manualMobil.id])) / (1000 * 60 * 60 * 24))) + " Hari" 
                           : "-"}
                       </span>
                     </div>
-                    <div className="flex justify-between mb-4 pb-4 border-b border-white/10">
-                      <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Grand Total</span>
-                      <span className="text-xl font-black text-red-400">
+
+                    <div className="flex justify-between items-center pt-2 border-t border-white/10">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Grand Total</span>
+                      <span className="text-lg font-black text-red-400">
                         Rp {(() => {
                           const durasi = Math.max(1, Math.ceil((new Date(tanggalSelesai[manualMobil.id]) - new Date(tanggalMulai[manualMobil.id])) / (1000 * 60 * 60 * 24)));
                           let total = durasi * manualMobil.harga;
@@ -1083,28 +1247,35 @@ export default function ListMobil() {
                         })()}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Metode</span>
+
+                    <div className="flex justify-between items-center pt-2 border-t border-white/10 text-xs">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Metode Pembayaran</span>
                       <select
                         value={manualClient.paymentMethod}
                         onChange={(e) => setManualClient({ ...manualClient, paymentMethod: e.target.value })}
-                        className="bg-transparent text-white text-xs font-black outline-none cursor-pointer"
+                        className="bg-slate-800 text-white text-xs font-bold rounded-lg px-2.5 py-1 border border-slate-700 outline-none cursor-pointer"
                       >
                         <option value="Cash" className="bg-slate-900">TUNAI / CASH</option>
-                        <option value="Transfer Bank" className="bg-slate-900">TRANSFER</option>
+                        <option value="Transfer Bank" className="bg-slate-900">TRANSFER BANK</option>
                       </select>
                     </div>
                   </div>
+
                 </div>
               </div>
             </div>
 
-            <button 
-              onClick={handleSubmitSewaManual}
-              className="w-full py-5 rounded-2xl bg-[#990000] hover:bg-[#7a0000] text-white font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-red-900/20"
-            >
-              Submit Transaksi Kasir
-            </button>
+            {/* Fixed Bottom Submit Footer */}
+            <div className="p-4 sm:px-10 sm:py-5 border-t border-slate-100 bg-slate-50/60 flex-shrink-0">
+              <button 
+                onClick={handleSubmitSewaManual}
+                className="w-full py-3.5 sm:py-4 rounded-2xl bg-[#990000] hover:bg-[#7a0000] text-white font-black text-xs sm:text-sm uppercase tracking-widest transition-all active:scale-[0.99] shadow-lg shadow-[#990000]/20 flex items-center justify-center gap-2"
+              >
+                <CheckCircle size={18} />
+                Simpan &amp; Terbitkan Pesanan Kasir
+              </button>
+            </div>
+
           </div>
         </div>
       )}

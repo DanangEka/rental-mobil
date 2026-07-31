@@ -4,17 +4,17 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDnwT8jYdsKS3oQiev8IRHSrtcea_xWryI",
-  authDomain: "rental-mobil-746c9.firebaseapp.com",
-  projectId: "rental-mobil-746c9",
-  storageBucket: "rental-mobil-746c9.appspot.com",
-  messagingSenderId: "321553671318",
-  appId: "1:321553671318:web:fb06560eb13db0fb678eb7",
-  measurementId: "G-JVEPBTEFSS"
+  apiKey:            process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain:        process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId:         process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket:     process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId:     process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+export const auth           = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+export const db             = getFirestore(app);
+export const storage        = getStorage(app);

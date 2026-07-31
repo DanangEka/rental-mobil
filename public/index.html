@@ -1,15 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
   <head>
     <!-- Preconnect to external origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://rental-mobil-746c9.firebaseapp.com" />
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+    <link rel="dns-prefetch" href="https://apis.google.com" />
+    <link rel="dns-prefetch" href="https://res.cloudinary.com" />
     <link rel="preconnect" href="https://rental-mobil-746c9.firebaseapp.com" />
     <link rel="preconnect" href="https://apis.google.com" />
     <link rel="preconnect" href="https://api.cloudinary.com" />
 
     <!-- Google Fonts -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      fetchpriority="high"
+    />
 
     <!-- Favicon Icons -->
     <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
@@ -20,30 +28,62 @@
 
     <!-- Viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8" />
 
     <!-- SEO Meta Tags -->
     <meta name="robots" content="index, follow" />
     <meta name="author" content="Cakra Lima Tujuh" />
-    <meta name="description" content="Cakra Lima Tujuh adalah layanan rental mobil terpercaya yang menyediakan berbagai pilihan kendaraan berkualitas untuk keperluan pribadi, bisnis, dan perjalanan wisata." />
-    <link rel="canonical" href="https://cakra-fifty-seven.vercel.app/" />
+    <meta
+      name="description"
+      content="Cakra Lima Tujuh — layanan Premium Rent, Tour &amp; Travel terpercaya. Sewa mobil harian, open trip wisata, dan airport transfer dengan armada premium dan driver profesional."
+    />
+    <link rel="canonical" href="https://www.cakra57.com/" />
 
-    <!-- Open Graph Meta Tags (untuk social media) -->
-    <meta property="og:title" content="Cakra Lima Tujuh" />
-    <meta property="og:description" content="Cakra Lima Tujuh adalah layanan rental mobil terpercaya yang menyediakan berbagai pilihan kendaraan berkualitas untuk keperluan pribadi, bisnis, dan perjalanan wisata." />
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Cakra Lima Tujuh — Premium Rent, Tour &amp; Travel" />
+    <meta
+      property="og:description"
+      content="Sewa mobil, open trip wisata, dan airport transfer dengan armada premium dan driver profesional. Harga transparan, booking mudah, layanan 24 jam."
+    />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://cakra-fifty-seven.vercel.app/" />
+    <meta property="og:url" content="https://www.cakra57.com/" />
     <meta property="og:image" content="%PUBLIC_URL%/android-chrome-512x512.png" />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:site_name" content="Cakra Lima Tujuh" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Cakra Lima Tujuh" />
-    <meta name="twitter:description" content="Cakra Lima Tujuh adalah layanan rental mobil terpercaya" />
+    <meta name="twitter:title" content="Cakra Lima Tujuh — Premium Rent, Tour &amp; Travel" />
+    <meta name="twitter:description" content="Sewa mobil premium, open trip wisata, dan airport transfer. Armada terpilih, driver profesional, harga transparan." />
     <meta name="twitter:image" content="%PUBLIC_URL%/android-chrome-512x512.png" />
 
-    <!-- Theme color -->
-    <meta name="theme-color" content="#000000" />
+    <!-- Theme color — charcoal -->
+    <meta name="theme-color" content="#1C1C1E" />
 
-    <title>Cakra Lima Tujuh</title>
+    <!-- Structured Data: LocalBusiness -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "Cakra Lima Tujuh",
+      "description": "Layanan Premium Rent, Tour & Travel — sewa mobil, open trip wisata, dan airport transfer.",
+      "url": "https://www.cakra57.com",
+      "logo": "https://www.cakra57.com/android-chrome-512x512.png",
+      "telephone": "+62-812-3456-7890",
+      "email": "info@cakralimatujuh.com",
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+        "opens": "00:00",
+        "closes": "23:59"
+      },
+      "sameAs": [
+        "https://www.instagram.com/cakralimatujuh"
+      ]
+    }
+    </script>
+
+    <title>Cakra Lima Tujuh — Premium Rent, Tour &amp; Travel</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
