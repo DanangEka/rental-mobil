@@ -284,3 +284,18 @@ code {
 .badge {
   @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
 }
+
+/* ==========================================
+   Hide Elfsight Widget Header Title ("What Our Customers Say")
+   ========================================== */
+[class*="elfsight-app-"] [class*="Header__Title"],
+[class*="elfsight-app-"] [class*="WidgetTitle"],
+[class*="elfsight-app-"] [class*="Header__Container"],
+[class*="elfsight-app-"] [class*="Header-sc"],
+[class*="elfsight-app-"] [class*="HeaderComponent"],
+[class*="elfsight-app-"] [class*="eapps-google-reviews-header-title"],
+[class*="elfsight-app-"] [class*="eapps-google-reviews-header"],
+[class*="elfsight-app-"] [class*="eapps-widget-header"] {
+  display: none !important;
+}
+

@@ -32,7 +32,9 @@ export default function UnitCalendarPicker({ bookings = [], startDate, endDate, 
     setCurrentMonth(new Date(year, month + 1, 1));
   };
 
-  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  // Convert JS getDay() (0=Sun) to Monday-first index (0=Mon)
+  const jsDay = new Date(year, month, 1).getDay();
+  const firstDayOfMonth = (jsDay + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   // Convert Date to YYYY-MM-DD
@@ -133,7 +135,7 @@ export default function UnitCalendarPicker({ bookings = [], startDate, endDate, 
 
       {/* Weekdays */}
       <div className="grid grid-cols-7 gap-1 text-center mb-1">
-        {(compact ? ["S", "S", "R", "K", "J", "S", "M"] : ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"]).map((day, idx) => (
+        {(compact ? ["S", "S", "R", "K", "J", "S", "M"] : ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]).map((day, idx) => (
           <span
             key={idx}
             className={`font-bold uppercase tracking-wider ${compact ? "text-[9px] text-slate-400" : "text-[10px] text-slate-400"}`}

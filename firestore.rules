@@ -148,12 +148,12 @@ service cloud.firestore {
     }
 
     // =====================================================
-    // MOBIL & SUBCOLLECTION BOOKINGS
+    // MOBIL & SUBCOLLECTION BOOKINGS (Publik Browsing)
     // =====================================================
 
     match /mobil/{mobilId} {
-      // Semua user login dapat melihat mobil
-      allow read: if signedIn();
+      // Siapa saja (termasuk tanpa login) dapat melihat katalog mobil
+      allow read: if true;
 
       // Admin bebas
       allow create, delete: if isAdmin();
@@ -178,52 +178,52 @@ service cloud.firestore {
 
       // Subcollection bookings di bawah mobil
       match /bookings/{bookingId} {
-        allow read: if signedIn();
+        allow read: if true;
         allow create: if signedIn();
         allow update, delete: if isAdmin();
       }
     }
 
     match /units/{unitId} {
-      allow read: if signedIn();
+      allow read: if true;
       allow create, update, delete: if isAdmin();
 
       match /bookings/{bookingId} {
-        allow read: if signedIn();
+        allow read: if true;
         allow create: if signedIn();
         allow update, delete: if isAdmin();
       }
     }
 
     // =====================================================
-    // PAKET WISATA & TOUR PACKAGES
+    // PAKET WISATA & TOUR PACKAGES (Publik Browsing)
     // =====================================================
 
     match /paket_wisata/{docId} {
-      allow read: if signedIn();
+      allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
     match /tour_packages/{docId} {
-      allow read: if signedIn();
+      allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
     // =====================================================
-    // OPEN TRIP
+    // OPEN TRIP (Publik Browsing)
     // =====================================================
 
     match /open_trips/{docId} {
-      allow read: if signedIn();
+      allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
     // =====================================================
-    // COMPANY PROFILE
+    // COMPANY PROFILE (Publik Browsing)
     // =====================================================
 
     match /company_profile/{docId} {
-      allow read: if signedIn();
+      allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 

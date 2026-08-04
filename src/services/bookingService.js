@@ -44,16 +44,23 @@ export async function fetchUnitBookings(unitId) {
  */
 export function subscribeUnitBookings(unitId, callback) {
   const ref = collection(db, "mobil", unitId, "bookings");
-  return onSnapshot(ref, (snap) => {
-    const bookings = snap.docs.map((d) => ({
-      id: d.id,
-      start: d.data().start?.toDate(),
-      end: d.data().end?.toDate(),
-      source: d.data().source,
-      status: d.data().status,
-    }));
-    callback(bookings);
-  });
+  return onSnapshot(
+    ref,
+    (snap) => {
+      const bookings = snap.docs.map((d) => ({
+        id: d.id,
+        start: d.data().start?.toDate(),
+        end: d.data().end?.toDate(),
+        source: d.data().source,
+        status: d.data().status,
+      }));
+      callback(bookings);
+    },
+    (error) => {
+      console.warn(`Firestore bookings read warning for unit ${unitId}:`, error);
+      callback([]);
+    }
+  );
 }
 
 /**

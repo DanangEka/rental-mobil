@@ -2,8 +2,8 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../services/firebase";
 import {
-  Car, ShieldCheck, Clock, Award, Star, ChevronRight,
-  Phone, Mail, MapPin, Key, UserCheck, Users, Sparkles, CheckCircle2
+  Car, ShieldCheck, Clock, Award, ChevronRight,
+  Phone, Mail, MapPin, Key, UserCheck
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -51,27 +51,6 @@ export default function LandingPage() {
       label: "Airport Transfer",
       desc: "Jemput & antar bandara",
       path: "/home?type=lepas",
-    },
-  ];
-
-  const testimonials = [
-    {
-      name: "Budi Santoso",
-      role: "Pebisnis",
-      text: "Layanan lepas kunci Cakra Lima Tujuh sangat praktis. Mobil bersih, mesin prima, proses cepat!",
-      rating: 5,
-    },
-    {
-      name: "Siti Rahmawati",
-      role: "Wisatawan",
-      text: "Driver sangat ramah dan menguasai rute. Perjalanan keluarga kami jadi terasa aman dan menyenangkan.",
-      rating: 5,
-    },
-    {
-      name: "Hendra Wijaya",
-      role: "Pelanggan Setia",
-      text: "Sudah 3 kali sewa di sini dan selalu puas. Tarif transparan tanpa biaya aneh-aneh di akhir.",
-      rating: 5,
     },
   ];
 
@@ -254,31 +233,7 @@ export default function LandingPage() {
             <h2 className="text-3xl md:text-4xl font-black text-gray-900">Kata Pelanggan Kami</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((t, i) => (
-              <div
-                key={i}
-                className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:border-red-100 hover:shadow-md transition-all duration-300 animate-fadeInUp"
-                style={{ animationDelay: `${i * 0.15}s` }}
-              >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(t.rating)].map((_, r) => (
-                    <Star key={r} size={16} className="fill-[#C5A059] text-[#C5A059]" />
-                  ))}
-                </div>
-                <p className="text-gray-800 text-sm leading-relaxed mb-5 italic">"{t.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-[#990000] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                    {t.name.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900 leading-none">{t.name}</p>
-                    <p className="text-xs text-gray-400 mt-1">{t.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <div className="elfsight-app-9e1ea109-b04f-462c-9b6f-a2d202491384 min-h-[150px]" data-elfsight-app-lazy />
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import {
   onAuthStateChanged,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Eye, EyeOff, LogIn, Loader2, ArrowRight } from "lucide-react";
 import { useToast } from "../components/Toast";
 
@@ -16,7 +16,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const loginLocation = useLocation();
   const toast = useToast();
+  const returnTo = loginLocation.state?.returnTo || null;
 
   const handleLogin = async (e) => {
     if (e) e.preventDefault();
@@ -44,7 +46,7 @@ export default function Login() {
           createdAt: new Date(),
         });
         toast.success("Berhasil masuk. Selamat datang!");
-        navigate("/");
+        navigate(returnTo || "/");
       } else {
         const userData = userDoc.data();
         const role = userData.role;
@@ -52,7 +54,7 @@ export default function Login() {
 
         if (role === "admin") {
           toast.success("Selamat datang, Admin!");
-          navigate("/");
+          navigate(returnTo || "/");
         } else if (role === "client") {
           // Check verification status for client
           if (verificationStatus === "unverified") {
@@ -62,7 +64,7 @@ export default function Login() {
           } else {
             toast.success("Berhasil masuk.");
           }
-          navigate("/");
+          navigate(returnTo || "/");
         } else if (role === "driver") {
           toast.success("Selamat datang, Driver!");
           navigate("/driver-dashboard");

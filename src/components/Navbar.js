@@ -223,7 +223,7 @@ export default function Navbar() {
               : "bg-white/95 backdrop-blur-md shadow-sm py-3.5"
           }`}
         >
-          <div className="max-w-7xl mx-auto px-6 flex items-center justify-between min-h-[52px]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between min-h-[52px]">
 
             {/* ── LOGO ── */}
             <Link to="/" className="flex items-center gap-3.5 shrink-0 group py-1">
@@ -288,7 +288,7 @@ export default function Navbar() {
                     onMouseLeave={() => setLayananDropdownOpen(false)}
                   >
                     <Link
-                      to={user ? "/home" : "/login"}
+                      to="/home"
                       className={`px-5 py-2.5 rounded-full text-[12.5px] font-black uppercase tracking-wider flex items-center gap-2 whitespace-nowrap transition-all ${
                         activeLink("/home")
                           ? "text-[#990000] bg-white shadow-md shadow-[#990000]/10"
@@ -301,7 +301,7 @@ export default function Navbar() {
                         className={layananDropdownOpen ? "rotate-180 transition-transform text-[#990000]" : "transition-transform"}
                       />
                     </Link>
-                    {layananDropdownOpen && user && (
+                    {layananDropdownOpen && (
                       <div className="absolute top-[calc(100%+12px)] left-0 w-80 bg-white border border-slate-100 shadow-[0_25px_50px_rgba(0,0,0,0.15)] rounded-[2.5rem] p-4 animate-dropdownIn z-[100]">
                         <Link
                           to="/home?type=lepas"
@@ -332,7 +332,7 @@ export default function Navbar() {
                   </div>
 
                   <Link
-                    to={user ? "/open-trip" : "/login"}
+                    to="/open-trip"
                     className={`px-5 py-2.5 rounded-full text-[12.5px] font-black uppercase tracking-wider whitespace-nowrap transition-all ${
                       activeLink("/open-trip")
                         ? "text-[#990000] bg-white shadow-md shadow-[#990000]/10"
@@ -352,7 +352,7 @@ export default function Navbar() {
                     Company
                   </Link>
                   <Link
-                    to={user ? "/tour-packages" : "/login"}
+                    to="/tour-packages"
                     className={`px-5 py-2.5 rounded-full text-[12.5px] font-black uppercase tracking-wider whitespace-nowrap transition-all ${
                       activeLink("/tour-packages")
                         ? "text-[#990000] bg-white shadow-md shadow-[#990000]/10"
@@ -738,11 +738,36 @@ export default function Navbar() {
                         >
                           <LogIn size={16} /> Login
                         </Link>
+                        <div className="h-px bg-slate-100 my-1" />
+                        <Link
+                          to="/home"
+                          role="menuitem"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
+                        >
+                          <Car size={16} /> Layanan
+                        </Link>
+                        <Link
+                          to="/open-trip"
+                          role="menuitem"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
+                        >
+                          <Map size={16} /> Open Trip
+                        </Link>
+                        <Link
+                          to="/tour-packages"
+                          role="menuitem"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
+                        >
+                          <Map size={16} /> Paket Wisata
+                        </Link>
                         <Link
                           to="/company-profile"
                           role="menuitem"
                           onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
+                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
                         >
                           <Users size={16} /> Company
                         </Link>

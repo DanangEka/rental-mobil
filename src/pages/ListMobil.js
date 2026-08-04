@@ -91,35 +91,37 @@ export default function ListMobil() {
     }
   };
 
-  // Ambil data mobil
   useEffect(() => {
-    if (!auth.currentUser) {
-      navigate("/login");
-      return;
+    // Realtime listener mobil — public, always load
+    const unsubscribeMobil = onSnapshot(
+      collection(db, "mobil"),
+      (snapshot) => {
+        const mobilData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          status: doc.data().status || "tersedia",
+        }));
+        setMobil(mobilData);
+      },
+      (error) => {
+        console.warn("Firestore mobil listener warning:", error);
+      }
+    );
+
+    // Cek admin role (only if logged in)
+    if (auth.currentUser) {
+      auth.currentUser.getIdTokenResult().then((idTokenResult) => {
+        setIsAdmin(idTokenResult.claims.admin === true);
+      });
+
+      // Fetch user data
+      fetchUserData();
     }
-
-    // Realtime listener mobil
-    const unsubscribeMobil = onSnapshot(collection(db, "mobil"), (snapshot) => {
-      const mobilData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        status: doc.data().status || "tersedia",
-      }));
-      setMobil(mobilData);
-    });
-
-    // Cek admin role
-    auth.currentUser.getIdTokenResult().then((idTokenResult) => {
-      setIsAdmin(idTokenResult.claims.admin === true);
-    });
-
-    // Fetch user data
-    fetchUserData();
 
     return () => {
       unsubscribeMobil();
     };
-  }, [navigate]);
+  }, []);
 
   // Realtime listener subcollection bookings per mobil
   const [unitBookings, setUnitBookings] = useState({});
@@ -132,7 +134,7 @@ export default function ListMobil() {
       })
     );
     return () => unsubs.forEach((unsub) => unsub && unsub());
-  }, [mobil]);
+  }, [mobil.map((m) => m.id).join(",")]);
 
   // Helper render price breakdown
   const getMobilPriceInfo = (m) => {
@@ -393,6 +395,11 @@ export default function ListMobil() {
   };
 
   const openUserSewaModal = (m) => {
+    // Require login for booking action
+    if (!auth.currentUser) {
+      navigate("/login", { state: { returnTo: `/home${location.search}` } });
+      return;
+    }
     setSelectedUserMobil(m);
     setShowUserModal(true);
   };
@@ -1172,7 +1179,7 @@ export default function ListMobil() {
                   </div>
 
                   {/* Datetime Pickers */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] text-slate-500 font-bold block mb-1 uppercase tracking-wider">Tgl Mulai</label>
                       <input
@@ -1195,7 +1202,7 @@ export default function ListMobil() {
 
                   {/* DP Amount */}
                   <div>
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
                       <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                         Nominal DP (Min 50%)
                       </label>
@@ -1226,7 +1233,7 @@ export default function ListMobil() {
                   </div>
 
                   {/* Summary Card */}
-                  <div className="bg-[#0f172a] rounded-2xl p-5 text-white shadow-md border border-slate-800 space-y-3">
+                  <div className="bg-[#0f172a] rounded-2xl p-4 sm:p-5 text-white shadow-md border border-slate-800 space-y-3">
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Estimasi Durasi</span>
                       <span className="font-black text-amber-400">
@@ -1238,7 +1245,7 @@ export default function ListMobil() {
 
                     <div className="flex justify-between items-center pt-2 border-t border-white/10">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Grand Total</span>
-                      <span className="text-lg font-black text-red-400">
+                      <span className="text-base sm:text-lg font-black text-red-400">
                         Rp {(() => {
                           const durasi = Math.max(1, Math.ceil((new Date(tanggalSelesai[manualMobil.id]) - new Date(tanggalMulai[manualMobil.id])) / (1000 * 60 * 60 * 24)));
                           let total = durasi * manualMobil.harga;
@@ -1248,12 +1255,12 @@ export default function ListMobil() {
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center pt-2 border-t border-white/10 text-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-white/10 text-xs gap-2">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Metode Pembayaran</span>
                       <select
                         value={manualClient.paymentMethod}
                         onChange={(e) => setManualClient({ ...manualClient, paymentMethod: e.target.value })}
-                        className="bg-slate-800 text-white text-xs font-bold rounded-lg px-2.5 py-1 border border-slate-700 outline-none cursor-pointer"
+                        className="w-full sm:w-auto bg-slate-800 text-white text-xs font-bold rounded-lg px-2.5 py-1.5 border border-slate-700 outline-none cursor-pointer"
                       >
                         <option value="Cash" className="bg-slate-900">TUNAI / CASH</option>
                         <option value="Transfer Bank" className="bg-slate-900">TRANSFER BANK</option>

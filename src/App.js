@@ -99,11 +99,11 @@ function AnimatedRoutes() {
         />
         <Route
           path="/home"
-          element={<ProtectedRoute role={["client", "admin"]}><PageTransition><ListMobil /></PageTransition></ProtectedRoute>}
+          element={<PageTransition><ListMobil /></PageTransition>}
         />
         <Route
           path="/open-trip"
-          element={<ProtectedRoute role={["client", "admin"]}><PageTransition><OpenTrip /></PageTransition></ProtectedRoute>}
+          element={<PageTransition><OpenTrip /></PageTransition>}
         />
         <Route
           path="/admin/open-trip"
@@ -111,7 +111,7 @@ function AnimatedRoutes() {
         />
         <Route
           path="/tour-packages"
-          element={<ProtectedRoute role={["client", "admin"]}><PageTransition><TourPackages /></PageTransition></ProtectedRoute>}
+          element={<PageTransition><TourPackages /></PageTransition>}
         />
         <Route
           path="/admin-tour-packages"

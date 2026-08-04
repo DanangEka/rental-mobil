@@ -5,6 +5,21 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 
+// Suppress benign ResizeObserver error overlay in React dev environment
+window.addEventListener('error', (e) => {
+  if (
+    e.message?.includes('ResizeObserver loop') ||
+    e.message?.includes('ResizeObserver loop limit exceeded')
+  ) {
+    const resizeObserverErrDiv = document.getElementById('webpack-dev-server-client-overlay-div');
+    const resizeObserverErr = document.getElementById('webpack-dev-server-client-overlay');
+    if (resizeObserverErrDiv) resizeObserverErrDiv.style.display = 'none';
+    if (resizeObserverErr) resizeObserverErr.style.display = 'none';
+    e.stopImmediatePropagation();
+    e.preventDefault();
+  }
+});
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
