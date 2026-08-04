@@ -286,16 +286,16 @@ code {
 }
 
 /* ==========================================
-   Hide Elfsight Widget Header Title ("What Our Customers Say")
+   Hide SociableKIT Widget Header Title
    ========================================== */
-[class*="elfsight-app-"] [class*="Header__Title"],
-[class*="elfsight-app-"] [class*="WidgetTitle"],
-[class*="elfsight-app-"] [class*="Header__Container"],
-[class*="elfsight-app-"] [class*="Header-sc"],
-[class*="elfsight-app-"] [class*="HeaderComponent"],
-[class*="elfsight-app-"] [class*="eapps-google-reviews-header-title"],
-[class*="elfsight-app-"] [class*="eapps-google-reviews-header"],
-[class*="elfsight-app-"] [class*="eapps-widget-header"] {
+[class*="sk-ww-google-reviews"] [class*="Header__Title"],
+[class*="sk-ww-google-reviews"] [class*="WidgetTitle"],
+[class*="sk-ww-google-reviews"] [class*="Header__Container"],
+[class*="sk-ww-google-reviews"] [class*="Header-sc"],
+[class*="sk-ww-google-reviews"] [class*="HeaderComponent"],
+[class*="sk-ww-google-reviews"] [class*="eapps-google-reviews-header-title"],
+[class*="sk-ww-google-reviews"] [class*="eapps-google-reviews-header"],
+[class*="sk-ww-google-reviews"] [class*="eapps-widget-header"] {
   display: none !important;
 }
 

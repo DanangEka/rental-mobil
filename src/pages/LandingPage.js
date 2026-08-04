@@ -233,7 +233,12 @@ export default function LandingPage() {
             <h2 className="text-3xl md:text-4xl font-black text-gray-900">Kata Pelanggan Kami</h2>
           </div>
 
-          <div className="elfsight-app-9e1ea109-b04f-462c-9b6f-a2d202491384 min-h-[150px]" data-elfsight-app-lazy />
+          <iframe
+            src="https://widgets.sociablekit.com/google-reviews/iframe/25702612"
+            className="w-full min-h-[500px] border-0"
+            title="Google Reviews"
+            loading="lazy"
+          />
         </div>
       </div>
 
