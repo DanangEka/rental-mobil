@@ -334,5 +334,55 @@ service cloud.firestore {
       // Delete
       allow delete: if isAdmin();
     }
+
+    // =====================================================
+    // TRIP REQUESTS (Open Trip / Private Trip pengajuan client)
+    // =====================================================
+
+    match /trip_requests/{requestId} {
+      // Client membaca request miliknya sendiri; admin melihat semua
+      allow read: if signedIn() && (
+        resource.data.uid == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Client membuat request baru
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == "submitted"
+        && request.resource.data.dp_paid == false
+        && request.resource.data.full_paid == false;
+
+      // Admin bisa update semua field (status, quote, dll)
+      allow update: if isAdmin();
+
+      // Client bisa update: merespons quote (status, dp_paid) atau menambah catatan
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).changedKeys()
+            .hasOnly(["status", "dp_paid", "dp_paid_at", "full_paid", "full_paid_at"]);
+
+      // Hanya admin yang bisa hapus
+      allow delete: if isAdmin();
+
+      // Subcollection revisions: immutable setelah dibuat
+      match /revisions/{revisionId} {
+        // Client membaca revisi milik requestnya; admin melihat semua
+        allow read: if signedIn() && (
+          get(/databases/$(database)/documents/trip_requests/$(requestId)).data.uid == request.auth.uid ||
+          isAdmin()
+        );
+
+        // Client & admin boleh membuat revisi
+        allow create: if signedIn() && (
+          get(/databases/$(database)/documents/trip_requests/$(requestId)).data.uid == request.auth.uid ||
+          isAdmin()
+        );
+
+        // Revisi bersifat immutable — tidak ada update atau delete
+        allow update, delete: if false;
+      }
+    }
   }
 }

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, Timestamp } from "firebase/firestore";
 import { db } from "../services/firebase";
-import { Plus, Trash2, Users, MapPin, Calendar, Car } from "lucide-react";
+import { Plus, Trash2, Users, MapPin, Calendar, Car, InboxIcon, LayoutGrid } from "lucide-react";
 import { useToast } from "../components/Toast";
+import TripRequestsQueue from "./TripRequestsQueue";
 
 export default function AdminOpenTrip() {
   const toast = useToast();
+  const [activeTab, setActiveTab] = useState("catalog"); // "catalog" | "requests"
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -114,15 +116,41 @@ export default function AdminOpenTrip() {
       <div className="max-w-7xl mx-auto px-6">
         
         {/* Header */}
-        <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
-              <Users size={14} />
-              <span>Sharing Economy Program</span>
-            </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Manajemen Open Trip</h1>
-            <p className="text-slate-500 mt-1">Kelola kuota, rute destinasi, dan manifest penumpang sharing seat.</p>
+        <div className="mb-8">
+          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+            <Users size={14} />
+            <span>Paket Wisata &amp; Perjalanan</span>
           </div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Manajemen Open Trip</h1>
+          <p className="text-slate-500 mt-1">Kelola katalog open trip dan antrian pengajuan private/open trip dari client.</p>
+        </div>
+
+        {/* Tab navigation */}
+        <div className="flex gap-2 mb-8 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-sm w-fit">
+          {[
+            { id: "catalog",  label: "Katalog Open Trip",                icon: <LayoutGrid size={14} /> },
+            { id: "requests", label: "Private Trip & Open Trip Submitted", icon: <InboxIcon size={14} /> },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${
+                activeTab === t.id
+                  ? "bg-[#990000] text-white shadow-md shadow-[#990000]/20"
+                  : "text-slate-500 hover:text-[#990000]"
+              }`}
+            >
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Tab: Trip Requests Queue ── */}
+        {activeTab === "requests" && <TripRequestsQueue />}
+
+        {/* ── Tab: Catalog ── */}
+        {activeTab === "catalog" && (<>
+        <div className="mb-8 flex justify-end">
           <button
             onClick={() => {
               setFormData({ judul: "", mobilUtama: "Innova Reborn", destinasi: "", tanggalBerangkat: "", waktuKumpul: "", titikKumpul: "", hargaPerPax: "" });
@@ -210,6 +238,7 @@ export default function AdminOpenTrip() {
             ))
           )}
         </div>
+        </>)}
 
       </div>
 

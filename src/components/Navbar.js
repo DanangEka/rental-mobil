@@ -154,6 +154,7 @@ export default function Navbar() {
     { name: "Mobil",        path: "/car-management",            icon: <Car size={16} /> },
     { name: "Client",       path: "/client-management",         icon: <Users size={16} /> },
     { name: "Driver",       path: "/admin-driver-management",   icon: <Settings size={16} /> },
+    { name: "Open Trip",    path: "/admin/open-trip",           icon: <Map size={16} /> },
     { name: "Paket Wisata", path: "/admin-tour-packages",       icon: <Map size={16} /> },
   ];
 
