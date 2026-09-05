@@ -503,88 +503,91 @@ export default function ListMobil() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800">
-      {/* Hero Header - Red Dynamic Style */}
-      <div className="relative bg-[#990000] overflow-hidden min-h-[400px] flex items-center">
-        {/* Decorative elements similar to Landing Page */}
-        <div className="absolute top-0 right-0 w-[40vw] h-[40vw] bg-white/5 rounded-full blur-[100px] -mr-20 -mt-20 z-0 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-[30vw] h-[30vw] bg-black/10 rounded-full blur-[80px] -ml-10 -mb-10 z-0 pointer-events-none"></div>
-        
-        {/* Car silhouette decoration */}
-        <div className="absolute right-[-5%] bottom-[-10%] z-0 opacity-10 pointer-events-none transform -rotate-12">
-          <Car size={600} strokeWidth={0.5} className="text-white" />
-        </div>
+    <div className="min-h-screen bg-[#FAFAF6] pt-0 pb-20 text-[#1B1717]">
+      {/* Hero Header - Luxury Dark Style */}
+      <div className="relative bg-[#1B1717] overflow-hidden min-h-[420px] md:min-h-[500px] flex items-center pt-28 md:pt-32">
+        <img
+          src="https://images.unsplash.com/photo-1549317661-bd32c8ce0afa?w=1920&auto=format&fit=crop&q=80"
+          alt="Luxury car fleet"
+          className="absolute inset-0 w-full h-full object-cover opacity-25 scale-[1.03]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1B1717]/98 via-[#1B1717]/80 to-[#1B1717]/50" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1B1717] via-transparent to-[#1B1717]/20" />
+        <div className="absolute bottom-0 left-1/3 w-[500px] h-[300px] pointer-events-none" style={{ background: "radial-gradient(ellipse at bottom, rgba(129,1,0,0.1) 0%, transparent 70%)" }} />
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.5) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-        <div className="max-w-7xl mx-auto px-6 py-16 md:py-24 relative z-10 w-full">
+        <div className="max-w-7xl mx-auto px-6 py-20 md:py-28 relative z-10 w-full">
           <div className="max-w-3xl animate-fadeInUp">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/90 text-[10px] font-black uppercase tracking-widest mb-8 backdrop-blur-sm">
-              <span className="w-2 h-2 rounded-full bg-red-300 animate-pulse" />
+            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#810100]/20 border border-[#810100]/30 text-[#ff9999] text-[10px] font-black uppercase tracking-[0.25em] mb-8 backdrop-blur-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C9A84C] animate-breathe" />
               <span>{serviceType === "driver" ? "Premium Chauffeur Service" : serviceType === "lepas" ? "Self Drive Liberty" : "Armada Cakra Lima Tujuh"}</span>
             </div>
-            
-            <h1 className="text-4xl md:text-7xl font-black text-white tracking-tighter mb-8 leading-[0.85]">
+
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white tracking-tighter mb-8 leading-[0.9]">
               {serviceType === "driver" ? "Sewa Dengan Driver" : serviceType === "lepas" ? "Sewa Lepas Kunci" : "Pilih Armada Terbaik"}
-              <span className="text-red-300">.</span>
+              <span className="text-transparent bg-clip-text ml-1" style={{ backgroundImage: "linear-gradient(135deg, #C9A84C, #E8D48B, #C9A84C)" }}>.</span>
             </h1>
-            
-            <p className="text-lg md:text-xl text-white/80 leading-relaxed max-w-2xl font-medium">
-              {serviceType === "driver" 
-                ? "Nikmati kenyamanan berkelas dengan driver profesional yang handal, memastikan setiap perjalanan Anda aman dan menyenangkan." 
-                : serviceType === "lepas" 
+
+            <p className="text-lg md:text-xl text-white/45 leading-relaxed max-w-2xl font-medium">
+              {serviceType === "driver"
+                ? "Nikmati kenyamanan berkelas dengan driver profesional yang handal, memastikan setiap perjalanan Anda aman dan menyenangkan."
+                : serviceType === "lepas"
                 ? "Kendali penuh di tangan Anda. Nikmati kebebasan mengeksplorasi setiap sudut kota dengan unit pilihan terbaik kami."
                 : "Solusi mobilitas modern dengan armada pilihan yang mumpuni untuk mendukung setiap langkah perjalanan berharga Anda."}
             </p>
 
             <div className="mt-12 flex flex-wrap gap-6 border-t border-white/10 pt-10">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white backdrop-blur-sm border border-white/10">
-                  <CheckCircle size={24} />
+                <div className="w-11 h-11 bg-white/[0.04] rounded-2xl flex items-center justify-center text-[#C9A84C]/70 border border-white/[0.06]">
+                  <CheckCircle size={20} />
                 </div>
                 <div>
-                  <p className="text-white font-black text-xs uppercase tracking-widest">Unit Prima</p>
-                  <p className="text-white/50 text-[10px] font-bold uppercase tracking-tighter">Standar QC Tinggi</p>
+                  <p className="text-white font-black text-[10px] uppercase tracking-[0.2em]">Unit Prima</p>
+                  <p className="text-white/30 text-[10px] font-bold uppercase tracking-[0.15em]">Standar QC Tinggi</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white backdrop-blur-sm border border-white/10">
-                  <Star size={24} />
+                <div className="w-11 h-11 bg-white/[0.04] rounded-2xl flex items-center justify-center text-[#C9A84C]/70 border border-white/[0.06]">
+                  <Star size={20} />
                 </div>
                 <div>
-                  <p className="text-white font-black text-xs uppercase tracking-widest">Layanan Bintang</p>
-                  <p className="text-white/50 text-[10px] font-bold uppercase tracking-tighter">Customer Priority</p>
+                  <p className="text-white font-black text-[10px] uppercase tracking-[0.2em]">Layanan Bintang</p>
+                  <p className="text-white/30 text-[10px] font-bold uppercase tracking-[0.15em]">Customer Priority</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
+        <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none" style={{ background: "linear-gradient(to top, #FAFAF6, transparent)" }} />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 mt-12">
-        {/* Search & Layout Controls - White Card Style */}
-        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm mb-12 animate-fadeInUp delay-100">
+      <div className="max-w-7xl mx-auto px-6 -mt-8 relative z-20">
+        {/* Search & Layout Controls */}
+        <div className="bg-white rounded-[2rem] p-8 border border-[#EDEBDD]/30 shadow-[0_12px_48px_rgba(0,0,0,0.06)] mb-12 animate-fadeInUp delay-100">
           <div className="flex flex-col lg:flex-row gap-8 items-end">
-            
+
             {/* Search Input */}
             <div className="flex-1 w-full lg:w-auto">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Pencarian Armada</label>
+              <label className="block text-[10px] font-black text-[#C9A84C] uppercase tracking-[0.2em] mb-3">Pencarian Armada</label>
               <div className="relative group">
                 <input
                   type="text"
                   placeholder="Ketik nama mobil, merek, atau tahun..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 focus:border-[#990000] focus:ring-4 focus:ring-red-100 transition-all text-slate-900 rounded-2xl outline-none font-medium"
+                  className="w-full pl-12 pr-4 py-4 bg-[#FAFAF6] border border-[#EDEBDD]/40 focus:border-[#810100]/30 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all text-[#1B1717] rounded-2xl outline-none font-medium placeholder:text-[#3D3636]/25"
                 />
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#990000] transition-colors">
-                  <Search size={20} />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#3D3636]/25 group-focus-within:text-[#810100] transition-colors">
+                  <Search size={18} />
                 </div>
               </div>
             </div>
 
-            {/* Service Toggle Switch (OPTIMIZED) */}
+            {/* Service Toggle */}
             <div className="w-full lg:w-auto">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Tipe Layanan</label>
-              <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
+              <label className="block text-[10px] font-black text-[#C9A84C] uppercase tracking-[0.2em] mb-3">Tipe Layanan</label>
+              <div className="flex bg-[#FAFAF6] p-1.5 rounded-2xl border border-[#EDEBDD]/30">
                 {[
                   { label: "Semua", val: null },
                   { label: "Lepas Kunci", val: "lepas" },
@@ -593,10 +596,10 @@ export default function ListMobil() {
                   <button
                     key={opt.label}
                     onClick={() => navigate(opt.val ? `/home?type=${opt.val}` : '/home')}
-                    className={`flex-1 px-2 md:px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black transition-all ${
-                      serviceType === opt.val 
-                        ? 'bg-[#990000] text-white shadow-lg shadow-red-900/20' 
-                        : 'text-slate-500 hover:text-slate-900'
+                    className={`flex-1 px-2 md:px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black transition-all duration-300 ${
+                      serviceType === opt.val
+                        ? 'bg-[#1B1717] text-[#C9A84C] shadow-[0_4px_16px_rgba(0,0,0,0.15)]'
+                        : 'text-[#3D3636]/35 hover:text-[#1B1717]'
                     }`}
                   >
                     {opt.label}
@@ -605,14 +608,14 @@ export default function ListMobil() {
               </div>
             </div>
 
-            {/* Sort & Filter Options */}
+            {/* Sort & Filter */}
             <div className="flex gap-4 w-full lg:w-auto">
               <div className="flex-1">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Urutkan</label>
+                <label className="block text-[10px] font-black text-[#C9A84C] uppercase tracking-[0.2em] mb-3">Urutkan</label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 text-sm font-bold text-slate-700 rounded-2xl outline-none cursor-pointer hover:border-[#990000] transition-colors appearance-none"
+                  className="w-full px-5 py-4 bg-[#FAFAF6] border border-[#EDEBDD]/40 text-sm font-bold text-[#3D3636] rounded-2xl outline-none cursor-pointer hover:border-[#810100]/20 transition-colors appearance-none"
                 >
                   <option value="name">Abjad (A-Z)</option>
                   <option value="price-low">Termurah</option>
@@ -620,11 +623,11 @@ export default function ListMobil() {
                 </select>
               </div>
               <div className="flex-1">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Ketersediaan</label>
+                <label className="block text-[10px] font-black text-[#C9A84C] uppercase tracking-[0.2em] mb-3">Ketersediaan</label>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 text-sm font-bold text-slate-700 rounded-2xl outline-none cursor-pointer hover:border-[#990000] transition-colors appearance-none"
+                  className="w-full px-5 py-4 bg-[#FAFAF6] border border-[#EDEBDD]/40 text-sm font-bold text-[#3D3636] rounded-2xl outline-none cursor-pointer hover:border-[#810100]/20 transition-colors appearance-none"
                 >
                   <option value="semua">Semua</option>
                   <option value="tersedia">Tersedia</option>
@@ -632,32 +635,32 @@ export default function ListMobil() {
                 </select>
               </div>
               <div className="flex flex-col">
-                <div className="h-[28px] lg:h-[30px]" /> {/* Spacer to align with labels */}
+                <div className="h-[28px] lg:h-[30px]" />
                 <button
                   onClick={handleRefresh}
-                  className="p-4 bg-slate-50 hover:bg-white hover:border-[#990000] border border-slate-200 text-slate-400 hover:text-[#990000] rounded-2xl transition-all h-[54px] md:h-[58px] flex items-center justify-center"
+                  className="p-4 bg-[#FAFAF6] hover:bg-white hover:border-[#C9A84C]/30 border border-[#EDEBDD]/40 text-[#3D3636]/25 hover:text-[#C9A84C] rounded-2xl transition-all duration-300 h-[54px] md:h-[58px] flex items-center justify-center"
                 >
-                  <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
+                  <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Quick Stats Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-10 pt-10 border-t border-slate-100">
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-10 pt-10 border-t border-[#EDEBDD]/30">
              {[
-               { label: "Tersedia", count: filteredMobil.filter(m => m.tersedia === true || m.status === "tersedia").length, color: "bg-emerald-50 text-emerald-600", icon: <CheckCircle size={14} /> },
-               { label: "Disewa", count: filteredMobil.filter(m => m.status === "disewa" || m.tersedia === false).length, color: "bg-red-50 text-red-600", icon: <Users size={14} /> },
-               { label: "Total Armada", count: filteredMobil.length, color: "bg-blue-50 text-blue-600", icon: <Car size={14} /> },
-               { label: "Rating Tinggi", count: "4.9/5", color: "bg-amber-50 text-amber-600", icon: <Star size={14} /> },
+               { label: "Tersedia", count: filteredMobil.filter(m => m.tersedia === true || m.status === "tersedia").length, color: "bg-[#FAFAF6] text-emerald-600 border border-emerald-200/40", icon: <CheckCircle size={14} /> },
+               { label: "Disewa", count: filteredMobil.filter(m => m.status === "disewa" || m.tersedia === false).length, color: "bg-[#FAFAF6] text-[#810100] border border-[#810100]/10", icon: <Users size={14} /> },
+               { label: "Total Armada", count: filteredMobil.length, color: "bg-[#FAFAF6] text-[#1B1717]/60 border border-[#EDEBDD]/40", icon: <Car size={14} /> },
+               { label: "Rating Tinggi", count: "4.9/5", color: "bg-[#FAFAF6] text-[#C9A84C] border border-[#C9A84C]/15", icon: <Star size={14} /> },
              ].map((stat, i) => (
                <div key={i} className="flex items-center gap-4">
                   <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center`}>
                     {stat.icon}
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">{stat.label}</p>
-                    <p className="text-xl font-black text-slate-900">{stat.count}</p>
+                    <p className="text-[10px] font-black text-[#3D3636]/30 uppercase tracking-[0.2em] leading-tight">{stat.label}</p>
+                    <p className="text-xl font-black text-[#1B1717]">{stat.count}</p>
                   </div>
                </div>
              ))}
@@ -666,33 +669,33 @@ export default function ListMobil() {
 
         {/* Verification Alert */}
         {userData && userData.verificationStatus !== "verified" && (
-          <div className={`mt-8 p-6 rounded-[2rem] border animate-fadeIn flex items-center gap-4 ${
+          <div className={`mt-8 p-6 rounded-[1.5rem] border animate-fadeIn flex items-center gap-4 ${
             userData.verificationStatus === "unverified"
-              ? "bg-red-50 border-red-100 text-[#990000]"
-              : "bg-amber-50 border-amber-100 text-amber-700"
+              ? "bg-[#810100]/[0.03] border-[#810100]/15 text-[#810100]"
+              : "bg-amber-50/50 border-amber-100/60 text-amber-700"
           }`}>
-             <div className="w-12 h-12 rounded-2xl bg-white/50 flex items-center justify-center shrink-0">
-                <CheckCircle size={24} />
+             <div className="w-11 h-11 rounded-2xl bg-white border border-[#EDEBDD]/40 flex items-center justify-center shrink-0">
+                <CheckCircle size={20} />
              </div>
              <div className="flex-1">
-                <p className="text-sm font-black uppercase tracking-widest mb-1">Status Verifikasi Account</p>
-                <p className="text-xs font-medium opacity-80">
-                  {userData.verificationStatus === "unverified" 
+                <p className="text-sm font-black uppercase tracking-[0.15em] mb-1">Status Verifikasi Account</p>
+                <p className="text-xs font-medium opacity-70">
+                  {userData.verificationStatus === "unverified"
                     ? "Akun Anda belum diverifikasi. Silakan upload KTP di halaman profil untuk dapat melakukan penyewaan."
                     : "Dokumen verifikasi Anda sedang dalam peninjauan oleh admin. Mohon tunggu sejenak."}
                 </p>
              </div>
-             <button onClick={() => navigate('/company-profile')} className="px-6 py-2.5 bg-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:shadow-md transition-all">
+             <button onClick={() => navigate('/company-profile')} className="px-5 py-2.5 bg-white border border-[#EDEBDD]/40 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] hover:shadow-md transition-all duration-300">
                Update Profil
              </button>
           </div>
         )}
 
         {filteredMobil.length === 0 ? (
-          <div className="text-center py-32 bg-white rounded-[2.5rem] border border-dashed border-slate-200 animate-fadeInUp">
-            <Car size={64} className="mx-auto text-slate-200 mb-6" />
-            <h3 className="text-2xl font-black text-slate-900 mb-2">Armada Tidak Ditemukan</h3>
-            <p className="text-slate-400 max-w-sm mx-auto">Coba gunakan kata kunci pencarian lain atau ubah filter layanan Anda.</p>
+          <div className="text-center py-32 bg-white rounded-[2rem] border border-[#EDEBDD]/30 border-dashed animate-fadeInUp">
+            <Car size={56} className="mx-auto text-[#3D3636]/10 mb-6" />
+            <h3 className="text-2xl font-black text-[#1B1717] mb-2">Armada Tidak Ditemukan</h3>
+            <p className="text-[#3D3636]/35 max-w-sm mx-auto text-sm">Coba gunakan kata kunci pencarian lain atau ubah filter layanan Anda.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8 mt-8 md:mt-12">
@@ -707,55 +710,57 @@ export default function ListMobil() {
               return (
                 <div
                   key={m.id}
-                  className="bg-white rounded-[2rem] p-6 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group flex flex-col h-full animate-fadeInUp"
-                  style={{ animationDelay: `${0.1 + i * 0.05}s` }}
+                  className="bg-white rounded-[1.5rem] p-6 border border-[#EDEBDD]/30 hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] transition-all duration-[600ms] group flex flex-col h-full"
+                  style={{ animation: `spotReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) ${i * 80}ms both`, transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}
                 >
-                  {/* Top Bar matching Mockup 2 */}
+                  {/* Top Bar */}
                   <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="text-xs font-semibold text-slate-500">
+                    <span className="text-[10px] font-bold text-[#3D3636]/35 uppercase tracking-[0.15em]">
                       {isDriverLayanan ? "Sewa mobil dengan driver" : "Sewa mobil lepas kunci"}
                     </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 shrink-0 ${info.badgeStyle}`}>
-                      <CalendarIcon size={13} />
+                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] border flex items-center gap-1.5 shrink-0 ${info.badgeStyle}`}>
+                      <CalendarIcon size={10} />
                       {info.badgeText}
                     </span>
                   </div>
 
                   {/* Image Box */}
-                  <div className="relative aspect-[16/10] bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden mb-4 p-4 flex items-center justify-center">
+                  <div className="relative aspect-[16/10] bg-[#FAFAF6] border border-[#EDEBDD]/20 rounded-[1.25rem] overflow-hidden mb-4 p-4 flex items-center justify-center">
                     <img
                       src={m.gambar}
                       alt={m.nama}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-[800ms]"
+                      style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}
                       loading="lazy"
                     />
+                    <div className="absolute inset-0 rounded-[1.25rem] border border-transparent group-hover:border-[#C9A84C]/10 transition-all duration-500 pointer-events-none" />
                   </div>
 
-                  {/* Car Title (NO PRICE DISPLAY) & Availability Subtext */}
+                  {/* Car Title & Availability */}
                   <div className="mb-3">
-                    <h3 className="text-lg font-bold text-slate-900 leading-snug tracking-tight group-hover:text-[#990000] transition-colors mb-1">
+                    <h3 className="text-lg font-black text-[#1B1717] leading-snug tracking-tight group-hover:text-[#810100] transition-colors duration-300 mb-1">
                       {m.nama}
                     </h3>
-                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                    <p className="text-[10px] text-[#3D3636]/40 font-medium leading-relaxed">
                       {info.descText}
                     </p>
                   </div>
 
-                  {/* Amenities Row matching Mockup 2 */}
-                  <div className="flex items-center gap-4 text-xs font-bold text-slate-600 mb-4 flex-wrap">
+                  {/* Amenities Row */}
+                  <div className="flex items-center gap-4 text-[10px] font-bold text-[#3D3636]/40 mb-4 flex-wrap">
                     <div className="flex items-center gap-1.5">
-                      <Users size={14} className="text-slate-400" />
+                      <Users size={11} className="text-[#C9A84C]/50" />
                       <span>{m.seats || 4} passengers</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Zap size={14} className="text-slate-400" />
+                      <Zap size={11} className="text-[#C9A84C]/50" />
                       <span>{m.chargingPort !== false ? "USB charging" : "No charging"}</span>
                     </div>
                   </div>
 
-                  {/* Divider & Inline Mini Calendar */}
-                  <div className="border-t border-slate-100 pt-4 mt-auto">
-                    <p className="text-xs font-bold text-slate-800 mb-2">Pilih tanggal sewa</p>
+                  {/* Divider & Calendar */}
+                  <div className="border-t border-[#EDEBDD]/30 pt-4 mt-auto">
+                    <p className="text-[10px] font-black text-[#3D3636]/35 uppercase tracking-[0.15em] mb-2">Pilih tanggal sewa</p>
                     <UnitCalendarPicker
                       compact={true}
                       bookings={unitBookings[m.id] || []}
@@ -775,23 +780,23 @@ export default function ListMobil() {
                             return (
                               <div className="flex flex-col items-center py-2 text-center">
                                 <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping mb-2" />
-                                <p className="text-xs font-black text-amber-600 uppercase tracking-widest">Processing... Please Wait</p>
+                                <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em]">Processing... Please Wait</p>
                               </div>
                             );
                           } else if (["disetujui", "menunggu pembayaran", "approved"].includes(orderStatus?.trim())) {
                             return (
-                              <button 
+                              <button
                                 onClick={() => navigate('/history-pesanan')}
-                                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md"
+                                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-md"
                               >
                                 Upload Payment Proof
                               </button>
                             );
                           } else if (orderStatus === "pembayaran berhasil") {
                             return (
-                              <div className="flex items-center justify-center gap-2 py-3 bg-blue-50 text-blue-600 rounded-xl">
-                                <CheckCircle size={16} />
-                                <span className="text-xs font-bold uppercase tracking-widest">Order Confirmed</span>
+                              <div className="flex items-center justify-center gap-2 py-3 bg-blue-50/50 text-blue-600 rounded-2xl">
+                                <CheckCircle size={14} />
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Order Confirmed</span>
                               </div>
                             );
                           }
@@ -799,7 +804,7 @@ export default function ListMobil() {
 
                         if (["servis", "service", "maintenance"].includes(statusLower)) {
                           return (
-                            <div className="text-center py-3 bg-amber-50 text-amber-600 rounded-xl text-xs font-bold">
+                            <div className="text-center py-3 bg-amber-50/50 text-amber-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em]">
                               Under Maintenance
                             </div>
                           );
@@ -815,7 +820,8 @@ export default function ListMobil() {
                             {!isAdmin && (
                               <button
                                 onClick={() => openUserSewaModal(m)}
-                                className="w-full py-3.5 bg-slate-900 hover:bg-[#990000] text-white rounded-xl font-bold text-xs transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5"
+                                className="w-full py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-300 active:scale-95 shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(129,1,0,0.2)] flex items-center justify-center gap-1.5"
+                                style={{ background: "linear-gradient(135deg, #1B1717, #3D3636)", color: "#fff" }}
                               >
                                 {buttonText}
                               </button>
@@ -823,7 +829,8 @@ export default function ListMobil() {
                             {isAdmin && (
                               <button
                                 onClick={() => openSewaManualModal(m)}
-                                className="w-full py-3.5 bg-slate-900 hover:bg-[#990000] text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-1.5"
+                                className="w-full py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-300 shadow-md flex items-center justify-center gap-1.5"
+                                style={{ background: "linear-gradient(135deg, #1B1717, #3D3636)", color: "#fff" }}
                               >
                                 Manual Order (Cashier)
                               </button>
@@ -843,44 +850,45 @@ export default function ListMobil() {
 
       {/* Payment Method Popups */}
       {showPaymentPopup && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] px-4 animate-fadeIn">
-          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm relative animate-popIn shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 bg-[#1B1717]/70 backdrop-blur-md flex items-center justify-center z-[100] px-4 animate-fadeIn">
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm relative animate-popIn shadow-[0_24px_64px_rgba(0,0,0,0.15)] border border-[#EDEBDD]/30">
             <button
               onClick={() => setShowPaymentPopup(false)}
-              className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-[#990000] hover:bg-red-50 transition-all font-bold"
+              className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-[#FAFAF6] text-[#3D3636]/30 hover:text-white hover:bg-[#810100] transition-all duration-300 font-bold"
             >
               ×
             </button>
             <div className="text-center">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-100 text-[#990000] text-[10px] font-black uppercase tracking-widest mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810100]/10 border border-[#810100]/20 text-[#810100] text-[10px] font-black uppercase tracking-[0.2em] mb-6">
                 Instruksi Pembayaran
               </div>
-              <h3 className="text-xl font-black text-slate-900 mb-6">
+              <h3 className="text-xl font-black text-[#1B1717] mb-6">
                 {selectedPaymentMethod}
               </h3>
-              
-              <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 mb-8">
+
+              <div className="bg-[#FAFAF6] p-6 rounded-[1.25rem] border border-[#EDEBDD]/30 mb-8">
                  <img
                    src={selectedPaymentMethod === "Transfer Bank" ? "/src/assets/tfbank.png" : "/src/assets/qris.png"}
                    alt="Payment Method"
-                   className="w-full max-w-[180px] h-auto object-contain mx-auto rounded-2xl shadow-sm"
+                   className="w-full max-w-[180px] h-auto object-contain mx-auto rounded-2xl"
                    onError={(e) => {
-                     e.target.onerror = null; 
+                     e.target.onerror = null;
                      e.target.src = "https://via.placeholder.com/200?text=Scan+QRIS+Di+Sini"
                    }}
                  />
               </div>
-              
-              <p className="text-sm text-slate-500 font-medium leading-relaxed mb-8">
+
+              <p className="text-sm text-[#3D3636]/40 font-medium leading-relaxed mb-8">
                 {selectedPaymentMethod === "Transfer Bank"
                   ? "Silakan transfer tepat sesuai nominal ke rekening yang tertera untuk konfirmasi otomatis."
                   : "Silakan pindai kode QRIS di atas menggunakan aplikasi mobile banking atau e-wallet Anda."
                 }
               </p>
-              
-              <button 
+
+              <button
                 onClick={() => setShowPaymentPopup(false)}
-                className="w-full py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-widest transition-all"
+                className="w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-white transition-all duration-300"
+                style={{ background: "linear-gradient(135deg, #1B1717, #3D3636)" }}
               >
                 Saya Sudah Membayar
               </button>
@@ -891,35 +899,35 @@ export default function ListMobil() {
 
       {/* User Sewa Modal */}
       {showUserModal && selectedUserMobil && (
-        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md flex items-center justify-center z-[100] p-4 sm:p-6 overflow-hidden">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-xl max-h-[90vh] flex flex-col relative animate-popIn shadow-2xl border border-slate-100 overflow-hidden">
-            
+        <div className="fixed inset-0 bg-[#1B1717]/75 backdrop-blur-md flex items-center justify-center z-[100] p-4 sm:p-6 overflow-hidden">
+          <div className="bg-white rounded-[2rem] w-full max-w-xl max-h-[90vh] flex flex-col relative animate-popIn shadow-[0_24px_64px_rgba(0,0,0,0.2)] border border-[#EDEBDD]/30 overflow-hidden">
+
             {/* Fixed Header */}
-            <div className="p-6 sm:px-8 sm:pt-8 sm:pb-5 border-b border-slate-100 flex-shrink-0 relative bg-white z-10">
+            <div className="p-6 sm:px-8 sm:pt-8 sm:pb-5 border-b border-[#EDEBDD]/30 flex-shrink-0 relative bg-white z-10">
               <button
                 onClick={() => setShowUserModal(false)}
-                className="absolute top-6 right-6 sm:top-8 sm:right-8 w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:text-white hover:bg-[#990000] transition-all font-bold text-lg shadow-sm"
+                className="absolute top-6 right-6 sm:top-8 sm:right-8 w-10 h-10 flex items-center justify-center rounded-full bg-[#FAFAF6] text-[#3D3636]/30 hover:text-white hover:bg-[#810100] transition-all duration-300 font-bold text-lg"
                 title="Tutup Modal"
               >
                 ✕
               </button>
-              
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-100 text-[#990000] text-[10px] font-black uppercase tracking-widest mb-3">
+
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810100]/10 border border-[#810100]/20 text-[#810100] text-[10px] font-black uppercase tracking-[0.2em] mb-3">
                 Pemesanan Armada
               </div>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pr-10">
+              <h3 className="text-2xl sm:text-3xl font-black text-[#1B1717] tracking-tight pr-10">
                 Konfirmasi Sewa
               </h3>
-              <p className="text-xs sm:text-sm font-semibold text-slate-500 mt-1">
-                Lengkapi detail perjalanan Anda untuk unit <span className="text-[#990000] font-black">{selectedUserMobil.nama}</span>.
+              <p className="text-xs sm:text-sm font-semibold text-[#3D3636]/40 mt-1">
+                Lengkapi detail perjalanan Anda untuk unit <span className="text-[#810100] font-black">{selectedUserMobil.nama}</span>.
               </p>
             </div>
 
             {/* Scrollable Form Body */}
             <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6">
-              {/* Kalender Ketersediaan Unit */}
+              {/* Kalender */}
               <div className="space-y-2">
-                <label className="text-[10px] text-[#990000] font-black uppercase tracking-widest ml-1 flex items-center gap-2">
+                <label className="text-[10px] text-[#C9A84C] font-black uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                   <CalendarIcon size={14} /> Kalender Ketersediaan Unit
                 </label>
                 <UnitCalendarPicker
@@ -936,42 +944,41 @@ export default function ListMobil() {
               {/* Tanggal Sewa */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] text-slate-400 font-black block mb-2 uppercase tracking-widest ml-1">Mulai Sewa</label>
+                  <label className="text-[10px] text-[#3D3636]/35 font-black block mb-2 uppercase tracking-[0.2em] ml-1">Mulai Sewa</label>
                   <input
                     type="datetime-local"
                     value={tanggalMulai[selectedUserMobil.id] || ""}
                     onChange={(e) => handleTanggalChange(selectedUserMobil.id, "mulai", e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-2xl p-4 focus:border-[#990000] focus:ring-4 focus:ring-red-100 transition-all outline-none font-bold"
+                    className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 text-[#1B1717] text-sm rounded-2xl p-4 focus:border-[#810100]/30 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all outline-none font-bold"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] text-slate-400 font-black uppercase tracking-widest ml-1">Selesai Sewa</label>
+                  <label className="text-[10px] text-[#3D3636]/35 font-black uppercase tracking-[0.2em] ml-1">Selesai Sewa</label>
                   <input
                     type="datetime-local"
                     value={tanggalSelesai[selectedUserMobil.id] || ""}
                     onChange={(e) => handleTanggalChange(selectedUserMobil.id, "selesai", e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-2xl p-4 focus:border-[#990000] focus:ring-4 focus:ring-red-100 transition-all outline-none font-bold"
+                    className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 text-[#1B1717] text-sm rounded-2xl p-4 focus:border-[#810100]/30 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all outline-none font-bold"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] text-slate-400 font-black uppercase tracking-widest ml-1">Lokasi Penyerahan</label>
+                <label className="text-[10px] text-[#3D3636]/35 font-black uppercase tracking-[0.2em] ml-1">Lokasi Penyerahan</label>
                 <div className="relative">
                   <select
                     value={lokasiPenyerahan[selectedUserMobil.id] || ""}
                     onChange={(e) => handleTanggalChange(selectedUserMobil.id, "lokasi", e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-2xl p-4 focus:border-[#990000] transition-all outline-none cursor-pointer appearance-none font-bold"
+                    className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 text-[#1B1717] text-sm rounded-2xl p-4 focus:border-[#810100]/30 transition-all outline-none cursor-pointer appearance-none font-bold"
                   >
                     <option value="">Pilih Lokasi...</option>
                     <option value="Rumah">Diantar ke Rumah / Hotel</option>
-                    {/* Hanya tampilkan Ambil di Garasi jika BUKAN mode Driver */}
                     {serviceType !== "driver" && !((selectedUserMobil.withDriver === true || selectedUserMobil.layanan === "Dengan Driver")) && (
                       <option value="Kantor">Ambil di Garasi</option>
                     )}
                     <option value="Titik Temu">Titik Temu Lain</option>
                   </select>
-                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
+                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-[#3D3636]/30">
                     <ChevronRight size={18} className="rotate-90" />
                   </div>
                 </div>
@@ -980,14 +987,14 @@ export default function ListMobil() {
               {/* Form Alamat untuk Diantar ke Rumah / Hotel */}
               {lokasiPenyerahan[selectedUserMobil.id] === "Rumah" && (
                 <div className="space-y-2 animate-fadeIn">
-                  <label className="text-[10px] text-[#990000] font-black uppercase tracking-widest ml-1">📍 Alamat Pengiriman</label>
-                  <p className="text-[10px] text-slate-400 ml-1">Driver akan mengantarkan mobil ke alamat berikut</p>
+                  <label className="text-[10px] text-[#810100] font-black uppercase tracking-[0.2em] ml-1">📍 Alamat Pengiriman</label>
+                  <p className="text-[10px] text-[#3D3636]/30 ml-1">Driver akan mengantarkan mobil ke alamat berikut</p>
                   <textarea
                     rows={3}
                     value={deliveryAddress[selectedUserMobil.id] || ""}
                     onChange={(e) => handleTanggalChange(selectedUserMobil.id, "deliveryAddress", e.target.value)}
                     placeholder="Contoh: Jl. Raya Darmo No. 21, Hotel Sheraton, Lt. 1 Lobby — Surabaya"
-                    className="w-full bg-red-50/30 border border-red-200 text-slate-900 text-sm rounded-2xl p-4 focus:border-[#990000] outline-none font-bold resize-none"
+                    className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 text-[#1B1717] text-sm rounded-2xl p-4 focus:border-[#810100]/30 outline-none font-bold resize-none"
                   />
                 </div>
               )}
@@ -995,14 +1002,14 @@ export default function ListMobil() {
               {/* Form Alamat untuk Titik Temu */}
               {lokasiPenyerahan[selectedUserMobil.id] === "Titik Temu" && (
                 <div className="space-y-2 animate-fadeIn">
-                  <label className="text-[10px] text-[#990000] font-black uppercase tracking-widest ml-1">📍 Titik Temu</label>
-                  <p className="text-[10px] text-slate-400 ml-1">Masukkan alamat atau nama tempat titik temu dengan driver</p>
+                  <label className="text-[10px] text-[#810100] font-black uppercase tracking-[0.2em] ml-1">📍 Titik Temu</label>
+                  <p className="text-[10px] text-[#3D3636]/30 ml-1">Masukkan alamat atau nama tempat titik temu dengan driver</p>
                   <textarea
                     rows={3}
                     value={deliveryAddress[selectedUserMobil.id] || ""}
                     onChange={(e) => handleTanggalChange(selectedUserMobil.id, "deliveryAddress", e.target.value)}
                     placeholder="Contoh: Bandara Juanda Terminal 1, Area Kedatangan — Sidoarjo"
-                    className="w-full bg-red-50/30 border border-red-200 text-slate-900 text-sm rounded-2xl p-4 focus:border-[#990000] outline-none font-bold resize-none"
+                    className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 text-[#1B1717] text-sm rounded-2xl p-4 focus:border-[#810100]/30 outline-none font-bold resize-none"
                   />
                 </div>
               )}
@@ -1010,11 +1017,11 @@ export default function ListMobil() {
 
 
               {tanggalMulai[selectedUserMobil.id] && tanggalSelesai[selectedUserMobil.id] && (
-                <div className="bg-[#990000] rounded-[2rem] p-8 text-white shadow-xl shadow-red-900/20 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
+                <div className="rounded-[1.5rem] p-8 text-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] relative overflow-hidden group" style={{ background: "linear-gradient(135deg, #1B1717, #3D3636)" }}>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#C9A84C]/[0.06] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
                   <div className="relative z-10 flex justify-between items-end">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Estimasi Total</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Estimasi Total</p>
                       <p className="text-3xl font-black tracking-tighter">
                         Rp {(() => {
                           const durasi = Math.ceil((new Date(tanggalSelesai[selectedUserMobil.id]) - new Date(tanggalMulai[selectedUserMobil.id])) / (1000 * 60 * 60 * 24));
@@ -1024,13 +1031,13 @@ export default function ListMobil() {
                           return total.toLocaleString();
                         })()}
                       </p>
-                      <p className="text-[10px] font-bold opacity-60 mt-1">
+                      <p className="text-[10px] font-bold text-white/35 mt-1">
                         {(rentalType[selectedUserMobil.id] || "Lepas Kunci") === "Driver" ? "+ Biaya Layanan Driver" : "Harga Netto"}
                       </p>
                     </div>
                     <div className="text-right">
-                      <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                        <CreditCard size={24} />
+                      <div className="w-12 h-12 bg-white/[0.06] rounded-2xl flex items-center justify-center text-[#C9A84C]/70">
+                        <CreditCard size={22} />
                       </div>
                     </div>
                   </div>
@@ -1038,11 +1045,12 @@ export default function ListMobil() {
               )}
             </div>
 
-            <button 
+            <button
               onClick={() => handleSewa(selectedUserMobil)}
-              className="w-full py-5 rounded-[1.5rem] bg-slate-900 hover:bg-[#990000] text-white font-black text-sm uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-3 group"
+              className="w-full py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] text-white transition-all duration-300 flex items-center justify-center gap-3 group"
+              style={{ background: "linear-gradient(135deg, #1B1717, #3D3636)", boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}
             >
-              <Car size={20} className="group-hover:-translate-x-1 transition-transform" /> 
+              <Car size={20} className="group-hover:-translate-x-1 transition-transform" />
               Proses Pesanan Sekarang
             </button>
           </div>
@@ -1051,33 +1059,33 @@ export default function ListMobil() {
 
       {/* Sewa Manual Modal (Cashier) */}
       {showManualModal && manualMobil && (
-        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md flex items-center justify-center z-[110] p-4 sm:p-6 overflow-hidden">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-4xl max-h-[90vh] flex flex-col relative animate-popIn shadow-2xl border border-slate-100 overflow-hidden">
-            
+        <div className="fixed inset-0 bg-[#1B1717]/75 backdrop-blur-md flex items-center justify-center z-[110] p-4 sm:p-6 overflow-hidden">
+          <div className="bg-white rounded-[2rem] w-full max-w-4xl max-h-[90vh] flex flex-col relative animate-popIn shadow-[0_24px_64px_rgba(0,0,0,0.2)] border border-[#EDEBDD]/30 overflow-hidden">
+
             {/* Fixed Modal Header */}
-            <div className="px-6 pt-6 pb-5 sm:px-10 sm:pt-8 sm:pb-6 border-b border-slate-100 flex-shrink-0 relative bg-white z-10">
+            <div className="px-6 pt-6 pb-5 sm:px-10 sm:pt-8 sm:pb-6 border-b border-[#EDEBDD]/30 flex-shrink-0 relative bg-white z-10">
               <button
                 onClick={() => setShowManualModal(false)}
-                className="absolute top-6 right-6 sm:top-8 sm:right-8 w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:text-white hover:bg-[#990000] transition-all font-bold text-lg shadow-sm"
+                className="absolute top-6 right-6 sm:top-8 sm:right-8 w-10 h-10 flex items-center justify-center rounded-full bg-[#FAFAF6] text-[#3D3636]/30 hover:text-white hover:bg-[#810100] transition-all duration-300 font-bold text-lg"
                 title="Tutup Modal"
               >
                 ✕
               </button>
 
               <div className="flex items-center gap-3 mb-2.5">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#990000]/10 text-[#990000] text-[10px] font-black uppercase tracking-widest border border-[#990000]/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#990000] animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#810100]/10 text-[#810100] text-[10px] font-black uppercase tracking-[0.2em] border border-[#810100]/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#810100] animate-breathe" />
                   Kasir Admin Panel
                 </span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-[#3D3636]/25 uppercase tracking-[0.15em]">
                   Mode Transaksi Offline
                 </span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3 pr-12">
-                <Car size={24} className="text-[#990000] flex-shrink-0" />
+              <h3 className="text-xl sm:text-2xl font-black text-[#1B1717] tracking-tight flex items-center gap-3 pr-12">
+                <Car size={22} className="text-[#810100] flex-shrink-0" />
                 Sewa Manual — {manualMobil.nama}
               </h3>
-              <p className="text-xs font-semibold text-slate-500 mt-0.5">
+              <p className="text-xs font-semibold text-[#3D3636]/35 mt-0.5">
                 Input data penyewa secara langsung dan atur jadwal pemesanan unit.
               </p>
             </div>
@@ -1085,12 +1093,12 @@ export default function ListMobil() {
             {/* Scrollable Form Body */}
             <div className="px-6 py-6 sm:px-10 sm:py-8 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-                
+
                 {/* Left Column: Customer Information Card */}
-                <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-5 sm:p-6 space-y-4">
-                  <div className="flex items-center gap-2 pb-3 border-b border-slate-200/60">
-                    <User size={18} className="text-[#990000]" />
-                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">
+                <div className="bg-[#FAFAF6] border border-[#EDEBDD]/30 rounded-[1.5rem] p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center gap-2 pb-3 border-b border-[#EDEBDD]/30">
+                    <User size={16} className="text-[#C9A84C]" />
+                    <h4 className="text-xs font-black text-[#1B1717] uppercase tracking-[0.2em]">
                       Informasi Pelanggan
                     </h4>
                   </div>
@@ -1098,55 +1106,55 @@ export default function ListMobil() {
                   <div className="space-y-4">
                     {/* Nama Lengkap */}
                     <div>
-                      <label className="text-[10px] text-slate-500 font-bold block mb-1.5 uppercase tracking-wider">
+                      <label className="text-[10px] text-[#3D3636]/35 font-bold block mb-1.5 uppercase tracking-[0.15em]">
                         Nama Lengkap Customer
                       </label>
                       <input
                         type="text"
                         value={manualClient.namaLengkap}
                         onChange={(e) => setManualClient({ ...manualClient, namaLengkap: e.target.value })}
-                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-xl p-3.5 focus:border-[#990000] focus:ring-2 focus:ring-[#990000]/10 outline-none font-bold transition-all shadow-sm"
+                        className="w-full bg-white border border-[#EDEBDD]/40 text-[#1B1717] text-xs sm:text-sm rounded-xl p-3.5 focus:border-[#810100]/30 focus:ring-2 focus:ring-[#810100]/[0.06] outline-none font-bold transition-all shadow-sm"
                         placeholder="Contoh: Budi Santoso"
                       />
                     </div>
 
                     {/* NIK */}
                     <div>
-                      <label className="text-[10px] text-slate-500 font-bold block mb-1.5 uppercase tracking-wider">
+                      <label className="text-[10px] text-[#3D3636]/35 font-bold block mb-1.5 uppercase tracking-[0.15em]">
                         NIK Penyewa (KTP)
                       </label>
                       <input
                         type="text"
                         value={manualClient.nik}
                         onChange={(e) => setManualClient({ ...manualClient, nik: e.target.value })}
-                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-xl p-3.5 focus:border-[#990000] focus:ring-2 focus:ring-[#990000]/10 outline-none font-bold transition-all shadow-sm"
+                        className="w-full bg-white border border-[#EDEBDD]/40 text-[#1B1717] text-xs sm:text-sm rounded-xl p-3.5 focus:border-[#810100]/30 focus:ring-2 focus:ring-[#810100]/[0.06] outline-none font-bold transition-all shadow-sm"
                         placeholder="Masukkan 16 digit NIK KTP..."
                       />
                     </div>
 
                     {/* WhatsApp */}
                     <div>
-                      <label className="text-[10px] text-slate-500 font-bold block mb-1.5 uppercase tracking-wider">
+                      <label className="text-[10px] text-[#3D3636]/35 font-bold block mb-1.5 uppercase tracking-[0.15em]">
                         Nomor Telepon / WhatsApp
                       </label>
                       <input
                         type="text"
                         value={manualClient.nomorTelepon}
                         onChange={(e) => setManualClient({ ...manualClient, nomorTelepon: e.target.value })}
-                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-xl p-3.5 focus:border-[#990000] focus:ring-2 focus:ring-[#990000]/10 outline-none font-bold transition-all shadow-sm"
+                        className="w-full bg-white border border-[#EDEBDD]/40 text-[#1B1717] text-xs sm:text-sm rounded-xl p-3.5 focus:border-[#810100]/30 focus:ring-2 focus:ring-[#810100]/[0.06] outline-none font-bold transition-all shadow-sm"
                         placeholder="08123456789"
                       />
                     </div>
 
                     {/* Alamat */}
                     <div>
-                      <label className="text-[10px] text-slate-500 font-bold block mb-1.5 uppercase tracking-wider">
+                      <label className="text-[10px] text-[#3D3636]/35 font-bold block mb-1.5 uppercase tracking-[0.15em]">
                         Alamat Lengkap Domisili
                       </label>
                       <textarea
                         value={manualClient.alamat}
                         onChange={(e) => setManualClient({ ...manualClient, alamat: e.target.value })}
-                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-xl p-3.5 focus:border-[#990000] focus:ring-2 focus:ring-[#990000]/10 outline-none h-24 resize-none font-bold transition-all shadow-sm"
+                        className="w-full bg-white border border-[#EDEBDD]/40 text-[#1B1717] text-xs sm:text-sm rounded-xl p-3.5 focus:border-[#810100]/30 focus:ring-2 focus:ring-[#810100]/[0.06] outline-none h-24 resize-none font-bold transition-all shadow-sm"
                         placeholder="Input alamat lengkap domisili penyewa..."
                       />
                     </div>
@@ -1154,18 +1162,18 @@ export default function ListMobil() {
                 </div>
 
                 {/* Right Column: Booking Configuration Card */}
-                <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-5 sm:p-6 space-y-4">
-                  <div className="flex items-center gap-2 pb-3 border-b border-slate-200/60">
-                    <CalendarIcon size={18} className="text-[#990000]" />
-                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">
+                <div className="bg-[#FAFAF6] border border-[#EDEBDD]/30 rounded-[1.5rem] p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center gap-2 pb-3 border-b border-[#EDEBDD]/30">
+                    <CalendarIcon size={16} className="text-[#C9A84C]" />
+                    <h4 className="text-xs font-black text-[#1B1717] uppercase tracking-[0.2em]">
                       Konfigurasi Sewa Unit
                     </h4>
                   </div>
 
                   {/* Calendar */}
-                  <div className="bg-white p-3 rounded-2xl border border-slate-200/60 shadow-sm">
-                    <label className="text-[10px] text-[#990000] font-black uppercase tracking-wider flex items-center gap-1.5 mb-2 px-1">
-                      <CalendarIcon size={13} /> Kalender Ketersediaan Armada
+                  <div className="bg-white p-3 rounded-2xl border border-[#EDEBDD]/30 shadow-sm">
+                    <label className="text-[10px] text-[#C9A84C] font-black uppercase tracking-[0.15em] flex items-center gap-1.5 mb-2 px-1">
+                      <CalendarIcon size={12} /> Kalender Ketersediaan Armada
                     </label>
                     <UnitCalendarPicker
                       bookings={unitBookings[manualMobil.id] || []}
@@ -1181,21 +1189,21 @@ export default function ListMobil() {
                   {/* Datetime Pickers */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] text-slate-500 font-bold block mb-1 uppercase tracking-wider">Tgl Mulai</label>
+                      <label className="text-[10px] text-[#3D3636]/35 font-bold block mb-1 uppercase tracking-[0.15em]">Tgl Mulai</label>
                       <input
                         type="datetime-local"
                         value={tanggalMulai[manualMobil.id] || ""}
                         onChange={(e) => handleTanggalChange(manualMobil.id, "mulai", e.target.value)}
-                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:border-[#990000] outline-none font-bold shadow-sm"
+                        className="w-full bg-white border border-[#EDEBDD]/40 text-[#1B1717] text-xs rounded-xl p-3 focus:border-[#810100]/30 outline-none font-bold shadow-sm"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 font-bold block mb-1 uppercase tracking-wider">Tgl Selesai</label>
+                      <label className="text-[10px] text-[#3D3636]/35 font-bold block mb-1 uppercase tracking-[0.15em]">Tgl Selesai</label>
                       <input
                         type="datetime-local"
                         value={tanggalSelesai[manualMobil.id] || ""}
                         onChange={(e) => handleTanggalChange(manualMobil.id, "selesai", e.target.value)}
-                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:border-[#990000] outline-none font-bold shadow-sm"
+                        className="w-full bg-white border border-[#EDEBDD]/40 text-[#1B1717] text-xs rounded-xl p-3 focus:border-[#810100]/30 outline-none font-bold shadow-sm"
                       />
                     </div>
                   </div>
@@ -1203,7 +1211,7 @@ export default function ListMobil() {
                   {/* DP Amount */}
                   <div>
                     <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
-                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                      <label className="text-[10px] text-[#3D3636]/35 font-bold uppercase tracking-[0.15em]">
                         Nominal DP (Min 50%)
                       </label>
                       {manualMobil && tanggalMulai[manualMobil.id] && tanggalSelesai[manualMobil.id] && (
@@ -1214,38 +1222,38 @@ export default function ListMobil() {
                             const minDp = Math.ceil(dur * manualMobil.harga * 0.5);
                             setManualClient({ ...manualClient, dpAmount: minDp });
                           }}
-                          className="text-[9px] font-black text-[#990000] hover:underline uppercase tracking-tight"
+                          className="text-[9px] font-black text-[#C9A84C] hover:underline uppercase tracking-tight"
                         >
                           + Set DP Minimal 50%
                         </button>
                       )}
                     </div>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 font-black text-xs">Rp</div>
+                      <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-[#3D3636]/30 font-black text-xs">Rp</div>
                       <input
                         type="number"
                         value={manualClient.dpAmount}
                         onChange={(e) => setManualClient({ ...manualClient, dpAmount: e.target.value })}
-                        className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-xl py-3 pl-10 pr-3 focus:border-[#990000] outline-none font-black shadow-sm"
+                        className="w-full bg-white border border-[#EDEBDD]/40 text-[#1B1717] text-xs sm:text-sm rounded-xl py-3 pl-10 pr-3 focus:border-[#810100]/30 outline-none font-black shadow-sm"
                         placeholder="0"
                       />
                     </div>
                   </div>
 
                   {/* Summary Card */}
-                  <div className="bg-[#0f172a] rounded-2xl p-4 sm:p-5 text-white shadow-md border border-slate-800 space-y-3">
+                  <div className="rounded-2xl p-4 sm:p-5 text-white shadow-md space-y-3" style={{ background: "linear-gradient(135deg, #1B1717, #2A2525)" }}>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Estimasi Durasi</span>
-                      <span className="font-black text-amber-400">
-                        {tanggalMulai[manualMobil.id] && tanggalSelesai[manualMobil.id] ? 
-                          Math.max(1, Math.ceil((new Date(tanggalSelesai[manualMobil.id]) - new Date(tanggalMulai[manualMobil.id])) / (1000 * 60 * 60 * 24))) + " Hari" 
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">Estimasi Durasi</span>
+                      <span className="font-black text-[#C9A84C]">
+                        {tanggalMulai[manualMobil.id] && tanggalSelesai[manualMobil.id] ?
+                          Math.max(1, Math.ceil((new Date(tanggalSelesai[manualMobil.id]) - new Date(tanggalMulai[manualMobil.id])) / (1000 * 60 * 60 * 24))) + " Hari"
                           : "-"}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center pt-2 border-t border-white/10">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Grand Total</span>
-                      <span className="text-base sm:text-lg font-black text-red-400">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">Grand Total</span>
+                      <span className="text-base sm:text-lg font-black text-[#EDEBDD]">
                         Rp {(() => {
                           const durasi = Math.max(1, Math.ceil((new Date(tanggalSelesai[manualMobil.id]) - new Date(tanggalMulai[manualMobil.id])) / (1000 * 60 * 60 * 24)));
                           let total = durasi * manualMobil.harga;
@@ -1256,14 +1264,14 @@ export default function ListMobil() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-white/10 text-xs gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Metode Pembayaran</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">Metode Pembayaran</span>
                       <select
                         value={manualClient.paymentMethod}
                         onChange={(e) => setManualClient({ ...manualClient, paymentMethod: e.target.value })}
-                        className="w-full sm:w-auto bg-slate-800 text-white text-xs font-bold rounded-lg px-2.5 py-1.5 border border-slate-700 outline-none cursor-pointer"
+                        className="w-full sm:w-auto bg-white/[0.06] text-white text-xs font-bold rounded-lg px-2.5 py-1.5 border border-white/10 outline-none cursor-pointer"
                       >
-                        <option value="Cash" className="bg-slate-900">TUNAI / CASH</option>
-                        <option value="Transfer Bank" className="bg-slate-900">TRANSFER BANK</option>
+                        <option value="Cash" className="bg-[#1B1717]">TUNAI / CASH</option>
+                        <option value="Transfer Bank" className="bg-[#1B1717]">TRANSFER BANK</option>
                       </select>
                     </div>
                   </div>
@@ -1273,10 +1281,11 @@ export default function ListMobil() {
             </div>
 
             {/* Fixed Bottom Submit Footer */}
-            <div className="p-4 sm:px-10 sm:py-5 border-t border-slate-100 bg-slate-50/60 flex-shrink-0">
-              <button 
+            <div className="p-4 sm:px-10 sm:py-5 border-t border-[#EDEBDD]/30 bg-[#FAFAF6]/60 flex-shrink-0">
+              <button
                 onClick={handleSubmitSewaManual}
-                className="w-full py-3.5 sm:py-4 rounded-2xl bg-[#990000] hover:bg-[#7a0000] text-white font-black text-xs sm:text-sm uppercase tracking-widest transition-all active:scale-[0.99] shadow-lg shadow-[#990000]/20 flex items-center justify-center gap-2"
+                className="w-full py-3.5 sm:py-4 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-[0.2em] text-white transition-all duration-300 active:scale-[0.99] flex items-center justify-center gap-2"
+                style={{ background: "linear-gradient(135deg, #1B1717, #3D3636)", boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}
               >
                 <CheckCircle size={18} />
                 Simpan &amp; Terbitkan Pesanan Kasir

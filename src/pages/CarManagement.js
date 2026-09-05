@@ -203,7 +203,7 @@ export default function CarManagement() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#990000] rounded-full animate-spin"></div>
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#810100] rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -211,12 +211,12 @@ export default function CarManagement() {
   if (!isAdmin) return (
     <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center p-6 text-center">
        <div className="bg-white p-10 rounded-3xl shadow-xl shadow-red-900/5 max-w-md w-full border border-red-50">
-          <div className="w-20 h-20 bg-red-50 text-[#990000] rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-20 h-20 bg-red-50 text-[#810100] rounded-full flex items-center justify-center mx-auto mb-6">
             <Settings size={40} />
           </div>
           <h2 className="text-2xl font-black text-slate-900 mb-2">Akses Terbatas</h2>
           <p className="text-slate-500 mb-8 italic">Halaman ini hanya dapat diakses oleh Administrator sistem Cakra Lima Tujuh.</p>
-          <div className="h-1.5 w-12 bg-[#990000] mx-auto rounded-full"></div>
+          <div className="h-1.5 w-12 bg-[#810100] mx-auto rounded-full"></div>
        </div>
     </div>
   );
@@ -227,7 +227,7 @@ export default function CarManagement() {
         
         {/* Header */}
         <div className="mb-10">
-          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
             <Car size={14} />
             <span>Manajemen Inventaris</span>
           </div>
@@ -237,13 +237,13 @@ export default function CarManagement() {
               <p className="text-slate-500 mt-1">Kelola data kendaraan, ketersediaan, dan status layanan.</p>
             </div>
             <div className="relative w-full md:w-80 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#990000] transition-colors" size={18} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#810100] transition-colors" size={18} />
               <input 
                 type="text" 
                 placeholder="Cari armada..."
                 value={searchMobil}
                 onChange={(e) => setSearchMobil(e.target.value)}
-                className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-6 py-3.5 focus:ring-2 focus:ring-red-100 focus:border-[#990000] outline-none transition-all placeholder:text-slate-400 font-medium"
+                className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-6 py-3.5 focus:ring-2 focus:ring-red-100 focus:border-[#810100] outline-none transition-all placeholder:text-slate-400 font-medium"
               />
             </div>
           </div>
@@ -255,7 +255,7 @@ export default function CarManagement() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 sticky top-[120px]">
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 bg-red-50 text-[#990000] rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-red-50 text-[#810100] rounded-xl flex items-center justify-center">
                   <Plus size={20} />
                 </div>
                 <h2 className="text-xl font-bold text-slate-900">Tambah Armada</h2>
@@ -269,7 +269,7 @@ export default function CarManagement() {
                     placeholder="Contoh: Toyota Alphard Gen 4"
                     value={form.nama}
                     onChange={e => setForm({ ...form, nama: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
                   />
                 </div>
 
@@ -280,7 +280,7 @@ export default function CarManagement() {
                     placeholder="1.100.000"
                     value={form.rental_fee_per_day}
                     onChange={e => setForm({ ...form, rental_fee_per_day: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
                   />
                 </div>
 
@@ -296,15 +296,15 @@ export default function CarManagement() {
                     value={form.driver_fee_per_day}
                     onChange={e => setForm({ ...form, driver_fee_per_day: e.target.value })}
                     disabled={form.layanan !== "Dengan Driver"}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold disabled:bg-slate-100"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold disabled:bg-slate-100"
                   />
                 </div>
 
                 {/* Preview Total */}
                 {form.rental_fee_per_day && (
-                  <div className="bg-[#0f172a] text-white rounded-xl px-4 py-3 flex justify-between items-center">
+                  <div className="bg-[#1B1717] text-white rounded-xl px-4 py-3 flex justify-between items-center">
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Total / Hari</span>
-                    <span className="font-black text-[#C5A059]">
+                    <span className="font-black text-[#EDEBDD]">
                       Rp {(parseInt(form.rental_fee_per_day || 0) + (form.layanan === "Dengan Driver" ? parseInt(form.driver_fee_per_day || 0) : 0)).toLocaleString("id-ID")}
                     </span>
                   </div>
@@ -315,7 +315,7 @@ export default function CarManagement() {
                   <select
                     value={form.layanan}
                     onChange={e => setForm({ ...form, layanan: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold appearance-none cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold appearance-none cursor-pointer"
                   >
                     <option value="Lepas Kunci">Lepas Kunci</option>
                     <option value="Dengan Driver">Dengan Driver</option>
@@ -323,7 +323,7 @@ export default function CarManagement() {
                 </div>
 
                 <div className="border border-slate-100 rounded-2xl p-4 bg-slate-50/50 space-y-4">
-                  <span className="text-[10px] font-bold text-[#990000] uppercase tracking-widest block border-b border-slate-100 pb-2">Fasilitas Armada</span>
+                  <span className="text-[10px] font-bold text-[#810100] uppercase tracking-widest block border-b border-slate-100 pb-2">Fasilitas Armada</span>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -332,16 +332,16 @@ export default function CarManagement() {
                         type="number"
                         value={form.seats}
                         onChange={e => setForm({ ...form, seats: e.target.value })}
-                        className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 focus:border-[#990000] outline-none transition-all font-semibold"
+                        className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 focus:border-[#810100] outline-none transition-all font-semibold"
                       />
                     </div>
                     <div className="flex flex-col justify-center gap-3 pt-5">
                       <label className="flex items-center gap-2 cursor-pointer group">
-                        <input type="checkbox" checked={form.chargingPort} onChange={e => setForm({ ...form, chargingPort: e.target.checked })} className="w-4 h-4 accent-[#990000] cursor-pointer" />
+                        <input type="checkbox" checked={form.chargingPort} onChange={e => setForm({ ...form, chargingPort: e.target.checked })} className="w-4 h-4 accent-[#810100] cursor-pointer" />
                         <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Port Charger</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer group">
-                        <input type="checkbox" checked={form.luggage} onChange={e => setForm({ ...form, luggage: e.target.checked })} className="w-4 h-4 accent-[#990000] cursor-pointer" />
+                        <input type="checkbox" checked={form.luggage} onChange={e => setForm({ ...form, luggage: e.target.checked })} className="w-4 h-4 accent-[#810100] cursor-pointer" />
                         <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Bagasi</span>
                       </label>
                     </div>
@@ -350,7 +350,7 @@ export default function CarManagement() {
 
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Foto Armada</label>
-                  <div className="relative group overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-4 transition-all hover:border-[#990000]/30">
+                  <div className="relative group overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-4 transition-all hover:border-[#810100]/30">
                     <input type="file" accept="image/*" onChange={handleFileSelect} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                     {form.gambar ? (
                       <div className="flex items-center gap-4">
@@ -372,7 +372,7 @@ export default function CarManagement() {
                   </button>
                 )}
 
-                <button onClick={handleTambahMobil} className="w-full py-4 bg-[#990000] text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all hover:bg-[#7a0000] shadow-lg shadow-red-900/10 active:scale-95">
+                <button onClick={handleTambahMobil} className="w-full py-4 bg-[#810100] text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all hover:bg-[#630000] shadow-lg shadow-red-900/10 active:scale-95">
                   Simpan Unit Baru
                 </button>
               </div>
@@ -398,7 +398,7 @@ export default function CarManagement() {
                           type="text"
                           value={editForm.nama}
                           onChange={(e) => setEditForm({ ...editForm, nama: e.target.value })}
-                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#990000]"
+                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#810100]"
                         />
                       </div>
                       <div>
@@ -407,7 +407,7 @@ export default function CarManagement() {
                           type="number"
                           value={editForm.rental_fee_per_day}
                           onChange={(e) => setEditForm({ ...editForm, rental_fee_per_day: e.target.value })}
-                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#990000]"
+                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#810100]"
                         />
                       </div>
                     </div>
@@ -421,13 +421,13 @@ export default function CarManagement() {
                           value={editForm.driver_fee_per_day}
                           onChange={(e) => setEditForm({ ...editForm, driver_fee_per_day: e.target.value })}
                           disabled={editForm.layanan !== "Dengan Driver"}
-                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#990000] disabled:bg-slate-100"
+                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#810100] disabled:bg-slate-100"
                         />
                       </div>
                       {editForm.rental_fee_per_day && (
-                        <div className="bg-[#0f172a] text-white rounded-lg px-3 py-2 flex flex-col justify-center">
+                        <div className="bg-[#1B1717] text-white rounded-lg px-3 py-2 flex flex-col justify-center">
                           <span className="text-[8px] font-black uppercase tracking-widest opacity-50">Total / Hari</span>
-                          <span className="font-black text-[#C5A059] text-xs">
+                          <span className="font-black text-[#EDEBDD] text-xs">
                             Rp {(parseInt(editForm.rental_fee_per_day || 0) + (editForm.layanan === "Dengan Driver" ? parseInt(editForm.driver_fee_per_day || 0) : 0)).toLocaleString("id-ID")}
                           </span>
                         </div>
@@ -440,7 +440,7 @@ export default function CarManagement() {
                         <select
                           value={editForm.layanan}
                           onChange={(e) => setEditForm({ ...editForm, layanan: e.target.value })}
-                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#990000]"
+                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#810100]"
                         >
                           <option value="Lepas Kunci">Lepas Kunci</option>
                           <option value="Dengan Driver">Dengan Driver</option>
@@ -452,7 +452,7 @@ export default function CarManagement() {
                           type="number"
                           value={editForm.seats}
                           onChange={(e) => setEditForm({ ...editForm, seats: e.target.value })}
-                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#990000]"
+                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#810100]"
                         />
                       </div>
                       <div className="flex items-center gap-2 pt-5">
@@ -461,7 +461,7 @@ export default function CarManagement() {
                           id={`edit-port-${m.id}`}
                           checked={editForm.chargingPort}
                           onChange={(e) => setEditForm({ ...editForm, chargingPort: e.target.checked })}
-                          className="accent-[#990000] w-4 h-4 cursor-pointer"
+                          className="accent-[#810100] w-4 h-4 cursor-pointer"
                         />
                         <label htmlFor={`edit-port-${m.id}`} className="text-[10px] font-bold text-slate-600 uppercase tracking-widest cursor-pointer">Port Charger</label>
                       </div>
@@ -471,7 +471,7 @@ export default function CarManagement() {
                           id={`edit-luggage-${m.id}`}
                           checked={editForm.luggage}
                           onChange={(e) => setEditForm({ ...editForm, luggage: e.target.checked })}
-                          className="accent-[#990000] w-4 h-4 cursor-pointer"
+                          className="accent-[#810100] w-4 h-4 cursor-pointer"
                         />
                         <label htmlFor={`edit-luggage-${m.id}`} className="text-[10px] font-bold text-slate-600 uppercase tracking-widest cursor-pointer">Bagasi</label>
                       </div>
@@ -498,7 +498,7 @@ export default function CarManagement() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1 flex-wrap">
                           <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight break-words">{m.nama}</h3>
-                          <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${m.tersedia ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-[#990000] border border-red-100'}`}>
+                          <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${m.tersedia ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-[#810100] border border-red-100'}`}>
                             {m.tersedia ? 'Tersedia' : 'Disewa'}
                           </span>
                         </div>
@@ -506,10 +506,10 @@ export default function CarManagement() {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tarif Sewa</p>
-                        <p className="text-2xl font-black text-[#990000]">Rp. {(m.rental_fee_per_day || m.harga || 0).toLocaleString("id-ID")}<span className="text-xs text-slate-400 font-bold">/hari</span></p>
+                        <p className="text-2xl font-black text-[#810100]">Rp. {(m.rental_fee_per_day || m.harga || 0).toLocaleString("id-ID")}<span className="text-xs text-slate-400 font-bold">/hari</span></p>
                         {m.layanan === "Dengan Driver" && (m.driver_fee_per_day > 0 || m.withDriver) && (
                           <p className="text-[10px] text-slate-500 font-bold mt-0.5">
-                            +Rp {(m.driver_fee_per_day || 250000).toLocaleString("id-ID")} driver = <span className="text-[#0f172a] font-black">Rp {((m.rental_fee_per_day || m.harga || 0) + (m.driver_fee_per_day || 250000)).toLocaleString("id-ID")}/hari</span>
+                            +Rp {(m.driver_fee_per_day || 250000).toLocaleString("id-ID")} driver = <span className="text-[#1B1717] font-black">Rp {((m.rental_fee_per_day || m.harga || 0) + (m.driver_fee_per_day || 250000)).toLocaleString("id-ID")}/hari</span>
                           </p>
                         )}
                       </div>
@@ -530,7 +530,7 @@ export default function CarManagement() {
                       </div>
                       <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
                         <Settings size={14} className="text-slate-400" />
-                        <span className="text-[10px] font-bold text-[#990000] uppercase italic">{m.status}</span>
+                        <span className="text-[10px] font-bold text-[#810100] uppercase italic">{m.status}</span>
                       </div>
                     </div>
 
@@ -543,7 +543,7 @@ export default function CarManagement() {
                             handleEditMobil(m.id, "layanan", val);
                             handleEditMobil(m.id, "withDriver", val === "Dengan Driver");
                           }}
-                          className="bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg outline-none focus:border-[#990000] cursor-pointer"
+                          className="bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg outline-none focus:border-[#810100] cursor-pointer"
                         >
                           <option value="Lepas Kunci">Lepas Kunci</option>
                           <option value="Dengan Driver">Dengan Driver</option>
@@ -553,7 +553,7 @@ export default function CarManagement() {
                             type="number"
                             value={m.harga}
                             onChange={(e) => handleEditMobil(m.id, "harga", parseInt(e.target.value))}
-                            className="w-24 bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg outline-none focus:border-[#990000]"
+                            className="w-24 bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg outline-none focus:border-[#810100]"
                           />
                           <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg" title="Auto-saved">
                             <Check size={14} />
@@ -577,7 +577,7 @@ export default function CarManagement() {
                         </button>
                         <button
                           onClick={() => handleHapusMobil(m.id)}
-                          className="p-2.5 bg-red-50 text-[#990000] hover:bg-[#990000] hover:text-white rounded-xl transition-all"
+                          className="p-2.5 bg-red-50 text-[#810100] hover:bg-[#810100] hover:text-white rounded-xl transition-all"
                         >
                           <Trash2 size={16} />
                         </button>

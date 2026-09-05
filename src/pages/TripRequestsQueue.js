@@ -201,8 +201,8 @@ export default function TripRequestsQueue() {
             onClick={() => setFilterStatus(f.value)}
             className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
               filterStatus === f.value
-                ? "bg-[#990000] text-white shadow-md shadow-[#990000]/20"
-                : "bg-white text-slate-500 border border-slate-200 hover:text-[#990000]"
+                ? "bg-[#810100] text-white shadow-md shadow-[#810100]/20"
+                : "bg-white text-slate-500 border border-slate-200 hover:text-[#810100]"
             }`}
           >
             {f.label}
@@ -213,7 +213,7 @@ export default function TripRequestsQueue() {
       {/* Requests List */}
       {loading ? (
         <div className="flex flex-col items-center py-20 gap-4">
-          <div className="w-10 h-10 border-4 border-slate-200 border-t-[#990000] rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-slate-200 border-t-[#810100] rounded-full animate-spin" />
           <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Memuat antrian...</p>
         </div>
       ) : filtered.length === 0 ? (
@@ -282,7 +282,7 @@ export default function TripRequestsQueue() {
 
                 {/* Catatan Client Box */}
                 {req.notes && (
-                  <div className="bg-[#f8fafc] p-4 rounded-2xl border border-slate-100">
+                  <div className="bg-[#FAFAF6] p-4 rounded-2xl border border-slate-100">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                       CATATAN CLIENT
                     </span>
@@ -338,7 +338,7 @@ export default function TripRequestsQueue() {
                         if (req.status === "submitted") setStatus(req.id, "in_review");
                         openQuoteForm(req);
                       }}
-                      className="flex-1 bg-[#990000] hover:bg-[#7a0000] text-white font-semibold text-sm py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all"
+                      className="flex-1 bg-[#810100] hover:bg-[#630000] text-white font-semibold text-sm py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all"
                     >
                       <Send size={15} />
                       {req.status === "revision_requested" ? "Upload quote revisi" : "Upload penawaran"}
@@ -368,7 +368,7 @@ export default function TripRequestsQueue() {
                     ref={noteRef}
                     type="text"
                     placeholder="Tambah catatan admin..."
-                    className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#990000] transition-all"
+                    className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#810100] transition-all"
                   />
                   <button
                     onClick={() => {
@@ -417,7 +417,7 @@ export default function TripRequestsQueue() {
                 </span>
                 <button
                   onClick={addLineItem}
-                  className="text-[#990000] text-xs font-bold hover:underline flex items-center gap-1"
+                  className="text-[#810100] text-xs font-bold hover:underline flex items-center gap-1"
                 >
                   + Tambah item
                 </button>
@@ -479,7 +479,7 @@ export default function TripRequestsQueue() {
                     value={quoteForm.dpAmount}
                     onChange={e => setQuoteForm(prev => ({ ...prev, dpAmount: e.target.value }))}
                     placeholder="Nominal DP"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#990000] transition-all"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#810100] transition-all"
                   />
                 </div>
 
@@ -491,7 +491,7 @@ export default function TripRequestsQueue() {
                     type="date"
                     value={quoteForm.dpDeadline}
                     onChange={e => setQuoteForm(prev => ({ ...prev, dpDeadline: e.target.value }))}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:border-[#990000] transition-all"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:border-[#810100] transition-all"
                   />
                 </div>
               </div>
@@ -504,7 +504,7 @@ export default function TripRequestsQueue() {
                   type="date"
                   value={quoteForm.fullDeadline}
                   onChange={e => setQuoteForm(prev => ({ ...prev, fullDeadline: e.target.value }))}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:border-[#990000] transition-all"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:border-[#810100] transition-all"
                 />
               </div>
             </div>
@@ -513,7 +513,7 @@ export default function TripRequestsQueue() {
             <button
               onClick={submitQuote}
               disabled={submitting}
-              className="w-full py-3.5 bg-[#990000] hover:bg-[#7a0000] text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full py-3.5 bg-[#810100] hover:bg-[#630000] text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {submitting ? (
                 <RefreshCw size={16} className="animate-spin" />

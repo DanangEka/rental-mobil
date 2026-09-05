@@ -348,7 +348,7 @@ export default function ManajemenPesanan() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#990000] rounded-full animate-spin"></div>
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#810100] rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -360,7 +360,7 @@ export default function ManajemenPesanan() {
           <AlertTriangle className="mx-auto h-16 w-16 text-red-500 mb-6" />
           <h2 className="text-2xl font-black text-slate-900 mb-2">Akses Ditolak</h2>
           <p className="text-slate-500 mb-6 italic">Anda tidak memiliki kredensial untuk manajemen keuangan & operasional.</p>
-          <div className="h-1.5 w-12 bg-[#990000] mx-auto rounded-full"></div>
+          <div className="h-1.5 w-12 bg-[#810100] mx-auto rounded-full"></div>
         </div>
       </div>
     );
@@ -373,7 +373,7 @@ export default function ManajemenPesanan() {
         {/* Header */}
         <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
-            <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+            <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
               <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
               <span>Sistem Operasional Armada</span>
             </div>
@@ -392,7 +392,7 @@ export default function ManajemenPesanan() {
               onClick={handleRefresh}
               className="group flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-6 py-3.5 rounded-2xl transition-all font-bold shadow-sm"
             >
-              <RefreshCw size={18} className={`text-[#990000] transition-transform duration-500 ${refreshing ? "rotate-180" : "group-hover:rotate-45"}`} />
+              <RefreshCw size={18} className={`text-[#810100] transition-transform duration-500 ${refreshing ? "rotate-180" : "group-hover:rotate-45"}`} />
               Refresh Data
             </button>
           </div>
@@ -407,7 +407,7 @@ export default function ManajemenPesanan() {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold appearance-none cursor-pointer"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold appearance-none cursor-pointer"
                 >
                   <option value="semua">Semua Status</option>
                   <option value="diproses">Masuk (Pending)</option>
@@ -424,7 +424,7 @@ export default function ManajemenPesanan() {
                 <select
                   value={filterRentalType}
                   onChange={(e) => setFilterRentalType(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold appearance-none cursor-pointer"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold appearance-none cursor-pointer"
                 >
                   <option value="semua">Semua Kategori</option>
                   <option value="Lepas Kunci">Lepas Kunci</option>
@@ -437,7 +437,7 @@ export default function ManajemenPesanan() {
                   type="date" 
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
                 />
               </div>
               <div>
@@ -446,7 +446,7 @@ export default function ManajemenPesanan() {
                   type="date" 
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
                 />
               </div>
             </div>
@@ -455,13 +455,13 @@ export default function ManajemenPesanan() {
               <div className="flex-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Pencarian Cepat</label>
                 <div className="relative group">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#990000] transition-colors" size={18} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#810100] transition-colors" size={18} />
                   <input 
                     type="text" 
                     placeholder="Nama client, mobil, atau email..."
                     value={searchPemesanan}
                     onChange={(e) => setSearchPemesanan(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-12 pr-6 py-3 focus:border-[#990000] outline-none transition-all font-semibold placeholder:text-slate-400"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-12 pr-6 py-3 focus:border-[#810100] outline-none transition-all font-semibold placeholder:text-slate-400"
                   />
                 </div>
               </div>
@@ -470,7 +470,7 @@ export default function ManajemenPesanan() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold appearance-none cursor-pointer"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold appearance-none cursor-pointer"
                 >
                   <option value="newest">Paling Baru</option>
                   <option value="oldest">Paling Lama</option>
@@ -502,7 +502,7 @@ export default function ManajemenPesanan() {
                     {/* Item Top: Header & Status */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-slate-100">
                       <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 bg-red-50 text-[#990000] rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-sm">
+                        <div className="w-16 h-16 bg-red-50 text-[#810100] rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-sm">
                            <Car size={32} />
                         </div>
                         <div>
@@ -513,7 +513,7 @@ export default function ManajemenPesanan() {
                               p.status === 'lunas' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                               p.status === 'ditolak' ? 'bg-slate-50 text-slate-400 border-slate-200' :
                               p.status === 'disetujui_cash' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                              'bg-red-50 text-[#990000] border-red-100'
+                              'bg-red-50 text-[#810100] border-red-100'
                             }`}>
                               {p.status === 'disetujui_cash' ? 'Disetujui (Cash)' : p.status}
                             </span>
@@ -525,7 +525,7 @@ export default function ManajemenPesanan() {
                       <div className="text-left md:text-right">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dibuat Pada</p>
                         <p className="text-sm font-black text-slate-900 flex items-center md:justify-end gap-2">
-                           <Calendar size={14} className="text-[#990000]" />
+                           <Calendar size={14} className="text-[#810100]" />
                            {new Date(p.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
                         </p>
                       </div>
@@ -548,7 +548,7 @@ export default function ManajemenPesanan() {
                         <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex flex-col justify-between">
                           <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                              <User size={12} className="text-[#990000]" /> Driver Penerima
+                              <User size={12} className="text-[#810100]" /> Driver Penerima
                             </p>
                             {p.driverId ? (
                               <>
@@ -579,7 +579,7 @@ export default function ManajemenPesanan() {
                               <p className="text-[10px] text-slate-400 font-bold mb-0.5">MULAI</p>
                               <p className="text-sm font-black text-slate-900">{p.tanggalMulai ? new Date(p.tanggalMulai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-'}</p>
                            </div>
-                           <ArrowRight size={14} className="text-[#990000] mt-4" />
+                           <ArrowRight size={14} className="text-[#810100] mt-4" />
                            <div className="text-center">
                               <p className="text-[10px] text-slate-400 font-bold mb-0.5">SELESAI</p>
                               <p className="text-sm font-black text-slate-900">{p.tanggalSelesai ? new Date(p.tanggalSelesai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-'}</p>
@@ -601,9 +601,9 @@ export default function ManajemenPesanan() {
                       {/* Financial Info */}
                       <div className="bg-red-50 border border-red-100/50 rounded-2xl p-5 text-right flex flex-col justify-center">
                         <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Estimasi Total</p>
-                        <p className="text-2xl font-black text-[#990000] tracking-tighter">Rp {p.perkiraanHarga?.toLocaleString()}</p>
+                        <p className="text-2xl font-black text-[#810100] tracking-tighter">Rp {p.perkiraanHarga?.toLocaleString()}</p>
                         {p.dpAmount && (
-                          <p className="text-[10px] font-black text-[#990000]/60 mt-1">DP: Rp {p.dpAmount.toLocaleString()}</p>
+                          <p className="text-[10px] font-black text-[#810100]/60 mt-1">DP: Rp {p.dpAmount.toLocaleString()}</p>
                         )}
                          {penalty.amount > 0 && (
                           <div className="mt-2 text-[10px] font-bold bg-red-600 text-white px-2 py-1 rounded inline-block">
@@ -677,7 +677,7 @@ export default function ManajemenPesanan() {
                         )}
                         {(p.status === "selesai" || p.status === "tugas aktif" || p.status === "pembayaran berhasil" || p.status === "lunas") && (
                           <button onClick={() => generateInvoicePDF(p, user, "full")} className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all group">
-                             <Download size={16} className="text-[#990000] group-hover:scale-110 transition-transform" /> 
+                             <Download size={16} className="text-[#810100] group-hover:scale-110 transition-transform" /> 
                              Cetak Invoice Full
                           </button>
                         )}

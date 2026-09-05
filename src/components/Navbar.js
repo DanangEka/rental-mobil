@@ -6,7 +6,7 @@ import { doc, getDoc, collection, query, where, orderBy, onSnapshot, updateDoc }
 import {
   User, LogIn, LogOut, Gauge, Car, Users, Bell, ClipboardList,
   TrendingUp, History, CreditCard, Camera, Settings, Clock,
-  DollarSign, ChevronDown, Key, ChevronRight, Map, Menu,
+  DollarSign, ChevronDown, Key, ChevronRight, Map, UserPlus, Compass,
 } from "lucide-react";
 import logo from "../assets/logo.png";
 
@@ -196,15 +196,15 @@ export default function Navbar() {
         }`}
       >
         {/* ── TOP UTILITY BAR (Charcoal + Red Accent) ── */}
-        <div className="bg-[#0f172a] text-white/80 py-2 px-6 border-b border-white/5">
+        <div className="bg-[#1B1717] text-white/80 py-2 px-6 border-b border-white/5">
           <div className="max-w-7xl mx-auto flex justify-between items-center text-[9px] font-black uppercase tracking-[0.2em]">
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
-                <Clock size={11} className="text-[#990000]" />
+                <Clock size={11} className="text-[#810100]" />
                 <span>Layanan 24 Jam</span>
               </div>
               <div className="items-center gap-2 hover:text-white transition-colors cursor-pointer hidden md:flex border-l border-white/10 pl-8">
-                <DollarSign size={11} className="text-[#C5A059]" />
+                <DollarSign size={11} className="text-[#EDEBDD]" />
                 <span>Tarif Transparan &amp; Kompetitif</span>
               </div>
             </div>
@@ -229,15 +229,15 @@ export default function Navbar() {
             {/* ── LOGO ── */}
             <Link to="/" className="flex items-center gap-3.5 shrink-0 group py-1">
               <div className="relative flex items-center justify-center">
-                <div className="absolute inset-0 bg-[#990000] rounded-xl blur-lg opacity-0 group-hover:opacity-20 transition-opacity" />
+                <div className="absolute inset-0 bg-[#810100] rounded-xl blur-lg opacity-0 group-hover:opacity-20 transition-opacity" />
                 <img src={logo} alt="Logo" className="relative h-10 w-10 object-contain rounded-xl shadow-sm border border-slate-100" />
               </div>
               <div className="flex flex-col justify-center">
-                <span className="font-black tracking-tight text-lg text-[#0f172a] leading-tight">
+                <span className="font-black tracking-tight text-lg text-[#1B1717] leading-tight">
                   Cakra Lima Tujuh
                 </span>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <div className="h-0.5 w-3.5 bg-[#990000] rounded-full shrink-0" />
+                  <div className="h-0.5 w-3.5 bg-[#810100] rounded-full shrink-0" />
                   <span className="text-[7.5px] font-bold text-slate-400 tracking-[0.18em] uppercase whitespace-nowrap">
                     Premium Rent, Tour &amp; Travel
                   </span>
@@ -255,8 +255,8 @@ export default function Navbar() {
                       to={m.path}
                       className={`px-4 py-2.5 rounded-full text-[12px] font-black uppercase tracking-wider flex items-center gap-2 whitespace-nowrap transition-all ${
                         activeLink(m.path)
-                          ? "text-[#990000] bg-white shadow-md shadow-[#990000]/10"
-                          : "text-slate-700 hover:text-[#990000]"
+                          ? "text-[#810100] bg-white shadow-md shadow-[#810100]/10"
+                          : "text-slate-700 hover:text-[#810100]"
                       }`}
                     >
                       {m.icon} {m.name}
@@ -271,8 +271,8 @@ export default function Navbar() {
                       to={m.path}
                       className={`px-3.5 py-2.5 rounded-full text-[11.5px] font-black uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap transition-all ${
                         activeLink(m.path)
-                          ? "text-[#990000] bg-white shadow-md shadow-[#990000]/10"
-                          : "text-slate-700 hover:text-[#990000]"
+                          ? "text-[#810100] bg-white shadow-md shadow-[#810100]/10"
+                          : "text-slate-700 hover:text-[#810100]"
                       }`}
                     >
                       {m.icon} {m.name}
@@ -292,23 +292,23 @@ export default function Navbar() {
                       to="/home"
                       className={`px-5 py-2.5 rounded-full text-[12.5px] font-black uppercase tracking-wider flex items-center gap-2 whitespace-nowrap transition-all ${
                         activeLink("/home")
-                          ? "text-[#990000] bg-white shadow-md shadow-[#990000]/10"
-                          : "text-slate-700 hover:text-[#990000]"
+                          ? "text-[#810100] bg-white shadow-md shadow-[#810100]/10"
+                          : "text-slate-700 hover:text-[#810100]"
                       }`}
                     >
                       Layanan
                       <ChevronDown
                         size={15}
-                        className={layananDropdownOpen ? "rotate-180 transition-transform text-[#990000]" : "transition-transform"}
+                        className={layananDropdownOpen ? "rotate-180 transition-transform text-[#810100]" : "transition-transform"}
                       />
                     </Link>
                     {layananDropdownOpen && (
                       <div className="absolute top-[calc(100%+12px)] left-0 w-80 bg-white border border-slate-100 shadow-[0_25px_50px_rgba(0,0,0,0.15)] rounded-[2.5rem] p-4 animate-dropdownIn z-[100]">
                         <Link
                           to="/home?type=lepas"
-                          className="flex items-center gap-5 p-5 hover:bg-[#990000]/5 rounded-3xl transition-all group/item"
+                          className="flex items-center gap-5 p-5 hover:bg-[#810100]/5 rounded-3xl transition-all group/item"
                         >
-                          <div className="w-12 h-12 bg-[#990000] text-white rounded-2xl flex items-center justify-center group-hover/item:scale-110 transition-transform shadow-lg shadow-[#990000]/20">
+                          <div className="w-12 h-12 bg-[#810100] text-white rounded-2xl flex items-center justify-center group-hover/item:scale-110 transition-transform shadow-lg shadow-[#810100]/20">
                             <Key size={22} />
                           </div>
                           <div>
@@ -318,9 +318,9 @@ export default function Navbar() {
                         </Link>
                         <Link
                           to="/home?type=driver"
-                          className="flex items-center gap-5 p-5 hover:bg-[#990000]/5 rounded-3xl transition-all group/item border-t border-slate-50 mt-1"
+                          className="flex items-center gap-5 p-5 hover:bg-[#810100]/5 rounded-3xl transition-all group/item border-t border-slate-50 mt-1"
                         >
-                          <div className="w-12 h-12 bg-[#0f172a] text-[#C5A059] rounded-2xl flex items-center justify-center group-hover/item:scale-110 transition-transform shadow-lg">
+                          <div className="w-12 h-12 bg-[#1B1717] text-[#EDEBDD] rounded-2xl flex items-center justify-center group-hover/item:scale-110 transition-transform shadow-lg">
                             <Users size={22} />
                           </div>
                           <div>
@@ -333,11 +333,22 @@ export default function Navbar() {
                   </div>
 
                   <Link
+                    to="/discovery"
+                    className={`px-5 py-2.5 rounded-full text-[12.5px] font-black uppercase tracking-wider whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                      activeLink("/discovery")
+                        ? "text-[#810100] bg-white shadow-md shadow-[#810100]/10"
+                        : "text-slate-700 hover:text-[#810100]"
+                    }`}
+                  >
+                    <Compass size={13} />
+                    Discovery
+                  </Link>
+                  <Link
                     to="/open-trip"
                     className={`px-5 py-2.5 rounded-full text-[12.5px] font-black uppercase tracking-wider whitespace-nowrap transition-all ${
                       activeLink("/open-trip")
-                        ? "text-[#990000] bg-white shadow-md shadow-[#990000]/10"
-                        : "text-slate-700 hover:text-[#990000]"
+                        ? "text-[#810100] bg-white shadow-md shadow-[#810100]/10"
+                        : "text-slate-700 hover:text-[#810100]"
                     }`}
                   >
                     Open Trip
@@ -346,8 +357,8 @@ export default function Navbar() {
                     to="/company-profile"
                     className={`px-5 py-2.5 rounded-full text-[12.5px] font-black uppercase tracking-wider whitespace-nowrap transition-all ${
                       activeLink("/company-profile")
-                        ? "text-[#990000] bg-white shadow-md shadow-[#990000]/10"
-                        : "text-slate-700 hover:text-[#990000]"
+                        ? "text-[#810100] bg-white shadow-md shadow-[#810100]/10"
+                        : "text-slate-700 hover:text-[#810100]"
                     }`}
                   >
                     Company
@@ -356,8 +367,8 @@ export default function Navbar() {
                     to="/tour-packages"
                     className={`px-5 py-2.5 rounded-full text-[12.5px] font-black uppercase tracking-wider whitespace-nowrap transition-all ${
                       activeLink("/tour-packages")
-                        ? "text-[#990000] bg-white shadow-md shadow-[#990000]/10"
-                        : "text-slate-700 hover:text-[#990000]"
+                        ? "text-[#810100] bg-white shadow-md shadow-[#810100]/10"
+                        : "text-slate-700 hover:text-[#810100]"
                     }`}
                   >
                     Paket Wisata
@@ -381,14 +392,14 @@ export default function Navbar() {
                       setDesktopProfileOpen(false);
                       setProfileOpen(false);
                     }}
-                    className="flex p-2.5 sm:p-3 rounded-full bg-slate-50 text-slate-500 hover:bg-[#990000]/10 hover:text-[#990000] transition-all relative"
+                    className="flex p-2.5 sm:p-3 rounded-full bg-slate-50 text-slate-500 hover:bg-[#810100]/10 hover:text-[#810100] transition-all relative"
                   >
                     <Bell
                       size={18}
-                      className={notificationOpen ? "animate-swing text-[#990000]" : ""}
+                      className={notificationOpen ? "animate-swing text-[#810100]" : ""}
                     />
                     {unreadCount > 0 && (
-                      <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#990000] rounded-full border-2 border-white animate-pulse" />
+                      <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#810100] rounded-full border-2 border-white animate-pulse" />
                     )}
                   </button>
 
@@ -401,7 +412,7 @@ export default function Navbar() {
                           <button
                             onClick={handleMarkAllAsRead}
                             disabled={loadingNotif}
-                            className="text-[10px] font-black text-[#990000] hover:underline uppercase tracking-tighter disabled:opacity-50"
+                            className="text-[10px] font-black text-[#810100] hover:underline uppercase tracking-tighter disabled:opacity-50"
                           >
                             {loadingNotif ? "Processing..." : "Tandai semua dibaca"}
                           </button>
@@ -425,13 +436,13 @@ export default function Navbar() {
                               className={`p-4 rounded-3xl transition-all cursor-pointer border ${
                                 n.read
                                   ? "bg-slate-50/50 border-transparent opacity-60"
-                                  : "bg-[#990000]/5 border-[#990000]/20 hover:bg-[#990000]/10 shadow-sm"
+                                  : "bg-[#810100]/5 border-[#810100]/20 hover:bg-[#810100]/10 shadow-sm"
                               }`}
                             >
                               <div className="flex gap-4">
                                 <div
                                   className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                                    n.read ? "bg-slate-200 text-slate-500" : "bg-[#990000] text-white"
+                                    n.read ? "bg-slate-200 text-slate-500" : "bg-[#810100] text-white"
                                   }`}
                                 >
                                   <Bell size={18} />
@@ -476,18 +487,18 @@ export default function Navbar() {
                     }}
                     className={`flex items-center gap-3 px-1.5 py-1.5 rounded-full transition-all border ${
                       role === "admin"
-                        ? "border-[#990000]/30 bg-[#990000]/10"
+                        ? "border-[#810100]/30 bg-[#810100]/10"
                         : "border-slate-200 bg-slate-50"
                     }`}
                   >
-                    <div className="w-9 h-9 bg-[#990000] text-white rounded-full flex items-center justify-center text-sm font-black shadow-md">
+                    <div className="w-9 h-9 bg-[#810100] text-white rounded-full flex items-center justify-center text-sm font-black shadow-md">
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
                     <div className="hidden xl:block text-left mr-2">
                       <p className="text-[9px] font-black text-slate-900 uppercase leading-none mb-1">
                         {user.email?.split("@")[0]}
                       </p>
-                      <p className="text-[8px] font-bold text-[#990000] uppercase tracking-widest opacity-80">
+                      <p className="text-[8px] font-bold text-[#810100] uppercase tracking-widest opacity-80">
                         {role || "Member"}
                       </p>
                     </div>
@@ -514,9 +525,9 @@ export default function Navbar() {
                           key={m.path}
                           to={m.path}
                           role="menuitem"
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-[#990000]/10 rounded-2xl transition-all text-slate-600 hover:text-[#990000]"
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-[#810100]/10 rounded-2xl transition-all text-slate-600 hover:text-[#810100]"
                         >
-                          <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#990000]">{m.icon}</div>
+                          <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#810100]">{m.icon}</div>
                           <span className="text-[10px] font-black uppercase tracking-widest">{m.name} Control</span>
                         </Link>
                       ))}
@@ -539,9 +550,9 @@ export default function Navbar() {
                         <Link
                           to="/history-pesanan"
                           role="menuitem"
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-[#990000]/10 rounded-2xl transition-all text-slate-600 hover:text-[#990000]"
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-[#810100]/10 rounded-2xl transition-all text-slate-600 hover:text-[#810100]"
                         >
-                          <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#990000]"><History size={16} /></div>
+                          <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#810100]"><History size={16} /></div>
                           <span className="text-[10px] font-black uppercase tracking-widest">History Pesanan</span>
                         </Link>
                       )}
@@ -550,7 +561,7 @@ export default function Navbar() {
                       <button
                         onClick={handleLogout}
                         role="menuitem"
-                        className="w-full flex items-center gap-3 px-4 py-4 text-[#990000] hover:bg-[#990000]/10 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest"
+                        className="w-full flex items-center gap-3 px-4 py-4 text-[#810100] hover:bg-[#810100]/10 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest"
                       >
                         <LogOut size={16} /> Logout System
                       </button>
@@ -558,13 +569,22 @@ export default function Navbar() {
                   )}
                 </div>
               ) : (
-                <Link
-                  to="/login"
-                  id="login-btn-desktop"
-                  className="hidden lg:flex items-center gap-3 bg-[#990000] text-white px-7 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.1em] hover:bg-[#7A0000] shadow-lg shadow-[#990000]/20 transition-all group"
-                >
-                  Member Access <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                </Link>
+                <div className="hidden lg:flex items-center gap-3">
+                  <Link
+                    to="/login"
+                    id="login-btn-desktop"
+                    className="flex items-center gap-2 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.1em] border border-[#EDEBDD]/40 text-[#1B1717] hover:border-[#810100]/30 hover:text-[#810100] transition-all group"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/signup"
+                    id="signup-btn-desktop"
+                    className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#810100] text-white text-[10px] font-black uppercase tracking-[0.1em] hover:bg-[#630000] shadow-lg shadow-[#810100]/20 transition-all group"
+                  >
+                    Sign Up <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </div>
               )}
 
               {/* ── MOBILE PROFILE BUTTON (visible only on < lg) ── */}
@@ -580,20 +600,18 @@ export default function Navbar() {
                   }}
                   className={`flex items-center gap-2 p-1.5 rounded-full transition-all border min-w-[44px] min-h-[44px] justify-center ${
                     profileOpen
-                      ? "border-[#990000]/40 bg-[#990000]/10"
-                      : "border-slate-200 bg-slate-50 hover:bg-[#990000]/10 hover:border-[#990000]/30"
+                      ? "border-[#810100]/40 bg-[#810100]/10"
+                      : "border-slate-200 bg-slate-50 hover:bg-[#810100]/10 hover:border-[#810100]/30"
                   }`}
                 >
                   {user ? (
-                    <div className="w-8 h-8 bg-[#990000] text-white rounded-full flex items-center justify-center text-sm font-black shadow-sm">
+                    <div className="w-8 h-8 bg-[#810100] text-white rounded-full flex items-center justify-center text-sm font-black shadow-sm">
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
-                  ) : (
-                    <Menu size={20} className="text-slate-600" />
-                  )}
+                  ) : null}
                   <ChevronDown
-                    size={14}
-                    className={`text-slate-400 transition-transform ${profileOpen ? "rotate-180" : ""}`}
+                    size={20}
+                    className={`text-slate-500 transition-transform ${profileOpen ? "rotate-180 text-[#810100]" : ""}`}
                   />
                 </button>
 
@@ -608,14 +626,14 @@ export default function Navbar() {
                         {/* User info header */}
                         <div className="px-4 py-3 mb-2 border-b border-slate-50">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-[#990000] text-white rounded-full flex items-center justify-center font-black shadow-sm">
+                            <div className="w-9 h-9 bg-[#810100] text-white rounded-full flex items-center justify-center font-black shadow-sm">
                               {user.email?.charAt(0).toUpperCase()}
                             </div>
                             <div>
                               <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest">
                                 {user.email?.split("@")[0]}
                               </p>
-                              <p className="text-[8px] font-bold text-[#990000] uppercase tracking-widest opacity-80">
+                              <p className="text-[8px] font-bold text-[#810100] uppercase tracking-widest opacity-80">
                                 {role || "Member"}
                               </p>
                             </div>
@@ -631,11 +649,11 @@ export default function Navbar() {
                             onClick={() => setProfileOpen(false)}
                             className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-[11px] font-bold uppercase tracking-widest ${
                               activeLink(m.path)
-                                ? "bg-[#990000]/10 text-[#990000]"
-                                : "text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000]"
+                                ? "bg-[#810100]/10 text-[#810100]"
+                                : "text-slate-600 hover:bg-[#810100]/10 hover:text-[#810100]"
                             }`}
                           >
-                            <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#990000]">{m.icon}</div>
+                            <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#810100]">{m.icon}</div>
                             {m.name}
                           </Link>
                         ))}
@@ -666,21 +684,32 @@ export default function Navbar() {
                               role="menuitem"
                               onClick={() => setProfileOpen(false)}
                               className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-[11px] font-bold uppercase tracking-widest ${
-                                activeLink("/home") ? "bg-[#990000]/10 text-[#990000]" : "text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000]"
+                                activeLink("/home") ? "bg-[#810100]/10 text-[#810100]" : "text-slate-600 hover:bg-[#810100]/10 hover:text-[#810100]"
                               }`}
                             >
-                              <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#990000]"><Car size={16} /></div>
+                              <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#810100]"><Car size={16} /></div>
                               Layanan
+                            </Link>
+                            <Link
+                              to="/discovery"
+                              role="menuitem"
+                              onClick={() => setProfileOpen(false)}
+                              className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-[11px] font-bold uppercase tracking-widest ${
+                                activeLink("/discovery") ? "bg-[#810100]/10 text-[#810100]" : "text-slate-600 hover:bg-[#810100]/10 hover:text-[#810100]"
+                              }`}
+                            >
+                              <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#810100]"><Compass size={16} /></div>
+                              Discovery
                             </Link>
                             <Link
                               to="/open-trip"
                               role="menuitem"
                               onClick={() => setProfileOpen(false)}
                               className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-[11px] font-bold uppercase tracking-widest ${
-                                activeLink("/open-trip") ? "bg-[#990000]/10 text-[#990000]" : "text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000]"
+                                activeLink("/open-trip") ? "bg-[#810100]/10 text-[#810100]" : "text-slate-600 hover:bg-[#810100]/10 hover:text-[#810100]"
                               }`}
                             >
-                              <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#990000]"><Map size={16} /></div>
+                              <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#810100]"><Map size={16} /></div>
                               Open Trip
                             </Link>
                             <Link
@@ -688,10 +717,10 @@ export default function Navbar() {
                               role="menuitem"
                               onClick={() => setProfileOpen(false)}
                               className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-[11px] font-bold uppercase tracking-widest ${
-                                activeLink("/company-profile") ? "bg-[#990000]/10 text-[#990000]" : "text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000]"
+                                activeLink("/company-profile") ? "bg-[#810100]/10 text-[#810100]" : "text-slate-600 hover:bg-[#810100]/10 hover:text-[#810100]"
                               }`}
                             >
-                              <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#990000]"><Users size={16} /></div>
+                              <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#810100]"><Users size={16} /></div>
                               Company
                             </Link>
                             <Link
@@ -699,10 +728,10 @@ export default function Navbar() {
                               role="menuitem"
                               onClick={() => setProfileOpen(false)}
                               className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-[11px] font-bold uppercase tracking-widest ${
-                                activeLink("/tour-packages") ? "bg-[#990000]/10 text-[#990000]" : "text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000]"
+                                activeLink("/tour-packages") ? "bg-[#810100]/10 text-[#810100]" : "text-slate-600 hover:bg-[#810100]/10 hover:text-[#810100]"
                               }`}
                             >
-                              <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#990000]"><Map size={16} /></div>
+                              <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#810100]"><Map size={16} /></div>
                               Paket Wisata
                             </Link>
                             <Link
@@ -710,10 +739,10 @@ export default function Navbar() {
                               role="menuitem"
                               onClick={() => setProfileOpen(false)}
                               className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-[11px] font-bold uppercase tracking-widest ${
-                                activeLink("/history-pesanan") ? "bg-[#990000]/10 text-[#990000]" : "text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000]"
+                                activeLink("/history-pesanan") ? "bg-[#810100]/10 text-[#810100]" : "text-slate-600 hover:bg-[#810100]/10 hover:text-[#810100]"
                               }`}
                             >
-                              <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#990000]"><History size={16} /></div>
+                              <div className="bg-white p-1.5 rounded-lg shadow-sm text-[#810100]"><History size={16} /></div>
                               History Pesanan
                             </Link>
                           </>
@@ -723,7 +752,7 @@ export default function Navbar() {
                         <button
                           onClick={handleLogout}
                           role="menuitem"
-                          className="w-full flex items-center gap-3 px-4 py-3.5 text-[#990000] hover:bg-[#990000]/10 rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest"
+                          className="w-full flex items-center gap-3 px-4 py-3.5 text-[#810100] hover:bg-[#810100]/10 rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest"
                         >
                           <LogOut size={16} /> Logout
                         </button>
@@ -735,42 +764,58 @@ export default function Navbar() {
                           to="/login"
                           role="menuitem"
                           onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3.5 bg-[#990000] text-white rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest shadow-md shadow-[#990000]/20"
+                          className="flex items-center gap-3 px-4 py-3.5 bg-[#810100] text-white rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest shadow-md shadow-[#810100]/20"
                         >
                           <LogIn size={16} /> Login
+                        </Link>
+                        <Link
+                          to="/signup"
+                          role="menuitem"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3.5 border border-[#EDEBDD]/40 text-[#1B1717] hover:border-[#810100]/30 hover:text-[#810100] rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest"
+                        >
+                          <UserPlus size={16} /> Sign Up
                         </Link>
                         <div className="h-px bg-slate-100 my-1" />
                         <Link
                           to="/home"
                           role="menuitem"
                           onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
+                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#810100]/10 hover:text-[#810100] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
                         >
                           <Car size={16} /> Layanan
+                        </Link>
+                        <Link
+                          to="/discovery"
+                          role="menuitem"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#810100]/10 hover:text-[#810100] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
+                        >
+                          <Compass size={16} /> Discovery
                         </Link>
                         <Link
                           to="/open-trip"
                           role="menuitem"
                           onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
+                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#810100]/10 hover:text-[#810100] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
                         >
                           <Map size={16} /> Open Trip
-                        </Link>
-                        <Link
-                          to="/tour-packages"
-                          role="menuitem"
-                          onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
-                        >
-                          <Map size={16} /> Paket Wisata
                         </Link>
                         <Link
                           to="/company-profile"
                           role="menuitem"
                           onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#990000]/10 hover:text-[#990000] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
+                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#810100]/10 hover:text-[#810100] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
                         >
                           <Users size={16} /> Company
+                        </Link>
+                        <Link
+                          to="/tour-packages"
+                          role="menuitem"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-[#810100]/10 hover:text-[#810100] rounded-2xl transition-all font-bold text-[11px] uppercase tracking-widest"
+                        >
+                          <Map size={16} /> Paket Wisata
                         </Link>
                       </div>
                     )}

@@ -54,7 +54,7 @@ export default function AdminVehicleVerifications() {
         
         {/* Header */}
         <div className="mb-10">
-          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
             <ShieldCheck size={14} />
             <span>Fleet Quality Control</span>
           </div>
@@ -78,7 +78,7 @@ export default function AdminVehicleVerifications() {
                   <button
                     key={f.id}
                     onClick={() => setFilter(f.id)}
-                    className={`px-5 py-3 rounded-xl text-left text-xs font-bold uppercase tracking-widest transition-all ${filter === f.id ? 'bg-[#990000] text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                    className={`px-5 py-3 rounded-xl text-left text-xs font-bold uppercase tracking-widest transition-all ${filter === f.id ? 'bg-[#810100] text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
                   >
                     {f.label}
                   </button>
@@ -139,7 +139,7 @@ export default function AdminVehicleVerifications() {
                               </div>
                               <button 
                                 onClick={() => setSelectedVerification(v)}
-                                className="bg-[#990000] hover:bg-[#7a0000] text-white px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center gap-2"
+                                className="bg-[#810100] hover:bg-[#630000] text-white px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center gap-2"
                               >
                                 <Eye size={16} /> Inspect
                               </button>

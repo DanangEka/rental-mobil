@@ -272,7 +272,7 @@ export default function PaymentVerification() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-6 md:py-10 lg:py-12">
         <div className="mb-8 md:mb-10 animate-fadeInUp">
-          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
              <CreditCard size={14} />
              <span>Finance Settlement</span>
           </div>
@@ -284,7 +284,7 @@ export default function PaymentVerification() {
           {/* Order List */}
           <div className="lg:col-span-1 space-y-4 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-1.5 h-6 bg-[#990000] rounded-full"></div>
+              <div className="w-1.5 h-6 bg-[#810100] rounded-full"></div>
               <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Order Berlangsung</h2>
             </div>
             
@@ -306,8 +306,8 @@ export default function PaymentVerification() {
                   }}
                   className={`p-6 rounded-[2rem] cursor-pointer transition-all duration-300 border ${
                     selectedOrder?.id === order.id
-                      ? "bg-[#990000] border-[#990000] shadow-xl shadow-red-900/20 -translate-y-1"
-                      : "bg-white border-slate-100 shadow-sm shadow-slate-200/50 hover:border-[#990000]/20"
+                      ? "bg-[#810100] border-[#810100] shadow-xl shadow-red-900/20 -translate-y-1"
+                      : "bg-white border-slate-100 shadow-sm shadow-slate-200/50 hover:border-[#810100]/20"
                   }`}
                 >
                   <div className="flex justify-between items-start gap-4">
@@ -341,7 +341,7 @@ export default function PaymentVerification() {
               <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-2xl shadow-slate-200/50">
                 <div className="px-6 md:px-10 py-5 md:py-8 border-b border-slate-50 bg-slate-50/50">
                   <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest">
-                    Verifikasi Pembayaran: <span className="text-[#990000]">{selectedOrder.namaMobil}</span>
+                    Verifikasi Pembayaran: <span className="text-[#810100]">{selectedOrder.namaMobil}</span>
                   </h2>
                 </div>
 
@@ -364,8 +364,8 @@ export default function PaymentVerification() {
                       </p>
                     </div>
                     <div className="md:col-span-2 pt-6 border-t border-slate-200">
-                      <span className="text-[10px] font-black text-[#990000] uppercase tracking-[0.2em] block mb-2">DP Diterima (Finance)</span>
-                      <p className="font-black text-[#990000] text-3xl md:text-4xl tracking-tighter">
+                      <span className="text-[10px] font-black text-[#810100] uppercase tracking-[0.2em] block mb-2">DP Diterima (Finance)</span>
+                      <p className="font-black text-[#810100] text-3xl md:text-4xl tracking-tighter">
                         Rp {(selectedOrder.dpAmount || Math.floor(selectedOrder.perkiraanHarga * 0.5)).toLocaleString()}
                       </p>
                     </div>
@@ -394,7 +394,7 @@ export default function PaymentVerification() {
                         <select
                           value={paymentMethod}
                           onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 text-sm font-black text-slate-800 focus:border-[#990000] focus:ring-1 focus:ring-[#990000] transition-all outline-none appearance-none cursor-pointer"
+                          className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 text-sm font-black text-slate-800 focus:border-[#810100] focus:ring-1 focus:ring-[#810100] transition-all outline-none appearance-none cursor-pointer"
                           disabled={selectedOrder.status === "menunggu pembayaran"}
                         >
                           <option value="cash">Tunai (Cash)</option>
@@ -430,9 +430,9 @@ export default function PaymentVerification() {
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             id="payment-photo-upload"
                           />
-                          <div className="border-2 border-dashed border-slate-200 hover:border-[#990000] rounded-[2.5rem] p-10 text-center bg-slate-50/50 transition-all group-hover:bg-red-50/30">
-                            <Camera className="h-12 w-12 text-slate-200 mx-auto mb-4 transition-colors group-hover:text-[#990000]" />
-                            <div className="bg-[#990000] text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest inline-block mb-3 shadow-lg shadow-red-900/10">Pilih Bukti</div>
+                          <div className="border-2 border-dashed border-slate-200 hover:border-[#810100] rounded-[2.5rem] p-10 text-center bg-slate-50/50 transition-all group-hover:bg-red-50/30">
+                            <Camera className="h-12 w-12 text-slate-200 mx-auto mb-4 transition-colors group-hover:text-[#810100]" />
+                            <div className="bg-[#810100] text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest inline-block mb-3 shadow-lg shadow-red-900/10">Pilih Bukti</div>
                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Pilih atau ambil foto bukti fisik</p>
                           </div>
                         </div>
@@ -443,7 +443,7 @@ export default function PaymentVerification() {
                             {paymentPhotos.map((photo, index) => (
                               <div key={index} className="relative group animate-fadeInUp">
                                 <div className="bg-slate-50 border border-slate-100 rounded-[1.5rem] p-5 flex flex-col items-center justify-center h-28 overflow-hidden shadow-inner">
-                                  <FileText className="h-8 w-8 text-slate-200 group-hover:text-[#990000] transition-colors mb-2" />
+                                  <FileText className="h-8 w-8 text-slate-200 group-hover:text-[#810100] transition-colors mb-2" />
                                   <p className="text-[9px] text-slate-400 font-black uppercase truncate w-full text-center tracking-tighter">
                                     {photo.name}
                                   </p>
@@ -470,7 +470,7 @@ export default function PaymentVerification() {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder="Contoh: Pembayaran lunas di awal, kembalian diserahkan, dll."
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-8 py-6 text-sm font-bold text-slate-800 focus:border-[#990000] outline-none transition-all placeholder:text-slate-300 min-h-[120px]"
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-8 py-6 text-sm font-bold text-slate-800 focus:border-[#810100] outline-none transition-all placeholder:text-slate-300 min-h-[120px]"
                       />
                     </div>
 
@@ -483,7 +483,7 @@ export default function PaymentVerification() {
                           !paymentAmount ||
                           ((paymentMethod === "cash" || selectedOrder?.paymentMethod === "Cash") && paymentPhotos.length === 0)
                         }
-                        className="w-full bg-[#990000] hover:bg-slate-900 disabled:bg-slate-100 disabled:text-slate-300 text-white font-black py-6 rounded-[2rem] tracking-widest text-[11px] uppercase transition-all shadow-xl shadow-red-900/10 group overflow-hidden relative active:scale-95"
+                        className="w-full bg-[#810100] hover:bg-slate-900 disabled:bg-slate-100 disabled:text-slate-300 text-white font-black py-6 rounded-[2rem] tracking-widest text-[11px] uppercase transition-all shadow-xl shadow-red-900/10 group overflow-hidden relative active:scale-95"
                       >
                         <div className="relative z-10 flex items-center justify-center gap-4">
                           {isSubmitting ? (

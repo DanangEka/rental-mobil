@@ -3,8 +3,6 @@
 ## Konteks project
 
 - Area yang terdampak: modal "Form Pengajuan — Detail Perjalananmu"
-- Melengkapi rancangan yang sudah dibahas di `marketplace-multi-mitra.md`
-  (Task 5: Pengajuan Open Trip / Private Trip oleh client)
 
 ## Masalah
 

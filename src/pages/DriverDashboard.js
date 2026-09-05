@@ -345,7 +345,7 @@ export default function DriverDashboard() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-6 md:py-10 lg:py-12">
         <div className="mb-8 md:mb-10 animate-fadeInUp">
-          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
              <Gauge size={14} />
              <span>Driver Control Dashboard</span>
           </div>
@@ -359,7 +359,7 @@ export default function DriverDashboard() {
             { label: "Total Order", value: stats.totalOrders, icon: <ClipboardList className="h-5 w-5" />, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
             { label: "Order Aktif", value: stats.activeOrders, icon: <Clock className="h-5 w-5" />, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
             { label: "Order Selesai", value: stats.completedOrders, icon: <CheckCircle className="h-5 w-5" />, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
-            { label: "Total Pendapatan", value: `Rp ${stats.totalEarnings.toLocaleString()}`, icon: <DollarSign className="h-5 w-5" />, color: "text-[#990000]", bg: "bg-red-50", border: "border-red-100" },
+            { label: "Total Pendapatan", value: `Rp ${stats.totalEarnings.toLocaleString()}`, icon: <DollarSign className="h-5 w-5" />, color: "text-[#810100]", bg: "bg-red-50", border: "border-red-100" },
           ].map((stat, idx) => (
             <div key={idx} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition-all group">
               <div className="flex items-start justify-between mb-4">
@@ -378,10 +378,10 @@ export default function DriverDashboard() {
         <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="w-1.5 h-6 bg-[#990000] rounded-full"></div>
+              <div className="w-1.5 h-6 bg-[#810100] rounded-full"></div>
               <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest">Order Terbaru Tersedia</h2>
             </div>
-            <div className="bg-red-50 text-[#990000] text-[10px] font-black px-4 py-2 rounded-full border border-red-100 uppercase tracking-widest">
+            <div className="bg-red-50 text-[#810100] text-[10px] font-black px-4 py-2 rounded-full border border-red-100 uppercase tracking-widest">
               {orders.length} Order Tersedia
             </div>
           </div>
@@ -400,13 +400,13 @@ export default function DriverDashboard() {
                 {/* Mobile Card View */}
                 <div className="space-y-4 md:hidden">
                   {orders.slice(0, 10).map((order) => (
-                    <div key={order.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:border-[#990000]/30 transition-all">
+                    <div key={order.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:border-[#810100]/30 transition-all">
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Armada</div>
                           <div className="text-sm font-black text-slate-900">{order.namaMobil}</div>
                           {order.status === "approve sewa" && (
-                            <div className="text-[8px] text-[#990000] font-black uppercase tracking-widest mt-1 bg-red-50 px-2 py-0.5 rounded border border-red-100 w-fit">Siap diambil (Cash)</div>
+                            <div className="text-[8px] text-[#810100] font-black uppercase tracking-widest mt-1 bg-red-50 px-2 py-0.5 rounded border border-red-100 w-fit">Siap diambil (Cash)</div>
                           )}
                         </div>
                         <div className="text-[10px] font-black text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 uppercase tracking-widest">
@@ -414,13 +414,13 @@ export default function DriverDashboard() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
-                        <div className="h-8 w-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black text-[#990000] shadow-sm">
+                        <div className="h-8 w-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black text-[#810100] shadow-sm">
                           {(users.find(u => u.id === order.uid)?.nama || order.email || 'U').charAt(0).toUpperCase()}
                         </div>
                         <div className="text-[11px] font-bold text-slate-600 truncate">{users.find(u => u.id === order.uid)?.nama || order.email}</div>
                       </div>
                       <div className="flex items-start text-xs text-slate-400 mb-5">
-                        <MapPin className="h-4 w-4 mr-2 mt-0.5 text-[#990000]/70 flex-shrink-0" />
+                        <MapPin className="h-4 w-4 mr-2 mt-0.5 text-[#810100]/70 flex-shrink-0" />
                         <div>
                           <span className="font-black text-slate-700 text-[11px] block">{order.lokasiPenyerahan || "Lokasi Default"}</span>
                           <span className="text-[10px] text-slate-400 line-clamp-1 block mt-0.5 uppercase tracking-wide">{getFullAddress(order)}</span>
@@ -429,7 +429,7 @@ export default function DriverDashboard() {
                       {(order.status === "approve sewa" || order.status === "pembayaran berhasil") && !order.driverId ? (
                         <button
                           onClick={() => handleAcceptOrder(order.id)}
-                          className="w-full bg-[#990000] hover:bg-slate-900 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-red-900/10 active:scale-95"
+                          className="w-full bg-[#810100] hover:bg-slate-900 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-red-900/10 active:scale-95"
                         >
                           Terima Order
                         </button>
@@ -460,14 +460,14 @@ export default function DriverDashboard() {
                       {orders.slice(0, 10).map((order) => (
                         <tr key={order.id} className="group hover:bg-slate-50/50 transition-colors">
                           <td className="px-6 py-6 whitespace-nowrap">
-                            <div className="text-[13px] font-black text-slate-900 group-hover:text-[#990000] transition-colors">{order.namaMobil}</div>
+                            <div className="text-[13px] font-black text-slate-900 group-hover:text-[#810100] transition-colors">{order.namaMobil}</div>
                             {order.status === "approve sewa" && (
-                               <div className="text-[8px] text-[#990000] font-black uppercase tracking-widest mt-1 bg-red-50 px-2 py-0.5 rounded border border-red-100 w-fit">Siap diambil (Cash)</div>
+                               <div className="text-[8px] text-[#810100] font-black uppercase tracking-widest mt-1 bg-red-50 px-2 py-0.5 rounded border border-red-100 w-fit">Siap diambil (Cash)</div>
                             )}
                           </td>
                           <td className="px-6 py-6 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[11px] font-black text-[#990000] mr-3 overflow-hidden shadow-inner uppercase">
+                              <div className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[11px] font-black text-[#810100] mr-3 overflow-hidden shadow-inner uppercase">
                                 {(users.find(u => u.id === order.uid)?.nama || order.email || 'U').charAt(0).toUpperCase()}
                               </div>
                               <div className="text-[12px] font-bold text-slate-600">
@@ -477,7 +477,7 @@ export default function DriverDashboard() {
                           </td>
                           <td className="px-6 py-6">
                             <div className="flex items-start text-xs text-slate-500">
-                              <MapPin className="h-4 w-4 mr-2 mt-0.5 text-[#990000]/70" />
+                              <MapPin className="h-4 w-4 mr-2 mt-0.5 text-[#810100]/70" />
                               <div>
                                 <span className="font-black text-slate-700 block text-[11px]">{order.lokasiPenyerahan || "Lokasi Default"}</span>
                                 <span className="text-[10px] text-slate-400 line-clamp-1 mt-0.5" title={getFullAddress(order)}>
@@ -495,7 +495,7 @@ export default function DriverDashboard() {
                             {(order.status === "approve sewa" || order.status === "pembayaran berhasil") && !order.driverId ? (
                               <button
                                 onClick={() => handleAcceptOrder(order.id)}
-                                className="bg-[#990000] hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-red-900/10 hover:scale-105 active:scale-95"
+                                className="bg-[#810100] hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-red-900/10 hover:scale-105 active:scale-95"
                               >
                                 Terima Order
                               </button>

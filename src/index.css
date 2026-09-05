@@ -2,20 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* C57 Design System Tokens — Crimson Red + Navy Dark + Warm Gold Accent */
+/* C57 Design System Tokens — Cherry Red + Noir Black + Cotton Accent */
 :root {
-  --c57-red:            #990000;
-  --c57-red-dark:       #7A0000;
-  --c57-red-light:      #C00000;
-  --c57-red-soft:       #FFF1F1;
-  --c57-charcoal:       #0f172a;
-  --c57-charcoal-soft:  #1e2d45;
-  --c57-slate:          #2d4061;
-  --c57-gold:           #C5A059;
-  --c57-gold-light:     #E5C88A;
-  --c57-gold-dark:      #9E7B3B;
-  --c57-cream:          #FAF8F5;
-  --c57-ivory:          #F8FAFC;
+  --c57-red:            #810100;
+  --c57-red-dark:       #630000;
+  --c57-red-light:      #991A19;
+  --c57-red-soft:       #F5E6E6;
+  --c57-charcoal:       #1B1717;
+  --c57-charcoal-soft:  #2A2525;
+  --c57-slate:          #3D3636;
+  --c57-cotton:         #EDEBDD;
+  --c57-cotton-light:   #F5F3EA;
+  --c57-cotton-dark:    #D8D5C7;
+  --c57-cream:          #F8F6F0;
+  --c57-ivory:          #FAFAF6;
+  --c57-gold:           #C9A84C;
+  --c57-gold-light:     #E8D48B;
 }
 
 /* ==========================================
@@ -35,7 +37,7 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f9fafb;
+  background-color: #FAFAF6;
   overflow-x: hidden;
 }
 
@@ -44,18 +46,29 @@ code {
 }
 
 /* ==========================================
+   Hide scrollbar utility (no plugin needed)
+   ========================================== */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==========================================
    Custom Scrollbar
    ========================================== */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #1B1717;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--c57-red);
-  border-radius: 3px;
+  border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--c57-red-light);
@@ -65,7 +78,7 @@ code {
    Animations
    ========================================== */
 @keyframes fadeInUp {
-  0%   { opacity: 0; transform: translateY(20px); }
+  0%   { opacity: 0; transform: translateY(24px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
@@ -99,8 +112,44 @@ code {
   50%      { opacity: 0.7; transform: scale(1.05); }
 }
 
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes spotReveal {
+  0%   { opacity: 0; transform: translateY(40px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes luxuryGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(129, 1, 0, 0.15), 0 0 60px rgba(129, 1, 0, 0.05); }
+  50%      { box-shadow: 0 0 30px rgba(129, 1, 0, 0.25), 0 0 80px rgba(129, 1, 0, 0.1); }
+}
+
+@keyframes borderShimmer {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes gentleBreathe {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.02); }
+}
+
+@keyframes heroKenBurns {
+  0%   { transform: scale(1) translateY(0); }
+  50%  { transform: scale(1.08) translateY(-1.5%); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+.heroKenBurns {
+  animation: heroKenBurns 16s ease-in-out infinite;
+}
+
 .animate-fadeInUp {
-  animation: fadeInUp 0.6s ease-out both;
+  animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-fadeIn {
@@ -119,6 +168,14 @@ code {
   animation: zoomIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.animate-luxuryGlow {
+  animation: luxuryGlow 4s ease-in-out infinite;
+}
+
+.animate-breathe {
+  animation: gentleBreathe 4s ease-in-out infinite;
+}
+
 .ease-smooth {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -130,36 +187,67 @@ code {
 .animate-fadeInUp.delay-500  { animation-delay: 0.5s; }
 
 /* ==========================================
-   Glassmorphism card
+   Glassmorphism card (Luxury variant)
    ========================================== */
 .glass-card {
   background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.glass-card-light {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
 }
 
 /* ==========================================
    Gradient text
    ========================================== */
 .gradient-text {
-  background: linear-gradient(135deg, var(--c57-red-light) 0%, var(--c57-red) 50%, var(--c57-gold) 100%);
+  background: linear-gradient(135deg, var(--c57-red-light) 0%, var(--c57-red) 50%, var(--c57-cotton) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-gold {
+  background: linear-gradient(135deg, var(--c57-gold) 0%, var(--c57-gold-light) 50%, var(--c57-gold) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 /* ==========================================
+   Luxury noise texture overlay
+   ========================================== */
+.noise-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ==========================================
    Shimmer skeleton loading
    ========================================== */
 .skeleton {
-  background: linear-gradient(90deg, #0f172a 25%, #1e2d45 50%, #0f172a 75%);
+  background: linear-gradient(90deg, #EDEBDD 25%, #F5F3EA 50%, #EDEBDD 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+
+.skeleton-dark {
+  background: linear-gradient(90deg, #1B1717 25%, #2A2525 50%, #1B1717 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 
 /* ==========================================
@@ -216,8 +304,40 @@ code {
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  background: linear-gradient(135deg, var(--c57-red), var(--c57-gold));
+  background: linear-gradient(135deg, var(--c57-red), var(--c57-cotton));
   z-index: -1;
+}
+
+/* ==========================================
+   Luxury divider with diamond
+   ========================================== */
+.luxury-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.luxury-divider::before,
+.luxury-divider::after {
+  content: '';
+  height: 1px;
+  width: 48px;
+  background: linear-gradient(90deg, transparent, var(--c57-cotton-dark), transparent);
+}
+
+/* ==========================================
+   Elegant card base
+   ========================================== */
+.elegant-card {
+  background: white;
+  border: 1px solid rgba(237, 235, 221, 0.5);
+  border-radius: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 20px rgba(0, 0, 0, 0.03);
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.elegant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 12px 40px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
 }
 
 /* ==========================================
@@ -229,12 +349,13 @@ code {
   font-weight: 600;
   padding: 0.75rem 1.5rem;
   border-radius: 0.75rem;
-  transition: all 0.2s;
-  box-shadow: 0 4px 15px rgba(153, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 4px 15px rgba(129, 1, 0, 0.25);
 }
 .btn-brand:hover {
   background-color: var(--c57-red-dark);
-  box-shadow: 0 8px 30px rgba(153, 0, 0, 0.4);
+  box-shadow: 0 8px 30px rgba(129, 1, 0, 0.35);
+  transform: translateY(-1px);
 }
 .btn-brand:focus {
   outline: 2px solid var(--c57-red-light);
@@ -247,35 +368,46 @@ code {
   font-weight: 600;
   padding: 0.75rem 1.5rem;
   border-radius: 0.75rem;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  backdrop-filter: blur(4px);
 }
 .btn-outline:hover {
   background: white;
   color: var(--c57-red);
+  transform: translateY(-1px);
 }
 .btn-outline:focus {
   outline: none;
 }
 
 /* ==========================================
-   Input base
+   Input base (refined)
    ========================================== */
 .input-base {
-  @apply w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900
-         placeholder-gray-400 transition-all duration-200
-         focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent;
+  @apply w-full px-4 py-3 border border-gray-200 rounded-xl bg-white text-gray-900
+         placeholder-gray-400 transition-all duration-300
+         focus:outline-none focus:ring-2 focus:ring-[#810100]/20 focus:border-[#810100]/40;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.input-base:focus {
+  box-shadow: 0 0 0 4px rgba(129, 1, 0, 0.06);
 }
 .input-dark {
   @apply w-full px-4 py-3 border border-gray-600 rounded-xl bg-gray-800 text-white
-         placeholder-gray-500 transition-all duration-200
-         focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent;
+         placeholder-gray-500 transition-all duration-300
+         focus:outline-none focus:ring-2 focus:ring-[#810100]/30 focus:border-[#810100]/40;
 }
 
 /* ==========================================
-   Card hover lift
+   Card hover lift (refined)
    ========================================== */
 .card-hover {
-  @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover;
+  @apply transition-all duration-[400ms];
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
 }
 
 /* ==========================================
@@ -283,6 +415,28 @@ code {
    ========================================== */
 .badge {
   @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+}
+
+/* ==========================================
+   Luxury pattern overlay
+   ========================================== */
+.dot-pattern {
+  background-image: radial-gradient(circle, rgba(129, 1, 0, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ==========================================
+   Elegant section spacing
+   ========================================== */
+.section-luxury {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+@media (min-width: 768px) {
+  .section-luxury {
+    padding-top: 7rem;
+    padding-bottom: 7rem;
+  }
 }
 
 /* ==========================================

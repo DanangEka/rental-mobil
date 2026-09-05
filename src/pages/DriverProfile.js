@@ -98,7 +98,7 @@ export default function DriverProfile() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#990000] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#810100] mx-auto"></div>
           <p className="text-slate-500 mt-4 font-black text-xs uppercase tracking-widest">Memuat profil driver...</p>
         </div>
       </div>
@@ -115,7 +115,7 @@ export default function DriverProfile() {
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 py-6 md:py-10 lg:py-12">
         <div className="mb-8 md:mb-10 animate-fadeInUp">
-          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
              <User size={14} />
              <span>Driver Identity</span>
           </div>
@@ -129,7 +129,7 @@ export default function DriverProfile() {
             <div className="bg-white rounded-[2rem] overflow-hidden border border-slate-100 animate-fadeInUp shadow-xl shadow-slate-200/50" style={{ animationDelay: "0.1s" }}>
               <div className="px-6 md:px-10 py-5 md:py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
                 <div className="flex items-center gap-4">
-                   <div className="p-3 bg-red-50 rounded-2xl text-[#990000] border border-red-100 shadow-sm">
+                   <div className="p-3 bg-red-50 rounded-2xl text-[#810100] border border-red-100 shadow-sm">
                       <User size={22} />
                    </div>
                    <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest">Data Pribadi</h2>
@@ -137,7 +137,7 @@ export default function DriverProfile() {
                 {!isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-2 px-7 py-3 bg-[#990000] hover:bg-slate-900 text-white rounded-full transition-all font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-900/10 active:scale-95"
+                    className="flex items-center gap-2 px-7 py-3 bg-[#810100] hover:bg-slate-900 text-white rounded-full transition-all font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-900/10 active:scale-95"
                   >
                     <Edit2 className="h-4 w-4" />
                     Edit Profil
@@ -173,7 +173,7 @@ export default function DriverProfile() {
                         type="text"
                         value={editForm.nama || ""}
                         onChange={(e) => setEditForm(prev => ({ ...prev, nama: e.target.value }))}
-                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#990000] text-slate-900 text-[13px] font-bold rounded-2xl px-5 py-4 outline-none transition-all"
+                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#810100] text-slate-900 text-[13px] font-bold rounded-2xl px-5 py-4 outline-none transition-all"
                       />
                     ) : (
                       <div className="bg-slate-50/50 border border-slate-50 rounded-2xl px-5 py-4 text-slate-900 font-bold text-[13px]">
@@ -201,7 +201,7 @@ export default function DriverProfile() {
                         type="tel"
                         value={editForm.noTelepon || ""}
                         onChange={(e) => setEditForm(prev => ({ ...prev, noTelepon: e.target.value }))}
-                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#990000] text-slate-900 text-[13px] font-bold rounded-2xl px-5 py-4 outline-none transition-all"
+                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#810100] text-slate-900 text-[13px] font-bold rounded-2xl px-5 py-4 outline-none transition-all"
                       />
                     ) : (
                       <div className="bg-slate-50/50 border border-slate-50 rounded-2xl px-5 py-4 text-slate-900 font-bold text-[13px] flex items-center gap-4">
@@ -220,7 +220,7 @@ export default function DriverProfile() {
                         type="text"
                         value={editForm.simNumber || ""}
                         onChange={(e) => setEditForm(prev => ({ ...prev, simNumber: e.target.value }))}
-                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#990000] text-slate-900 text-[13px] font-bold rounded-2xl px-5 py-4 outline-none transition-all"
+                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#810100] text-slate-900 text-[13px] font-bold rounded-2xl px-5 py-4 outline-none transition-all"
                       />
                     ) : (
                       <div className="bg-slate-50/50 border border-slate-50 rounded-2xl px-5 py-4 text-slate-900 font-bold text-[13px] flex items-center gap-4">
@@ -239,7 +239,7 @@ export default function DriverProfile() {
                         type="date"
                         value={editForm.tanggalLahir || ""}
                         onChange={(e) => setEditForm(prev => ({ ...prev, tanggalLahir: e.target.value }))}
-                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#990000] text-slate-900 text-[13px] font-bold rounded-2xl px-5 py-4 outline-none transition-all"
+                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#810100] text-slate-900 text-[13px] font-bold rounded-2xl px-5 py-4 outline-none transition-all"
                       />
                     ) : (
                       <div className="bg-slate-50/50 border border-slate-50 rounded-2xl px-5 py-4 text-slate-900 font-bold text-[13px] flex items-center gap-4">
@@ -257,7 +257,7 @@ export default function DriverProfile() {
                       <textarea
                         value={editForm.alamat || ""}
                         onChange={(e) => setEditForm(prev => ({ ...prev, alamat: e.target.value }))}
-                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#990000] text-slate-900 text-[13px] font-bold rounded-2xl px-5 py-4 outline-none transition-all resize-none"
+                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#810100] text-slate-900 text-[13px] font-bold rounded-2xl px-5 py-4 outline-none transition-all resize-none"
                         rows={3}
                       />
                     ) : (
@@ -295,7 +295,7 @@ export default function DriverProfile() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-5">
-                  <div className="p-6 bg-slate-50 border border-slate-100 rounded-[1.5rem] group hover:border-[#990000]/30 transition-all">
+                  <div className="p-6 bg-slate-50 border border-slate-100 rounded-[1.5rem] group hover:border-[#810100]/30 transition-all">
                      <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Total Perjalanan</p>
                      <div className="flex items-center justify-between">
                         <span className="text-3xl font-black text-slate-900">{stats.totalTrips}</span>
@@ -305,7 +305,7 @@ export default function DriverProfile() {
                      </div>
                   </div>
 
-                  <div className="p-6 bg-slate-50 border border-slate-100 rounded-[1.5rem] group hover:border-[#990000]/30 transition-all">
+                  <div className="p-6 bg-slate-50 border border-slate-100 rounded-[1.5rem] group hover:border-[#810100]/30 transition-all">
                      <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Total Pendapatan</p>
                      <div className="flex items-center justify-between">
                         <span className="text-2xl font-black text-emerald-600">Rp {stats.totalEarnings.toLocaleString()}</span>
@@ -331,7 +331,7 @@ export default function DriverProfile() {
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500 text-[11px] font-black uppercase tracking-widest">Tipe Akun</span>
                   <span className="text-slate-900 text-sm font-black flex items-center gap-2 uppercase tracking-tighter">
-                    <Briefcase size={14} className="text-[#990000]" />
+                    <Briefcase size={14} className="text-[#810100]" />
                     {driverData.role}
                   </span>
                 </div>

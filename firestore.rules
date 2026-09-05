@@ -219,6 +219,15 @@ service cloud.firestore {
     }
 
     // =====================================================
+    // DESTINATION SPOTS (Detail Destinasi — Publik Browsing)
+    // =====================================================
+
+    match /destinationSpots/{spotId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // =====================================================
     // COMPANY PROFILE (Publik Browsing)
     // =====================================================
 

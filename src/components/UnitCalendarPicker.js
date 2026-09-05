@@ -110,7 +110,7 @@ export default function UnitCalendarPicker({ bookings = [], startDate, endDate, 
       {/* Month Header */}
       <div className={`flex items-center justify-between px-1 ${compact ? "mb-2" : "mb-4"}`}>
         <div className="flex items-center gap-2">
-          <CalendarIcon size={compact ? 14 : 16} className="text-[#990000]" />
+          <CalendarIcon size={compact ? 14 : 16} className="text-[#810100]" />
           <span className={`font-black text-slate-900 tracking-tight ${compact ? "text-xs" : "text-sm"}`}>
             {monthNames[month]} {year}
           </span>
@@ -168,14 +168,14 @@ export default function UnitCalendarPicker({ bookings = [], startDate, endDate, 
             thisDateStr > startStr &&
             thisDateStr < endStr;
 
-          let cellClass = "bg-white text-slate-700 hover:bg-red-50 hover:text-[#990000]";
+          let cellClass = "bg-white text-slate-700 hover:bg-red-50 hover:text-[#810100]";
 
           if (past || booked) {
             cellClass = "bg-slate-100/60 text-slate-300 cursor-not-allowed line-through opacity-50";
           } else if (isStart || isEnd) {
-            cellClass = "bg-[#990000] text-white font-black shadow-md shadow-red-900/30 scale-105 z-10 rounded-xl";
+            cellClass = "bg-[#810100] text-white font-black shadow-md shadow-red-900/30 scale-105 z-10 rounded-xl";
           } else if (inRange) {
-            cellClass = "bg-red-100 text-[#990000] font-bold rounded-lg";
+            cellClass = "bg-red-100 text-[#810100] font-bold rounded-lg";
           }
 
           return (
@@ -197,7 +197,7 @@ export default function UnitCalendarPicker({ bookings = [], startDate, endDate, 
         <div className="mt-4 pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between text-[10px] text-slate-500 font-bold gap-2">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#990000]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#810100]" />
               <span>Dipilih</span>
             </div>
             <div className="flex items-center gap-1">
@@ -205,7 +205,7 @@ export default function UnitCalendarPicker({ bookings = [], startDate, endDate, 
               <span>Terbooked</span>
             </div>
           </div>
-          <span className="text-[#990000]">
+          <span className="text-[#810100]">
             {!startStr ? "Klik tanggal mulai" : !endStr ? "Klik tanggal selesai" : `${startStr} s/d ${endStr}`}
           </span>
         </div>

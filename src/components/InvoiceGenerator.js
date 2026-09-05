@@ -4,23 +4,23 @@ import logo from '../assets/logo.png';
 
 // Design System Constants
 const COLORS = {
-  PRIMARY: [220, 38, 38],   // Red (Corporate)
-  SUCCESS: [34, 197, 94],   // Green
+  PRIMARY: [129, 1, 0],      // Cherry Red (Brand)
+  SUCCESS: [34, 197, 94],    // Green
   INFO: [59, 130, 246],      // Blue
-  DARK: [31, 41, 55],       // Gray 800
-  LIGHT_GRAY: [243, 244, 246],
-  BORDER: [209, 213, 219],
-  TEXT_DARK: [17, 24, 39],
+  DARK: [27, 23, 23],        // Noir Black
+  LIGHT_GRAY: [245, 243, 234], // Cotton light
+  BORDER: [216, 213, 199],   // Cotton dark
+  TEXT_DARK: [27, 23, 23],
   TEXT_GRAY: [107, 114, 128]
 };
 
 const COMPANY_INFO = {
   name: "CAKRA LIMA TUJUH",
-  tagline: "Rental Mobil Surabaya - Profesional & Terpercaya",
+  tagline: "Premium Travel & Tour Experience",
   address: "Lembah Harapan, Blok AA-57, Lidah Wetan",
   city: "Kec. Lakarsantri, Surabaya",
-  email: "limatujuhcakra@gmail.com",
-  phone: "0812-xxxx-xxxx" // Adjusted to placeholder if not known
+  email: "cakralimatujuh@gmail.com",
+  phone: "+62 878-5966-0053"
 };
 
 // Helper to Format Currency

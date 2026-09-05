@@ -132,7 +132,7 @@ export default function VehicleVerification() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-6 md:py-10 lg:py-12">
         <div className="mb-8 md:mb-10 animate-fadeInUp">
-          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
              <Camera size={14} />
              <span>Fleet Standard Quality Control</span>
           </div>
@@ -144,7 +144,7 @@ export default function VehicleVerification() {
           {/* Order List */}
           <div className="lg:col-span-1 space-y-4 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-1.5 h-6 bg-[#990000] rounded-full"></div>
+              <div className="w-1.5 h-6 bg-[#810100] rounded-full"></div>
               <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Order Aktif</h2>
             </div>
             
@@ -160,8 +160,8 @@ export default function VehicleVerification() {
                   onClick={() => setSelectedOrder(order)}
                   className={`p-6 rounded-[2rem] cursor-pointer transition-all duration-300 border ${
                     selectedOrder?.id === order.id
-                      ? "bg-[#990000] border-[#990000] shadow-xl shadow-red-900/20 -translate-y-1"
-                      : "bg-white border-slate-100 shadow-sm shadow-slate-200/50 hover:border-[#990000]/20"
+                      ? "bg-[#810100] border-[#810100] shadow-xl shadow-red-900/20 -translate-y-1"
+                      : "bg-white border-slate-100 shadow-sm shadow-slate-200/50 hover:border-[#810100]/20"
                   }`}
                 >
                   <div className="flex justify-between items-start gap-4">
@@ -192,7 +192,7 @@ export default function VehicleVerification() {
               <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-2xl shadow-slate-200/50">
                 <div className="px-6 md:px-10 py-5 md:py-8 border-b border-slate-50 bg-slate-50/50">
                   <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest">
-                    Update Kondisi: <span className="text-[#990000]">{selectedOrder.namaMobil}</span>
+                    Update Kondisi: <span className="text-[#810100]">{selectedOrder.namaMobil}</span>
                   </h2>
                 </div>
 
@@ -205,7 +205,7 @@ export default function VehicleVerification() {
                         onClick={() => setVerificationType("before")}
                         className={`px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
                           verificationType === "before"
-                            ? "bg-[#990000] text-white shadow-lg shadow-red-900/20 active:scale-95"
+                            ? "bg-[#810100] text-white shadow-lg shadow-red-900/20 active:scale-95"
                             : "text-slate-400 hover:text-slate-900 hover:bg-white"
                         }`}
                       >
@@ -215,7 +215,7 @@ export default function VehicleVerification() {
                         onClick={() => setVerificationType("after")}
                         className={`px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
                           verificationType === "after"
-                            ? "bg-[#990000] text-white shadow-lg shadow-red-900/20 active:scale-95"
+                            ? "bg-[#810100] text-white shadow-lg shadow-red-900/20 active:scale-95"
                             : "text-slate-400 hover:text-slate-900 hover:bg-white"
                         }`}
                       >
@@ -232,7 +232,7 @@ export default function VehicleVerification() {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder="Contoh: Baret halus di bemper depan kanan, BBM 50%, Interior bersih..."
-                        className="w-full bg-slate-50 border border-slate-100 rounded-[2rem] px-8 py-6 text-sm font-bold text-slate-800 focus:border-[#990000] outline-none transition-all placeholder:text-slate-300 min-h-[160px]"
+                        className="w-full bg-slate-50 border border-slate-100 rounded-[2rem] px-8 py-6 text-sm font-bold text-slate-800 focus:border-[#810100] outline-none transition-all placeholder:text-slate-300 min-h-[160px]"
                       />
                     </div>
 
@@ -249,9 +249,9 @@ export default function VehicleVerification() {
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                           id="photo-upload"
                         />
-                        <div className="border-2 border-dashed border-slate-200 hover:border-[#990000] rounded-[2.5rem] p-10 text-center bg-slate-50/50 transition-all group-hover:bg-red-50/30">
-                          <Camera className="h-12 w-12 text-slate-200 mx-auto mb-4 transition-colors group-hover:text-[#990000]" />
-                          <div className="bg-[#990000] text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest inline-block mb-3 shadow-lg shadow-red-900/10">Pilih Media</div>
+                        <div className="border-2 border-dashed border-slate-200 hover:border-[#810100] rounded-[2.5rem] p-10 text-center bg-slate-50/50 transition-all group-hover:bg-red-50/30">
+                          <Camera className="h-12 w-12 text-slate-200 mx-auto mb-4 transition-colors group-hover:text-[#810100]" />
+                          <div className="bg-[#810100] text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest inline-block mb-3 shadow-lg shadow-red-900/10">Pilih Media</div>
                           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Upload bukti kondisi fisik mobil</p>
                         </div>
                       </div>
@@ -262,7 +262,7 @@ export default function VehicleVerification() {
                           {photos.map((photo, index) => (
                             <div key={index} className="relative group animate-fadeInUp" style={{ animationDelay: `${index * 0.05}s` }}>
                               <div className="bg-slate-50 border border-slate-100 rounded-[1.5rem] p-5 flex flex-col items-center justify-center h-36 overflow-hidden shadow-inner">
-                                <FileText className="h-10 w-10 text-slate-200 mb-3 group-hover:text-[#990000] transition-colors" />
+                                <FileText className="h-10 w-10 text-slate-200 mb-3 group-hover:text-[#810100] transition-colors" />
                                 <p className="text-[9px] text-slate-400 font-black uppercase truncate w-full text-center tracking-tighter">
                                   {photo.name}
                                 </p>
@@ -284,7 +284,7 @@ export default function VehicleVerification() {
                       <button
                         onClick={submitVerification}
                         disabled={isSubmitting || photos.length === 0}
-                        className="w-full bg-[#990000] hover:bg-slate-900 disabled:bg-slate-100 disabled:text-slate-300 text-white font-black py-6 rounded-[2rem] tracking-widest text-[11px] uppercase transition-all shadow-xl shadow-red-900/10 relative overflow-hidden group active:scale-95"
+                        className="w-full bg-[#810100] hover:bg-slate-900 disabled:bg-slate-100 disabled:text-slate-300 text-white font-black py-6 rounded-[2rem] tracking-widest text-[11px] uppercase transition-all shadow-xl shadow-red-900/10 relative overflow-hidden group active:scale-95"
                       >
                         <div className="relative z-10 flex items-center justify-center gap-4">
                           {isSubmitting ? (

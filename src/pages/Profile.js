@@ -198,12 +198,12 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen pt-[160px] pb-12 bg-gray-50 flex flex-col items-center">
+    <div className="min-h-screen pt-[160px] pb-12 bg-[#FAFAF6] flex flex-col items-center">
       {/* Dynamic Header Background */}
-      <div className="w-full bg-brand-900 absolute top-0 left-0 h-64 z-0">
-         <div className="absolute inset-0 bg-gradient-to-t from-gray-50 to-transparent"></div>
-         <div className="absolute top-10 left-10 w-64 h-64 bg-red-600/20 rounded-full mix-blend-screen filter blur-[80px]"></div>
-         <div className="absolute top-20 right-10 w-72 h-72 bg-brand-500/20 rounded-full mix-blend-screen filter blur-[80px]"></div>
+      <div className="w-full bg-[#1B1717] absolute top-0 left-0 h-64 z-0">
+         <div className="absolute inset-0 bg-gradient-to-t from-[#FAFAF6] to-transparent"></div>
+         <div className="absolute top-10 left-10 w-64 h-64 bg-[#810100]/10 rounded-full mix-blend-screen filter blur-[100px]"></div>
+         <div className="absolute top-20 right-10 w-72 h-72 bg-[#810100]/[0.05] rounded-full mix-blend-screen filter blur-[100px]"></div>
       </div>
 
       <div className="w-full max-w-5xl px-4 sm:px-6 z-10 animate-fadeInUp mt-6 md:mt-8">
@@ -211,51 +211,51 @@ export default function Profile() {
           
           {/* Left: Avatar & Identity Card */}
           <div className="w-full md:w-1/3 flex flex-col gap-4 md:gap-6">
-            <div className="bg-white rounded-2xl md:rounded-3xl shadow-card border border-gray-100 p-4 sm:p-6 md:p-8 flex flex-col items-center relative overflow-hidden group">
+            <div className="bg-white rounded-[1.5rem] shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-[#EDEBDD]/30 p-5 sm:p-6 md:p-8 flex flex-col items-center relative overflow-hidden group">
               {/* Top Accent line */}
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand-600 to-red-400"></div>
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#810100]/20 to-transparent"></div>
 
-              <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg bg-gray-100 flex items-center justify-center mb-5 overflow-hidden z-10 relative group-hover:scale-105 transition-transform duration-300">
+              <div className="w-32 h-32 rounded-full border-4 border-white shadow-[0_8px_32px_rgba(0,0,0,0.08)] bg-[#FAFAF6] flex items-center justify-center mb-5 overflow-hidden z-10 relative group-hover:scale-105 transition-transform duration-500">
                 {userData.photoURL ? (
                   <img src={userData.photoURL} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <User className="w-16 h-16 text-gray-400" />
+                  <User className="w-14 h-14 text-[#3D3636]/20" />
                 )}
               </div>
               
-              <h3 className="text-2xl font-black text-gray-900 mb-1 text-center">{userData.nama || "Nama Lengkap"}</h3>
-              <p className="text-gray-500 text-sm font-medium flex items-center gap-2 mb-6 text-center">
-                <Mail className="w-4 h-4" /> {userData.email}
+              <h3 className="text-xl font-black text-[#1B1717] mb-1 text-center">{userData.nama || "Nama Lengkap"}</h3>
+              <p className="text-[#3D3636]/40 text-sm font-medium flex items-center gap-2 mb-6 text-center">
+                <Mail className="w-3.5 h-3.5" /> {userData.email}
               </p>
 
               {/* Verification Badge */}
               <div className="w-full">
                 <div className={`flex flex-col items-center justify-center p-4 rounded-2xl border ${
                   userData.verificationStatus === "verified"
-                    ? "bg-green-50 border-green-200 text-green-700"
+                    ? "bg-emerald-50 border-emerald-200/50 text-emerald-700"
                     : userData.verificationStatus === "pending"
-                    ? "bg-yellow-50 border-yellow-200 text-yellow-700"
-                    : "bg-red-50 border-red-200 text-red-700"
+                    ? "bg-amber-50 border-amber-200/50 text-amber-700"
+                    : "bg-red-50 border-red-200/50 text-red-700"
                 }`}>
                   {userData.verificationStatus === "verified" && (
                     <>
-                      <ShieldCheck className="w-8 h-8 text-green-500 mb-2" />
+                      <ShieldCheck className="w-7 h-7 text-emerald-500 mb-2" />
                       <span className="font-bold text-sm">Akun Terverifikasi</span>
-                      <span className="text-xs text-green-600 mt-1 text-center">Siap untuk melakukan pemesanan via app</span>
+                      <span className="text-xs text-emerald-600/70 mt-1 text-center">Siap untuk melakukan pemesanan via app</span>
                     </>
                   )}
                   {userData.verificationStatus === "pending" && (
                      <>
-                      <Clock className="w-8 h-8 text-yellow-500 mb-2" />
+                      <Clock className="w-7 h-7 text-amber-500 mb-2" />
                       <span className="font-bold text-sm">Menunggu Verifikasi</span>
-                      <span className="text-xs text-yellow-600 mt-1 text-center">Admin sedang meninjau KTP Anda</span>
+                      <span className="text-xs text-amber-600/70 mt-1 text-center">Admin sedang meninjau KTP Anda</span>
                     </>
                   )}
                   {userData.verificationStatus === "unverified" && (
                      <>
-                      <AlertTriangle className="w-8 h-8 text-red-500 mb-2" />
+                      <AlertTriangle className="w-7 h-7 text-red-500 mb-2" />
                       <span className="font-bold text-sm">Belum Terverifikasi</span>
-                      <span className="text-xs text-red-600 mt-1 text-center">Harap unggah KTP untuk verifikasi akun</span>
+                      <span className="text-xs text-red-600/70 mt-1 text-center">Harap unggah KTP untuk verifikasi akun</span>
                     </>
                   )}
                 </div>
@@ -264,7 +264,7 @@ export default function Profile() {
               {!editMode && (
                 <button
                   onClick={() => setEditMode(true)}
-                  className="mt-6 w-full py-3 rounded-xl font-bold bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 flex items-center justify-center gap-2 transition-colors focus:ring-2 focus:ring-brand-400 focus:ring-offset-1"
+                  className="mt-6 w-full py-3 rounded-xl font-bold bg-[#F5E6E6] hover:bg-[#810100]/10 text-[#810100] border border-[#810100]/10 flex items-center justify-center gap-2 transition-all duration-300"
                 >
                   <Edit2 className="w-4 h-4" /> Edit Profil
                 </button>
@@ -272,16 +272,16 @@ export default function Profile() {
             </div>
 
             {/* Quick Stats / Info Widget */}
-            <div className="bg-gradient-to-br from-brand-800 to-gray-900 rounded-2xl md:rounded-3xl shadow-brand-lg p-4 md:p-6 relative overflow-hidden text-white">
-              <div className="absolute right-[-10%] top-[-10%] w-32 h-32 bg-white/10 rounded-full mix-blend-screen"></div>
-              <h4 className="text-brand-100 font-bold uppercase tracking-wider text-xs mb-4">Informasi Akun</h4>
+            <div className="bg-[#1B1717] rounded-[1.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.12)] p-5 md:p-6 relative overflow-hidden text-white">
+              <div className="absolute right-[-10%] top-[-10%] w-32 h-32 bg-white/[0.03] rounded-full mix-blend-screen"></div>
+              <h4 className="text-white/30 font-bold uppercase tracking-[0.15em] text-[10px] mb-4">Informasi Akun</h4>
               <div className="space-y-4">
-                <div className="flex justify-between items-center border-b border-brand-700/50 pb-3">
-                  <span className="text-brand-200 text-sm">Role</span>
-                  <span className="font-bold capitalize">{userData.role || 'Client'}</span>
+                <div className="flex justify-between items-center border-b border-white/[0.06] pb-3">
+                  <span className="text-white/40 text-sm">Role</span>
+                  <span className="font-bold capitalize text-sm">{userData.role || 'Client'}</span>
                 </div>
-                <div className="flex justify-between items-center border-b border-brand-700/50 pb-3">
-                  <span className="text-brand-200 text-sm">Bergabung</span>
+                <div className="flex justify-between items-center border-b border-white/[0.06] pb-3">
+                  <span className="text-white/40 text-sm">Bergabung</span>
                   <span className="font-bold text-sm">
                     {userData.createdAt?.toDate ? userData.createdAt.toDate().toLocaleDateString('id-ID', {day: 'numeric', month:'long', year:'numeric'}) : '-'}
                   </span>

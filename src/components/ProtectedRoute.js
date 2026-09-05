@@ -5,25 +5,25 @@ import { doc, getDoc } from "firebase/firestore";
 
 function LoadingSkeleton() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5]">
+    <div className="min-h-screen flex items-center justify-center bg-[#F8F6F0]">
       <div className="flex flex-col items-center gap-4">
         {/* Spinner ring */}
         <div className="relative w-14 h-14">
           <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
-          <div className="absolute inset-0 rounded-full border-4 border-t-[#C9A84C] animate-spin" />
+          <div className="absolute inset-0 rounded-full border-4 border-t-[#810100] animate-spin" />
         </div>
         {/* Bouncing dots */}
         <div className="flex items-center gap-1.5">
           <span
-            className="w-2 h-2 bg-[#C9A84C] rounded-full animate-bounce"
+            className="w-2 h-2 bg-[#810100] rounded-full animate-bounce"
             style={{ animationDelay: "0ms" }}
           />
           <span
-            className="w-2 h-2 bg-[#C9A84C] rounded-full animate-bounce"
+            className="w-2 h-2 bg-[#810100] rounded-full animate-bounce"
             style={{ animationDelay: "150ms" }}
           />
           <span
-            className="w-2 h-2 bg-[#C9A84C] rounded-full animate-bounce"
+            className="w-2 h-2 bg-[#810100] rounded-full animate-bounce"
             style={{ animationDelay: "300ms" }}
           />
         </div>

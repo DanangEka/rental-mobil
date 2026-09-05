@@ -402,10 +402,10 @@ _Terima kasih, selamat bertugas!_`;
     const isDigitalPayment = order.paymentMethod === "Transfer Bank" || order.paymentMethod === "E-Wallet";
 
     return (
-      <div className="bg-white rounded-[2rem] overflow-hidden border border-slate-100 hover:border-[#990000]/30 transition-all duration-300 p-6 md:p-8 lg:p-10 mb-8 animate-fadeInUp shadow-sm shadow-slate-200/50">
+      <div className="bg-white rounded-[2rem] overflow-hidden border border-slate-100 hover:border-[#810100]/30 transition-all duration-300 p-6 md:p-8 lg:p-10 mb-8 animate-fadeInUp shadow-sm shadow-slate-200/50">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-[#990000] shadow-sm border border-red-100">
+            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-[#810100] shadow-sm border border-red-100">
                 <Car size={32} />
             </div>
             <div>
@@ -474,7 +474,7 @@ _Terima kasih, selamat bertugas!_`;
         {order.catatan && (
           <div className="mb-8 md:mb-10 p-5 bg-red-50/50 rounded-[1.5rem] border border-red-100/50 italic">
             <p className="text-[13px] text-slate-500 leading-relaxed font-medium">
-              <span className="text-[#990000] font-black not-italic mr-2 uppercase tracking-widest text-[10px]">Catatan:</span> {order.catatan}
+              <span className="text-[#810100] font-black not-italic mr-2 uppercase tracking-widest text-[10px]">Catatan:</span> {order.catatan}
             </p>
           </div>
         )}
@@ -669,7 +669,7 @@ _Terima kasih, selamat bertugas!_`;
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 py-6 md:py-10 lg:py-12">
         <div className="mb-8 md:mb-10 animate-fadeInUp">
-          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
              <ClipboardList size={14} />
              <span>Order Management</span>
           </div>
@@ -691,7 +691,7 @@ _Terima kasih, selamat bertugas!_`;
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-3 py-4 px-6 md:px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all whitespace-nowrap ${
                   activeTab === tab.id
-                    ? "bg-[#990000] text-white shadow-lg shadow-red-900/20 active:scale-95"
+                    ? "bg-[#810100] text-white shadow-lg shadow-red-900/20 active:scale-95"
                     : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
@@ -710,7 +710,7 @@ _Terima kasih, selamat bertugas!_`;
         {activeTab === "available" && (
           <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
             <div className="flex items-center gap-3 mb-8">
-               <div className="w-1.5 h-6 bg-[#990000] rounded-full"></div>
+               <div className="w-1.5 h-6 bg-[#810100] rounded-full"></div>
                <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest">Order Baru Tersedia</h2>
             </div>
             {availableOrders.length === 0 ? (

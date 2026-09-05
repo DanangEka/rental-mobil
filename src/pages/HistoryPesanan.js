@@ -211,118 +211,118 @@ export default function HistoryPesanan() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 px-4 md:px-8">
+    <div className="min-h-screen bg-[#FAFAF6] pt-[160px] pb-20 px-4 md:px-8">
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
-            <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-3">
-              <History size={14} />
+            <div className="flex items-center gap-2 text-[#810100] font-bold text-[10px] uppercase tracking-[0.2em] mb-3">
+              <History size={13} />
               <span>Log Perjalanan Anda</span>
             </div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">History Pesanan</h1>
+            <h1 className="text-3xl md:text-4xl font-black text-[#1B1717] tracking-tight">History Pesanan</h1>
           </div>
-          <button onClick={handleRefresh} className="flex items-center gap-2 bg-white px-6 py-3.5 rounded-2xl font-bold shadow-sm border border-slate-100 active:scale-95 transition-all">
-            <RefreshCw size={18} className={refreshing ? "animate-spin" : ""} /> Refresh
+          <button onClick={handleRefresh} className="flex items-center gap-2 bg-white px-6 py-3.5 rounded-2xl font-bold shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#EDEBDD]/30 active:scale-95 transition-all duration-300 text-sm">
+            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-10">
           <div className="lg:col-span-2 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#3D3636]/20" size={16} />
             <input 
               type="text" placeholder="Cari mobil..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-6 py-4 outline-none focus:border-[#990000] transition-all font-semibold"
+              className="w-full bg-white border border-[#EDEBDD]/30 rounded-2xl pl-12 pr-6 py-3.5 outline-none focus:border-[#810100]/30 transition-all duration-300 font-semibold text-sm"
             />
           </div>
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-white border border-slate-200 rounded-2xl px-6 py-4 font-bold outline-none">
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-white border border-[#EDEBDD]/30 rounded-2xl px-6 py-3.5 font-bold text-sm outline-none">
             <option value="all">Semua Status</option>
             <option value="ongoing">Berjalan</option>
             <option value="lunas">Lunas</option>
             <option value="selesai">Selesai</option>
           </select>
-          <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-white border border-slate-200 rounded-2xl px-6 py-4 font-bold outline-none">
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-white border border-[#EDEBDD]/30 rounded-2xl px-6 py-3.5 font-bold text-sm outline-none">
             <option value="newest">Terbaru</option>
             <option value="oldest">Terlama</option>
           </select>
         </div>
 
         {/* List */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           {filteredPemesanan.map(p => (
-            <div key={p.id} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all p-6 md:p-10">
-              <div className="flex flex-col lg:flex-row justify-between gap-8">
-                <div className="flex gap-6">
-                  <div className="w-20 h-20 bg-red-50 text-[#990000] rounded-3xl flex items-center justify-center shrink-0">
-                    <Car size={32} />
+            <div key={p.id} className="bg-white rounded-[1.5rem] border border-[#EDEBDD]/30 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden hover:shadow-[0_8px_32px_rgba(0,0,0,0.06)] transition-all duration-400 p-6 md:p-8" style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}>
+              <div className="flex flex-col lg:flex-row justify-between gap-6">
+                <div className="flex gap-5">
+                  <div className="w-16 h-16 bg-[#F5E6E6] text-[#810100] rounded-2xl flex items-center justify-center shrink-0">
+                    <Car size={28} />
                   </div>
                   <div>
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">{p.namaMobil}</h3>
-                      <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusColor(p.status)}`}>
+                      <h3 className="text-xl font-black text-[#1B1717] tracking-tight uppercase">{p.namaMobil}</h3>
+                      <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] border ${getStatusColor(p.status)}`}>
                         {p.status}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
+                    <div className="flex items-center gap-3 text-[#3D3636]/30 font-bold text-[10px] uppercase tracking-[0.15em]">
                        <span>#{p.id.slice(0,8)}</span>
-                       <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+                       <span className="w-1 h-1 bg-[#EDEBDD] rounded-full"></span>
                        <span>{p.rentalType}</span>
                     </div>
                   </div>
                 </div>
                 <div className="text-left lg:text-right">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estimasi Biaya</p>
-                  <p className="text-3xl font-black text-[#990000]">Rp {p.perkiraanHarga?.toLocaleString()}</p>
+                  <p className="text-[10px] font-black text-[#3D3636]/30 uppercase tracking-[0.2em] mb-1">Estimasi Biaya</p>
+                  <p className="text-2xl font-black text-[#810100]">Rp {p.perkiraanHarga?.toLocaleString()}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-10">
-                <div className="bg-slate-50 p-6 rounded-3xl">
-                  <p className="text-[10px] font-black text-slate-400 uppercase mb-3 flex items-center gap-2"><Calendar size={12} /> Periode</p>
-                  <p className="text-xs font-black text-slate-700">{new Date(p.tanggalMulai).toLocaleDateString()} - {new Date(p.tanggalSelesai).toLocaleDateString()}</p>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
+                <div className="bg-[#FAFAF6] p-5 rounded-2xl">
+                  <p className="text-[10px] font-black text-[#3D3636]/30 uppercase tracking-[0.15em] mb-2 flex items-center gap-1.5"><Calendar size={11} /> Periode</p>
+                  <p className="text-xs font-black text-[#1B1717]">{new Date(p.tanggalMulai).toLocaleDateString()} - {new Date(p.tanggalSelesai).toLocaleDateString()}</p>
                 </div>
-                <div className="bg-slate-50 p-6 rounded-3xl">
-                  <p className="text-[10px] font-black text-slate-400 uppercase mb-3 flex items-center gap-2"><MapPin size={12} /> Lokasi</p>
-                  <p className="text-xs font-black text-slate-700">{p.lokasiPenyerahan}</p>
+                <div className="bg-[#FAFAF6] p-5 rounded-2xl">
+                  <p className="text-[10px] font-black text-[#3D3636]/30 uppercase tracking-[0.15em] mb-2 flex items-center gap-1.5"><MapPin size={11} /> Lokasi</p>
+                  <p className="text-xs font-black text-[#1B1717]">{p.lokasiPenyerahan}</p>
                   {(p.deliveryAddress || p.titikTemuAddress) && (
-                    <p className="text-[10px] text-slate-400 mt-1 italic line-clamp-2">{p.deliveryAddress || p.titikTemuAddress}</p>
+                    <p className="text-[10px] text-[#3D3636]/40 mt-1 italic line-clamp-2">{p.deliveryAddress || p.titikTemuAddress}</p>
                   )}
                 </div>
-                <div className="bg-slate-50 p-6 rounded-3xl">
-                  <p className="text-[10px] font-black text-slate-400 uppercase mb-3 flex items-center gap-2"><CreditCard size={12} /> Pembayaran</p>
-                  <p className="text-xs font-black text-slate-700">{p.paymentMethod || "Belum dipilih"}</p>
+                <div className="bg-[#FAFAF6] p-5 rounded-2xl">
+                  <p className="text-[10px] font-black text-[#3D3636]/30 uppercase tracking-[0.15em] mb-2 flex items-center gap-1.5"><CreditCard size={11} /> Pembayaran</p>
+                  <p className="text-xs font-black text-[#1B1717]">{p.paymentMethod || "Belum dipilih"}</p>
                 </div>
-                <div className="bg-slate-50 p-6 rounded-3xl">
-                  <p className="text-[10px] font-black text-slate-400 uppercase mb-3 flex items-center gap-2"><Info size={12} /> Plat Nomor</p>
-                  <p className="text-xs font-black text-slate-700">{p.platNomor || "TBA"}</p>
+                <div className="bg-[#FAFAF6] p-5 rounded-2xl">
+                  <p className="text-[10px] font-black text-[#3D3636]/30 uppercase tracking-[0.15em] mb-2 flex items-center gap-1.5"><Info size={11} /> Plat Nomor</p>
+                  <p className="text-xs font-black text-[#1B1717]">{p.platNomor || "TBA"}</p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-6 mt-10 pt-8 border-t border-slate-50">
-                <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 mt-8 pt-6 border-t border-[#EDEBDD]/20">
+                <div className="flex flex-wrap gap-3">
                   {/* Action Buttons */}
                   {p.status === "diproses" && (
-                    <button onClick={() => { setSelectedOrder(p); setCancelModal(true); }} className="flex items-center gap-2 text-red-500 font-bold text-xs hover:bg-red-50 px-4 py-2 rounded-xl transition-all">
-                      <Trash2 size={16} /> Batalkan
+                    <button onClick={() => { setSelectedOrder(p); setCancelModal(true); }} className="flex items-center gap-2 text-red-500 font-bold text-xs hover:bg-red-50 px-4 py-2 rounded-xl transition-all duration-300">
+                      <Trash2 size={14} /> Batalkan
                     </button>
                   )}
                   
                   {(p.status === "menunggu pembayaran" || p.status === "disetujui_cash") && (
-                    <button onClick={() => { setSelectedOrder(p); setPaymentModal(true); }} className="bg-[#990000] text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-red-900/20 active:scale-95 transition-all animate-pulse">
+                    <button onClick={() => { setSelectedOrder(p); setPaymentModal(true); }} className="bg-[#810100] text-white px-7 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] shadow-[0_4px_20px_rgba(129,1,0,0.25)] active:scale-95 transition-all duration-300">
                       Konfirmasi Pembayaran
                     </button>
                   )}
 
                   {/* Document Downloads */}
                   {["pembayaran berhasil", "lunas", "selesai"].includes(p.status) && (
-                    <button onClick={() => InvoiceGenerator.generateDPInvoice(p, auth.currentUser)} className="bg-slate-900 text-white px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-lg">
-                      <Download size={14} /> Download Invoice DP
+                    <button onClick={() => InvoiceGenerator.generateDPInvoice(p, auth.currentUser)} className="bg-[#1B1717] text-white px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] flex items-center gap-2 shadow-[0_4px_16px_rgba(0,0,0,0.1)]">
+                      <Download size={13} /> Download Invoice DP
                     </button>
                   )}
                 </div>
-                <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                <div className="text-[10px] font-black text-[#3D3636]/20 uppercase tracking-[0.15em]">
                    Update: {new Date(p.tanggal).toLocaleDateString()}
                 </div>
               </div>
@@ -333,11 +333,11 @@ export default function HistoryPesanan() {
 
       {/* Payment Modal */}
       {paymentModal && selectedOrder && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-fadeIn">
-          <div className="bg-white rounded-[3rem] w-full max-w-xl p-10 shadow-2xl animate-scaleUp">
+        <div className="fixed inset-0 z-[200] bg-[#1B1717]/60 backdrop-blur-md flex items-center justify-center p-6 animate-fadeIn">
+          <div className="bg-white rounded-[2rem] w-full max-w-xl p-8 sm:p-10 shadow-[0_24px_64px_rgba(0,0,0,0.15)] animate-scaleUp">
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-3xl font-black text-slate-900 tracking-tight">Pembayaran DP</h3>
-              <button onClick={() => setPaymentModal(false)} className="text-slate-300 hover:text-red-500 transition-colors"><X size={32} /></button>
+              <h3 className="text-2xl font-black text-[#1B1717] tracking-tight">Pembayaran DP</h3>
+              <button onClick={() => setPaymentModal(false)} className="text-[#3D3636]/20 hover:text-red-500 transition-colors duration-300"><X size={28} /></button>
             </div>
             
             <div className="space-y-6">
@@ -371,7 +371,7 @@ export default function HistoryPesanan() {
                    </div>
                    <input 
                       type="file" accept="image/*" onChange={e => setPaymentForm({ ...paymentForm, proof: e.target.files[0] })}
-                      className="mt-6 w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-[#990000] file:text-white"
+                      className="mt-6 w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-[#810100] file:text-white"
                    />
                 </div>
               )}
@@ -387,7 +387,7 @@ export default function HistoryPesanan() {
                    </div>
                    <input 
                       type="file" accept="image/*" onChange={e => setPaymentForm({ ...paymentForm, proof: e.target.files[0] })}
-                      className="mt-6 w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-[#990000] file:text-white"
+                      className="mt-6 w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-[#810100] file:text-white"
                    />
                 </div>
               )}
@@ -397,7 +397,7 @@ export default function HistoryPesanan() {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nominal Pembayaran DP (IDR)</label>
                   <input 
                     type="number" value={paymentForm.dpAmount} onChange={e => setPaymentForm({ ...paymentForm, dpAmount: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-black text-[#990000] focus:border-[#990000] outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-black text-[#810100] focus:border-[#810100] outline-none"
                     placeholder={`Contoh: ${(selectedOrder.perkiraanHarga * 0.5)}`}
                   />
                   <p className="text-[10px] text-amber-600 font-bold italic">
@@ -411,7 +411,7 @@ export default function HistoryPesanan() {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Input Nominal DP (IDR)</label>
                   <input 
                     type="number" value={paymentForm.dpAmount} onChange={e => setPaymentForm({ ...paymentForm, dpAmount: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-black text-[#990000] focus:border-[#990000] outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-black text-[#810100] focus:border-[#810100] outline-none"
                     placeholder="Contoh: 500000"
                   />
                   <p className="text-[10px] text-amber-600 font-bold italic">*Masukkan jumlah uang yang akan Anda berikan tunai.</p>
@@ -420,7 +420,7 @@ export default function HistoryPesanan() {
 
               <button 
                 onClick={handlePaymentSubmit}
-                className="w-full py-5 bg-[#990000] text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-red-900/20 active:scale-95 transition-all mt-6"
+                className="w-full py-5 bg-[#810100] text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-red-900/20 active:scale-95 transition-all mt-6"
               >
                 Konfirmasi & Kirim
               </button>
@@ -431,16 +431,16 @@ export default function HistoryPesanan() {
 
       {/* Cancel Modal */}
       {cancelModal && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-fadeIn">
-          <div className="bg-white rounded-[3rem] w-full max-w-sm p-10 shadow-2xl animate-scaleUp text-center">
-            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-               <AlertTriangle size={36} />
+        <div className="fixed inset-0 z-[200] bg-[#1B1717]/60 backdrop-blur-md flex items-center justify-center p-6 animate-fadeIn">
+          <div className="bg-white rounded-[2rem] w-full max-w-sm p-8 shadow-[0_24px_64px_rgba(0,0,0,0.15)] animate-scaleUp text-center">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-5">
+               <AlertTriangle size={30} />
             </div>
-            <h3 className="text-2xl font-black text-slate-900 mb-2">Batalkan Pesanan?</h3>
-            <p className="text-slate-500 text-sm italic mb-8">Tindakan ini tidak dapat dibatalkan.</p>
-            <div className="grid grid-cols-2 gap-4">
-              <button onClick={handleCancelSubmit} className="bg-red-600 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg">Ya, Batal</button>
-              <button onClick={() => setCancelModal(false)} className="bg-slate-100 text-slate-500 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest">Tutup</button>
+            <h3 className="text-xl font-black text-[#1B1717] mb-2 tracking-tight">Batalkan Pesanan?</h3>
+            <p className="text-[#3D3636]/40 text-sm italic mb-8">Tindakan ini tidak dapat dibatalkan.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={handleCancelSubmit} className="bg-red-600 text-white py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] shadow-[0_4px_16px_rgba(220,38,38,0.25)]">Ya, Batal</button>
+              <button onClick={() => setCancelModal(false)} className="bg-[#FAFAF6] text-[#3D3636]/50 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] border border-[#EDEBDD]/30">Tutup</button>
             </div>
           </div>
         </div>

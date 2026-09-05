@@ -156,7 +156,7 @@ export default function AdminTourPackages() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#990000] rounded-full animate-spin"></div>
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#810100] rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -164,12 +164,12 @@ export default function AdminTourPackages() {
   if (!isAdmin) return (
     <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center p-6 text-center">
        <div className="bg-white p-10 rounded-3xl shadow-xl shadow-red-900/5 max-w-md w-full border border-red-50">
-          <div className="w-20 h-20 bg-red-50 text-[#990000] rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-20 h-20 bg-red-50 text-[#810100] rounded-full flex items-center justify-center mx-auto mb-6">
             <Settings size={40} />
           </div>
           <h2 className="text-2xl font-black text-slate-900 mb-2">Akses Terbatas</h2>
           <p className="text-slate-500 mb-8 italic">Halaman ini hanya dapat diakses oleh Administrator sistem Cakra Lima Tujuh.</p>
-          <div className="h-1.5 w-12 bg-[#990000] mx-auto rounded-full"></div>
+          <div className="h-1.5 w-12 bg-[#810100] mx-auto rounded-full"></div>
        </div>
     </div>
   );
@@ -180,7 +180,7 @@ export default function AdminTourPackages() {
         
         {/* Header */}
         <div className="mb-10">
-          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
             <Map size={14} />
             <span>Manajemen Layanan</span>
           </div>
@@ -190,13 +190,13 @@ export default function AdminTourPackages() {
               <p className="text-slate-500 mt-1">Buat dan kelola paket perjalanan wisata eksklusif.</p>
             </div>
             <div className="relative w-full md:w-80 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#990000] transition-colors" size={18} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#810100] transition-colors" size={18} />
               <input 
                 type="text" 
                 placeholder="Cari paket..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-6 py-3.5 focus:ring-2 focus:ring-red-100 focus:border-[#990000] outline-none transition-all placeholder:text-slate-400 font-medium"
+                className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-6 py-3.5 focus:ring-2 focus:ring-red-100 focus:border-[#810100] outline-none transition-all placeholder:text-slate-400 font-medium"
               />
             </div>
           </div>
@@ -208,7 +208,7 @@ export default function AdminTourPackages() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 sticky top-[180px] max-h-[calc(100vh-210px)] overflow-y-auto">
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 bg-red-50 text-[#990000] rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-red-50 text-[#810100] rounded-xl flex items-center justify-center">
                   <Plus size={20} />
                 </div>
                 <h2 className="text-xl font-bold text-slate-900">Tambah Paket</h2>
@@ -222,7 +222,7 @@ export default function AdminTourPackages() {
                     placeholder="Contoh: Explore Bali 3D2N"
                     value={form.judul}
                     onChange={e => setForm({ ...form, judul: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
                   />
                 </div>
 
@@ -234,7 +234,7 @@ export default function AdminTourPackages() {
                       placeholder="0"
                       value={form.harga}
                       onChange={e => setForm({ ...form, harga: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
+                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
                     />
                   </div>
                   <div>
@@ -244,7 +244,7 @@ export default function AdminTourPackages() {
                       placeholder="e.g. 3 Hari 2 Malam"
                       value={form.durasi}
                       onChange={e => setForm({ ...form, durasi: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
+                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
                     />
                   </div>
                 </div>
@@ -256,7 +256,7 @@ export default function AdminTourPackages() {
                     placeholder="Contoh: Kuta, Ubud, Uluwatu"
                     value={form.destinasi}
                     onChange={e => setForm({ ...form, destinasi: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
                   />
                 </div>
 
@@ -267,13 +267,13 @@ export default function AdminTourPackages() {
                     rows={3}
                     value={form.description}
                     onChange={e => setForm({ ...form, description: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#990000] outline-none transition-all font-semibold"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
                   />
                 </div>
 
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Banner Paket</label>
-                  <div className="relative group overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-4 transition-all hover:border-[#990000]/30">
+                  <div className="relative group overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-4 transition-all hover:border-[#810100]/30">
                     <input type="file" accept="image/*" onChange={handleFileSelect} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                     {form.imageUrl ? (
                       <div className="flex items-center gap-4">
@@ -295,7 +295,7 @@ export default function AdminTourPackages() {
                   </button>
                 )}
 
-                <button onClick={handleTambahPackage} className="w-full py-4 bg-[#990000] text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all hover:bg-[#7a0000] shadow-lg shadow-red-900/10 active:scale-95">
+                <button onClick={handleTambahPackage} className="w-full py-4 bg-[#810100] text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all hover:bg-[#630000] shadow-lg shadow-red-900/10 active:scale-95">
                   Publikasikan Paket
                 </button>
               </div>
@@ -309,7 +309,7 @@ export default function AdminTourPackages() {
                 <div className="w-full md:w-64 h-48 bg-slate-100 flex-shrink-0 relative overflow-hidden">
                   <img src={p.imageUrl} alt={p.judul} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute top-4 left-4">
-                    <span className="px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest text-[#990000] border border-red-100 shadow-sm">
+                    <span className="px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest text-[#810100] border border-red-100 shadow-sm">
                       {p.durasi}
                     </span>
                   </div>
@@ -319,10 +319,10 @@ export default function AdminTourPackages() {
                   <div>
                     <div className="flex justify-between items-start gap-4 mb-2">
                       <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{p.judul}</h3>
-                      <p className="text-2xl font-black text-[#990000] flex-shrink-0">Rp. {p.harga.toLocaleString("id-ID")}</p>
+                      <p className="text-2xl font-black text-[#810100] flex-shrink-0">Rp. {p.harga.toLocaleString("id-ID")}</p>
                     </div>
                     <div className="flex items-center gap-2 text-slate-400 mb-4">
-                      <MapPin size={14} className="text-[#990000]" />
+                      <MapPin size={14} className="text-[#810100]" />
                       <span className="text-[10px] font-bold uppercase tracking-widest">{p.destinasi}</span>
                     </div>
                     <p className="text-sm text-slate-500 line-clamp-2 italic mb-4 leading-relaxed">
@@ -340,7 +340,7 @@ export default function AdminTourPackages() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleHapusPackage(p.id)}
-                        className="p-2.5 bg-red-50 text-[#990000] hover:bg-[#990000] hover:text-white rounded-xl transition-all"
+                        className="p-2.5 bg-red-50 text-[#810100] hover:bg-[#810100] hover:text-white rounded-xl transition-all"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -352,7 +352,7 @@ export default function AdminTourPackages() {
 
             {filteredPackages.length === 0 && (
               <div className="py-24 text-center bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden relative group">
-                <div className="absolute top-0 left-0 w-1 h-full bg-[#990000]/10"></div>
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#810100]/10"></div>
                 <div className="relative z-10 flex flex-col items-center">
                   <div className="w-20 h-20 bg-slate-50 text-slate-200 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
                     <ListChecks size={40} />

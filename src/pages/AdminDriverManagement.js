@@ -97,7 +97,7 @@ export default function AdminDriverManagement() {
       description: "Kelola biodata dan status aktifitas pengemudi.",
       icon: <User size={28} />,
       path: "/admin-driver-profiles",
-      color: "text-[#990000]",
+      color: "text-[#810100]",
       bg: "bg-red-50"
     }
   ];
@@ -108,7 +108,7 @@ export default function AdminDriverManagement() {
         
         {/* Header */}
         <div className="mb-12">
-          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
             <LayoutGrid size={14} />
             <span>Driver Operations</span>
           </div>
@@ -119,7 +119,7 @@ export default function AdminDriverManagement() {
             </div>
             <Link
               to="/admin-add-driver"
-              className="group bg-[#990000] hover:bg-[#7a0000] text-white px-8 py-4 rounded-2xl font-bold flex items-center shadow-lg shadow-red-900/10 transition-all active:scale-95"
+              className="group bg-[#810100] hover:bg-[#630000] text-white px-8 py-4 rounded-2xl font-bold flex items-center shadow-lg shadow-red-900/10 transition-all active:scale-95"
             >
               <Plus className="h-5 w-5 mr-3 group-hover:rotate-90 transition-transform" />
               Tambah Mitra Baru
@@ -138,13 +138,13 @@ export default function AdminDriverManagement() {
               <div className={`w-16 h-16 ${item.bg} ${item.color} rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform`}>
                 {item.icon}
               </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight group-hover:text-[#990000] transition-colors line-clamp-1">
+              <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight group-hover:text-[#810100] transition-colors line-clamp-1">
                 {item.title}
               </h3>
               <p className="text-slate-500 text-sm leading-relaxed mb-10 min-h-[40px]">
                 {item.description}
               </p>
-              <div className="mt-auto flex items-center text-[#990000] font-bold text-xs uppercase tracking-widest group-hover:gap-4 gap-2 transition-all">
+              <div className="mt-auto flex items-center text-[#810100] font-bold text-xs uppercase tracking-widest group-hover:gap-4 gap-2 transition-all">
                 <span>Akses Modul</span>
                 <ArrowRight size={16} />
               </div>
@@ -157,7 +157,7 @@ export default function AdminDriverManagement() {
         {/* Summary Banner */}
         <div className="bg-white rounded-[2.5rem] p-10 border border-slate-200 shadow-sm relative overflow-hidden">
            <div className="flex items-center gap-4 mb-10 relative z-10">
-              <div className="w-1.5 h-8 bg-[#990000] rounded-full"></div>
+              <div className="w-1.5 h-8 bg-[#810100] rounded-full"></div>
               <h2 className="text-2xl font-black text-slate-900 tracking-tight">Status Operasional Hari Ini</h2>
            </div>
            
@@ -165,7 +165,7 @@ export default function AdminDriverManagement() {
               {[
                 { label: "Verifikasi Mobil", val: stats.vehicleCount, suffix: "Pemeriksaan", color: "text-blue-600" },
                 { label: "Transaksi Cash", val: stats.cashCount, suffix: "Disetujui", color: "text-emerald-600" },
-                { label: "Mitra Bertugas", val: stats.driverCount, suffix: "Pengemudi", color: "text-[#990000]" },
+                { label: "Mitra Bertugas", val: stats.driverCount, suffix: "Pengemudi", color: "text-[#810100]" },
               ].map((stat, i) => (
                 <div key={i} className="space-y-3 group">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
@@ -174,7 +174,7 @@ export default function AdminDriverManagement() {
                      <span className={`${stat.color} text-[10px] font-bold uppercase tracking-widest group-hover:translate-x-1 transition-transform inline-block`}>{stat.suffix}</span>
                   </div>
                   <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                     <div className={`h-full opacity-30 ${stat.color === 'text-[#990000]' ? 'bg-[#990000]' : stat.color.replace('text-', 'bg-')} transition-all`} style={{ width: stat.val > 0 ? '100%' : '0%' }}></div>
+                     <div className={`h-full opacity-30 ${stat.color === 'text-[#810100]' ? 'bg-[#810100]' : stat.color.replace('text-', 'bg-')} transition-all`} style={{ width: stat.val > 0 ? '100%' : '0%' }}></div>
                   </div>
                 </div>
               ))}

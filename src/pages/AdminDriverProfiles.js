@@ -93,7 +93,7 @@ export default function AdminDriverProfiles() {
         {/* Header */}
         <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
-            <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+            <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
               <User size={14} />
               <span>Mitra Pengemudi</span>
             </div>
@@ -110,7 +110,7 @@ export default function AdminDriverProfiles() {
               <button
                 key={f.id}
                 onClick={() => setFilter(f.id)}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${filter === f.id ? 'bg-[#990000] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${filter === f.id ? 'bg-[#810100] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 {f.label}
               </button>
@@ -134,13 +134,13 @@ export default function AdminDriverProfiles() {
                       <User size={32} />
                     </div>
                     <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
-                      (driver.status || 'active') === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-[#990000] border-red-100'
+                      (driver.status || 'active') === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-[#810100] border-red-100'
                     }`}>
                       {driver.status || 'active'}
                     </span>
                   </div>
                   
-                  <h3 className="text-xl font-black text-slate-900 group-hover:text-[#990000] transition-colors mb-1">{driver.displayName || driver.name || driver.nama || 'Anonymous Driver'}</h3>
+                  <h3 className="text-xl font-black text-slate-900 group-hover:text-[#810100] transition-colors mb-1">{driver.displayName || driver.name || driver.nama || 'Anonymous Driver'}</h3>
                   <p className="text-xs font-bold text-slate-400 mb-6">{driver.email}</p>
 
                   <div className="space-y-4 mb-8">
@@ -172,7 +172,7 @@ export default function AdminDriverProfiles() {
                 <div className="mt-auto px-8 py-6 bg-slate-50 flex items-center justify-between">
                    <button 
                     onClick={() => setSelectedDriver(driver)}
-                    className="flex items-center gap-2 text-[#990000] text-[10px] font-bold uppercase tracking-widest hover:gap-4 transition-all"
+                    className="flex items-center gap-2 text-[#810100] text-[10px] font-bold uppercase tracking-widest hover:gap-4 transition-all"
                    >
                      Lihat Detail Mitra <ArrowRight size={14} />
                    </button>
@@ -198,7 +198,7 @@ export default function AdminDriverProfiles() {
             <div className="bg-white rounded-[2.5rem] w-full max-w-4xl shadow-2xl overflow-hidden animate-scaleUp max-h-[90vh] flex flex-col">
               <div className="px-10 py-8 border-b border-slate-100 flex items-center justify-between">
                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-red-50 text-[#990000] rounded-2xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-red-50 text-[#810100] rounded-2xl flex items-center justify-center">
                        <User size={24} />
                     </div>
                     <div>
@@ -257,7 +257,7 @@ export default function AdminDriverProfiles() {
 
                        {selectedDriver.notes && (
                          <div className="p-6 bg-red-50 border border-red-100 rounded-3xl">
-                            <p className="text-[10px] font-bold text-[#990000] uppercase tracking-widest mb-1 italic">Internal Admin Notes:</p>
+                            <p className="text-[10px] font-bold text-[#810100] uppercase tracking-widest mb-1 italic">Internal Admin Notes:</p>
                             <p className="text-sm text-slate-600 font-medium leading-relaxed italic">"{selectedDriver.notes}"</p>
                          </div>
                        )}

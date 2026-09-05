@@ -85,7 +85,7 @@ export default function AdminPaymentVerifications() {
         
         {/* Header */}
         <div className="mb-10">
-          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
             <DollarSign size={14} />
             <span>Financial Logistics</span>
           </div>
@@ -112,7 +112,7 @@ export default function AdminPaymentVerifications() {
                   <button
                     key={f.id}
                     onClick={() => setFilter(f.id)}
-                    className={`px-5 py-3 rounded-xl text-left text-xs font-bold uppercase tracking-widest transition-all ${filter === f.id ? 'bg-[#990000] text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                    className={`px-5 py-3 rounded-xl text-left text-xs font-bold uppercase tracking-widest transition-all ${filter === f.id ? 'bg-[#810100] text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
                   >
                     {f.label}
                   </button>
@@ -120,7 +120,7 @@ export default function AdminPaymentVerifications() {
               </div>
             </div>
 
-            <div className="bg-[#990000] rounded-3xl p-8 text-white shadow-lg overflow-hidden relative">
+            <div className="bg-[#810100] rounded-3xl p-8 text-white shadow-lg overflow-hidden relative">
                <div className="relative z-10">
                   <p className="text-[10px] font-bold text-red-200 uppercase tracking-widest mb-1">Menunggu Review</p>
                   <p className="text-4xl font-black">{verifications.filter(v => v.status === "pending").length}</p>
@@ -218,8 +218,8 @@ export default function AdminPaymentVerifications() {
                           </div>
                           
                           <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                             <p className="text-[10px] font-bold text-[#990000] uppercase tracking-widest mb-2">Pelunasan (Driver)</p>
-                             <p className="text-2xl font-black text-[#990000] tracking-tighter">
+                             <p className="text-[10px] font-bold text-[#810100] uppercase tracking-widest mb-2">Pelunasan (Driver)</p>
+                             <p className="text-2xl font-black text-[#810100] tracking-tighter">
                                {formatCurrency(selectedVerification.amount || 0)}
                              </p>
                           </div>
@@ -242,7 +242,7 @@ export default function AdminPaymentVerifications() {
 
                        {selectedVerification.notes && (
                          <div className="p-6 bg-red-50/50 border border-red-100 rounded-2xl">
-                            <p className="text-[10px] font-bold text-[#990000] uppercase tracking-widest mb-1 italic">Catatan Driver:</p>
+                            <p className="text-[10px] font-bold text-[#810100] uppercase tracking-widest mb-1 italic">Catatan Driver:</p>
                             <p className="text-sm text-slate-600 font-medium italic">"{selectedVerification.notes}"</p>
                          </div>
                        )}

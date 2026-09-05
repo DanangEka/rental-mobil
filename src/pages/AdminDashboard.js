@@ -46,10 +46,10 @@ export default function AdminDashboard() {
         label: 'Pendapatan Harian',
         data: [],
         backgroundColor: 'rgba(153, 0, 0, 0.7)',
-        borderColor: '#990000',
+        borderColor: '#810100',
         borderWidth: 0,
         borderRadius: 6,
-        hoverBackgroundColor: '#990000',
+        hoverBackgroundColor: '#810100',
         barThickness: 20,
       }],
     },
@@ -58,12 +58,12 @@ export default function AdminDashboard() {
       datasets: [{
         label: 'Pendapatan Bulanan',
         data: [],
-        borderColor: '#990000',
+        borderColor: '#810100',
         backgroundColor: 'rgba(153, 0, 0, 0.05)',
         fill: true,
         tension: 0.4,
         pointBackgroundColor: '#fff',
-        pointBorderColor: '#990000',
+        pointBorderColor: '#810100',
         pointBorderWidth: 2,
         pointRadius: 4,
         pointHoverRadius: 6,
@@ -262,7 +262,7 @@ export default function AdminDashboard() {
       },
       tooltip: {
         backgroundColor: '#fff',
-        titleColor: '#111827',
+        titleColor: '#1B1717',
         bodyColor: '#4b5563',
         borderColor: '#e5e7eb',
         borderWidth: 1,
@@ -322,7 +322,7 @@ export default function AdminDashboard() {
         {/* Header */}
         <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+            <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
               <LayoutDashboard size={14} />
               <span>Admin Control Panel</span>
             </div>
@@ -335,7 +335,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
             { label: "Mobil Tersedia", val: stats.availableCars, icon: <Car size={20} />, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
-            { label: "Mobil Disewa", val: stats.rentedCars, icon: <Car size={20} />, color: "text-[#990000]", bg: "bg-red-50", border: "border-red-100" },
+            { label: "Mobil Disewa", val: stats.rentedCars, icon: <Car size={20} />, color: "text-[#810100]", bg: "bg-red-50", border: "border-red-100" },
             { label: "Mobil Diservis", val: stats.serviceCars, icon: <Car size={20} />, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
             { label: "Total Pelanggan", val: stats.totalCustomers, icon: <Users size={20} />, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
           ].map((item, i) => (
@@ -355,7 +355,7 @@ export default function AdminDashboard() {
         {/* Revenue Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 flex items-center gap-6 group">
-            <div className="w-16 h-16 bg-red-50 text-[#990000] rounded-2xl flex items-center justify-center flex-shrink-0">
+            <div className="w-16 h-16 bg-red-50 text-[#810100] rounded-2xl flex items-center justify-center flex-shrink-0">
               <DollarSign size={32} />
             </div>
             <div className="flex-1">
@@ -367,7 +367,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="bg-[#990000] rounded-2xl shadow-lg p-8 flex items-center gap-6 group overflow-hidden relative">
+          <div className="bg-[#810100] rounded-2xl shadow-lg p-8 flex items-center gap-6 group overflow-hidden relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10" />
             <div className="w-16 h-16 bg-white/20 text-white rounded-2xl flex items-center justify-center flex-shrink-0 relative z-10 backdrop-blur-sm">
               <TrendingUp size={32} />
@@ -391,7 +391,7 @@ export default function AdminDashboard() {
                 <h3 className="text-lg font-bold text-slate-900 mb-1">Analisis Harian</h3>
                 <p className="text-xs text-slate-400 font-medium tracking-wide uppercase">7 Hari Terakhir</p>
               </div>
-              <div className="w-2.5 h-2.5 rounded-full bg-[#990000]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#810100]" />
             </div>
             <div className="h-64">
               {revenueData.daily.labels.length > 0 ? (
@@ -441,7 +441,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-[#990000] transition-all duration-1000 ease-out" 
+                    className="h-full bg-[#810100] transition-all duration-1000 ease-out" 
                     style={{ width: `${((stats.totalCars - stats.availableCars) / stats.totalCars) * 100}%` }}
                   />
                 </div>

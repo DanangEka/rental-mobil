@@ -32,15 +32,18 @@ const AdminOpenTrip            = lazy(() => import("./pages/AdminOpenTrip"));
 const OpenTrip                 = lazy(() => import("./pages/OpenTrip"));
 const AdminTourPackages        = lazy(() => import("./pages/AdminTourPackages"));
 const TourPackages             = lazy(() => import("./pages/TourPackages"));
+const DestinasiDetail          = lazy(() => import("./pages/DestinasiDetail"));
+const DiscoveryPage            = lazy(() => import("./pages/DiscoveryPage"));
+const DestinationDetailPage    = lazy(() => import("./pages/DestinationDetailPage"));
 
 // ── Suspense fallback — full-screen charcoal/gold spinner ──────────────────
 function PageLoadingFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5]">
+    <div className="min-h-screen flex items-center justify-center bg-[#F8F6F0]">
       <div className="flex flex-col items-center gap-4">
         <div className="relative w-14 h-14">
           <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
-          <div className="absolute inset-0 rounded-full border-4 border-t-[#C9A84C] animate-spin" />
+          <div className="absolute inset-0 rounded-full border-4 border-t-[#810100] animate-spin" />
         </div>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
           Memuat…
@@ -161,6 +164,11 @@ function AnimatedRoutes() {
           path="/admin-add-driver"
           element={<ProtectedRoute role="admin"><PageTransition><AdminAddDriver /></PageTransition></ProtectedRoute>}
         />
+
+        <Route path="/destinasi/:region" element={<PageTransition><DestinasiDetail /></PageTransition>} />
+        <Route path="/destinasi/:region/:slug" element={<PageTransition><DestinationDetailPage /></PageTransition>} />
+        <Route path="/discovery" element={<PageTransition><DiscoveryPage /></PageTransition>} />
+        <Route path="/discovery/:region" element={<PageTransition><DiscoveryPage /></PageTransition>} />
 
         <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
       </Routes>

@@ -103,7 +103,7 @@ export default function ClientManagement() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#990000] rounded-full animate-spin"></div>
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#810100] rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -111,12 +111,12 @@ export default function ClientManagement() {
   if (!isAdmin) return (
     <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center p-6 text-center">
        <div className="bg-white p-10 rounded-3xl shadow-xl shadow-red-900/5 max-w-md w-full border border-red-50">
-          <div className="w-20 h-20 bg-red-50 text-[#990000] rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-20 h-20 bg-red-50 text-[#810100] rounded-full flex items-center justify-center mx-auto mb-6">
             <UserX size={40} />
           </div>
           <h2 className="text-2xl font-black text-slate-900 mb-2">Akses Terbatas</h2>
           <p className="text-slate-500 mb-8 italic">Otoritas administrator diperlukan untuk akses database client.</p>
-          <div className="h-1.5 w-12 bg-[#990000] mx-auto rounded-full"></div>
+          <div className="h-1.5 w-12 bg-[#810100] mx-auto rounded-full"></div>
        </div>
     </div>
   );
@@ -127,7 +127,7 @@ export default function ClientManagement() {
         
         {/* Header */}
         <div className="mb-10">
-          <div className="flex items-center gap-2 text-[#990000] font-bold text-xs uppercase tracking-widest mb-2">
+          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
             <ShieldCheck size={14} />
             <span>Keamanan & Data Pengguna</span>
           </div>
@@ -138,13 +138,13 @@ export default function ClientManagement() {
             </div>
             <div className="flex flex-wrap gap-4 w-full md:w-auto">
               <div className="relative group flex-1 md:w-80">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#990000] transition-colors" size={18} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#810100] transition-colors" size={18} />
                 <input 
                   type="text" 
                   placeholder="Cari nama, email, atau telepon..."
                   value={searchClients}
                   onChange={(e) => setSearchClients(e.target.value)}
-                  className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-6 py-3.5 focus:ring-2 focus:ring-red-100 focus:border-[#990000] outline-none transition-all placeholder:text-slate-400 font-medium"
+                  className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-6 py-3.5 focus:ring-2 focus:ring-red-100 focus:border-[#810100] outline-none transition-all placeholder:text-slate-400 font-medium"
                 />
               </div>
             </div>
@@ -182,7 +182,7 @@ export default function ClientManagement() {
                   <button
                     key={f.val}
                     onClick={() => setFilterStatus(f.val)}
-                    className={`px-5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${filterStatus === f.val ? 'bg-[#990000] text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                    className={`px-5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${filterStatus === f.val ? 'bg-[#810100] text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
                   >
                     {f.label}
                   </button>
@@ -237,7 +237,7 @@ export default function ClientManagement() {
                   <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
                     c.verificationStatus === "verified" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
                     c.verificationStatus === "pending" ? "bg-amber-50 text-amber-600 border-amber-100" :
-                    "bg-red-50 text-[#990000] border-red-100"
+                    "bg-red-50 text-[#810100] border-red-100"
                   }`}>
                     {c.verificationStatus}
                   </span>
@@ -278,7 +278,7 @@ export default function ClientManagement() {
                    </button>
                    <button 
                     onClick={() => handleDeleteClient(c.id)}
-                    className="p-2.5 bg-red-50 text-[#990000] hover:bg-[#990000] hover:text-white rounded-xl transition-all"
+                    className="p-2.5 bg-red-50 text-[#810100] hover:bg-[#810100] hover:text-white rounded-xl transition-all"
                     title="Hapus Client"
                    >
                     <Trash2 size={18} />
