@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 
-# Disallow admin and driver panel pages
+# Disallow admin panels
 Disallow: /admin-dashboard
 Disallow: /manajemen-pesanan
 Disallow: /car-management
@@ -13,10 +13,16 @@ Disallow: /admin-payment-verifications
 Disallow: /admin-driver-profiles
 Disallow: /admin-add-driver
 Disallow: /admin/open-trip
+
+# Disallow driver panels
 Disallow: /driver-dashboard
 Disallow: /driver-orders
 Disallow: /vehicle-verification
 Disallow: /payment-verification
 Disallow: /driver-profile
+
+# Disallow private user pages
+Disallow: /profil
+Disallow: /history-pesanan
 
 Sitemap: https://www.cakra57.com/sitemap.xml
