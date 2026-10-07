@@ -1,4 +1,33 @@
+# Dependencies
 node_modules
+
+# Environment / secrets
 .env
+.env.local
+.env.*.local
+
+# Build output
 dist
 build
+coverage
+
+# Firebase emulator & debug logs
+*.log
+.firebase/
+firebase-debug.log
+ui-debug.log
+firestore-debug.log
+
+# Local design mockups & scratch files (not shipped)
+stitch_cakra57_travel_web_redesign/
+googlecalendar
+
+# Markdown docs (local notes/specs — README stays on GitHub)
+*.md
+!README.md
+
+# OS / editor / tooling
+.DS_Store
+Thumbs.db
+.eslintcache
+.vercel/

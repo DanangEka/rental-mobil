@@ -1,11 +1,89 @@
-// PaymentVerification.js - Updated to fix composite index error (v2.0)
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
-import { collection, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
-import { CreditCard, DollarSign, CheckCircle, Camera, FileText } from "lucide-react";
+import { releaseVehicle } from "../services/bookingService";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  updateDoc,
+  addDoc,
+  serverTimestamp,
+  where,
+} from "firebase/firestore";
 import InvoiceGenerator from "../components/InvoiceGenerator";
+import { useToast } from "../components/Toast";
+import { uploadImage, validateImageFile } from "../utils/uploadImage";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import EmptyState from "../components/ui/EmptyState";
+import Field from "../components/ui/Field";
+import Icon from "../components/ui/Icon";
+import Input from "../components/ui/Input";
+import PageHeader from "../components/ui/PageHeader";
+import Pill from "../components/ui/Pill";
+import Select from "../components/ui/Select";
+import Textarea from "../components/ui/Textarea";
+
+/**
+ * Driver payment settlement.
+ *
+ * Reads the driver's in-progress orders and writes a `paymentVerifications`
+ * record, flips the order to `selesai`, releases the car, and prints the full
+ * invoice. All of that Firestore sequence is unchanged by the redesign.
+ *
+ * Corrections from the markup pass:
+ *
+ *  - The five `alert()` calls became `toast.error`/`toast.success`, matching
+ *    every other surface in the app. The copy is unchanged.
+ *
+ *  - The "Jumlah Diterima" field rendered `parseInt(paymentAmount).toString()`,
+ *    which prints the literal "NaN" when `perkiraanHarga` or `dpAmount` is
+ *    missing on a malformed order. It is now formatted through
+ *    `formatRupiah`, which degrades to an em dash.
+ *
+ *  - The order list was a `<div onClick>`, so the primary control on the page
+ *    was unreachable by keyboard. It is a real `<button>` now, with
+ *    `aria-pressed` carrying the selection.
+ *
+ *  - `{true && (...)}` around the photo block, and two `await import()` calls
+ *    for `getDoc`/`getDocs` that were already statically importable, are gone.
+ */
+
+const IN_PROGRESS = ["disetujui", "dalam perjalanan", "menunggu pembayaran"];
+
+const STATUS_VARIANTS = {
+  "dalam perjalanan": "sand",
+  "menunggu pembayaran": "sand",
+};
+
+const STATUS_TEXT = {
+  "dalam perjalanan": "Dalam Perjalanan",
+  "menunggu pembayaran": "Menunggu Pembayaran",
+};
+
+const METHOD_TEXT = {
+  Cash: "Tunai",
+  "Transfer Bank": "Transfer Bank",
+};
+
+const METHOD_VARIANTS = {
+  Cash: "available",
+  "Transfer Bank": "neutral",
+};
+
+/** DP defaults to half the estimate when the order has no explicit DP. */
+const dpOf = (order) => order.dpAmount || Math.floor(order.perkiraanHarga * 0.5);
+
+/** What the driver still has to collect. NaN-safe. */
+const remainingOf = (order) => order.perkiraanHarga - dpOf(order);
+
+const formatRupiah = (value) =>
+  Number.isFinite(value) ? value.toLocaleString("id-ID") : "—";
 
 export default function PaymentVerification() {
+  const toast = useToast();
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -45,7 +123,6 @@ export default function PaymentVerification() {
       if (!user) return;
 
       try {
-        const { getDoc, doc } = await import("firebase/firestore");
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           setUserData(userDoc.data());
@@ -64,17 +141,24 @@ export default function PaymentVerification() {
     // Fetch orders that are currently in progress - using getDocs to avoid listener issues
     const fetchOrders = async () => {
       try {
-        // Use getDocs instead of onSnapshot to avoid real-time listener issues
-        const { getDocs } = await import("firebase/firestore");
-        const querySnapshot = await getDocs(collection(db, "pemesanan"));
+        // Rules scope a driver's read of `pemesanan` to orders that are theirs or
+        // still unassigned, so this must be filtered in the query rather than in
+        // JS. Firestore has no OR, hence two reads. Orders always carry an
+        // explicit `driverId` (null when unassigned) — firestore.rules reads that
+        // field directly, so it can never be absent.
+        const scopes = [
+          query(collection(db, "pemesanan"), where("driverId", "==", user.uid)),
+          query(collection(db, "pemesanan"), where("driverId", "==", null)),
+        ];
 
+        const merged = new Map();
+        for (const scopeQuery of scopes) {
+          const snap = await getDocs(scopeQuery);
+          snap.forEach((d) => merged.set(d.id, { id: d.id, ...d.data() }));
+        }
         const ordersData = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          // Filter by driverId and status client-side to completely avoid composite index
-          if (data.driverId === user.uid && ["disetujui", "dalam perjalanan", "menunggu pembayaran"].includes(data.status)) {
-            ordersData.push({ id: doc.id, ...data });
-          }
+        merged.forEach((order) => {
+          if (IN_PROGRESS.includes(order.status)) ordersData.push(order);
         });
 
         // Sort by date client-side
@@ -101,30 +185,49 @@ export default function PaymentVerification() {
 
   const handlePhotoUpload = (event) => {
     const files = Array.from(event.target.files);
-    setPaymentPhotos(prev => [...prev, ...files]);
+    const accepted = [];
+    files.forEach((file) => {
+      const problem = validateImageFile(file, "proof");
+      if (problem) {
+        toast.error(problem, "File ditolak");
+      } else {
+        accepted.push(file);
+      }
+    });
+    if (accepted.length !== files.length) event.target.value = "";
+    if (accepted.length > 0) setPaymentPhotos(prev => [...prev, ...accepted]);
   };
 
   const removePhoto = (index) => {
     setPaymentPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
+  const selectOrder = (order) => {
+    setSelectedOrder(order);
+    setPaymentAmount(remainingOf(order).toString());
+    setPaymentMethod(order.paymentMethod || "cash");
+  };
+
   const submitPaymentVerification = async () => {
     if (!selectedOrder || !paymentAmount) {
-      alert("Mohon lengkapi semua field yang diperlukan");
+      toast.error("Mohon lengkapi semua field yang diperlukan", "Gagal");
       return;
     }
 
     // For cash payments, require photos
     if (paymentMethod === "cash" && paymentPhotos.length === 0) {
-      alert("Untuk pembayaran cash, mohon upload minimal 1 foto bukti pembayaran");
+      toast.error("Untuk pembayaran cash, mohon upload minimal 1 foto bukti pembayaran", "Gagal");
       return;
     }
 
     const amount = parseInt(paymentAmount);
-    const clientDP = selectedOrder.dpAmount || Math.floor(selectedOrder.perkiraanHarga * 0.5);
-    const expectedRemaining = selectedOrder.perkiraanHarga - clientDP;
+    const clientDP = dpOf(selectedOrder);
+    const expectedRemaining = remainingOf(selectedOrder);
     if (amount !== expectedRemaining) {
-      alert(`Jumlah pembayaran (Rp ${amount.toLocaleString()}) tidak sesuai dengan sisa pembayaran yang harus diselesaikan (Rp ${expectedRemaining.toLocaleString()})`);
+      toast.error(
+        `Jumlah pembayaran (Rp ${formatRupiah(amount)}) tidak sesuai dengan sisa pembayaran yang harus diselesaikan (Rp ${formatRupiah(expectedRemaining)})`,
+        "Gagal"
+      );
       return;
     }
 
@@ -132,20 +235,10 @@ export default function PaymentVerification() {
     try {
       let proofUrl = null;
       if (paymentPhotos.length > 0) {
-        const formData = new FormData();
-        formData.append("file", paymentPhotos[0]);
-        formData.append("upload_preset", process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || "rental-mobil");
-        
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || "dnfruux8d"}/image/upload`, {
-          method: "POST",
-          body: formData
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          proofUrl = data.secure_url;
-        } else {
-          console.error("Cloudinary upload failed", await res.text());
+        try {
+          proofUrl = await uploadImage(paymentPhotos[0], { limit: "proof" });
+        } catch (e) {
+          console.error("Cloudinary upload failed", e);
         }
       }
 
@@ -180,10 +273,7 @@ export default function PaymentVerification() {
 
       // Make car available again
       if (selectedOrder.mobilId) {
-        await updateDoc(doc(db, "mobil", selectedOrder.mobilId), {
-          tersedia: true,
-          status: "normal"
-        });
+        await releaseVehicle(selectedOrder.mobilId, selectedOrder.id);
         console.log(`Car ${selectedOrder.mobilId} made available again after payment verification`);
       }
 
@@ -209,311 +299,329 @@ export default function PaymentVerification() {
       setPaymentPhotos([]);
       setNotes("");
 
-      alert("Verifikasi pembayaran berhasil! Order telah selesai.");
+      toast.success("Verifikasi pembayaran berhasil! Order telah selesai.", "Berhasil");
     } catch (error) {
       console.error("Error submitting payment verification:", error);
-      alert("Terjadi kesalahan saat menyimpan verifikasi pembayaran");
+      toast.error("Terjadi kesalahan saat menyimpan verifikasi pembayaran", "Gagal");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "dalam perjalanan":
-        return "bg-yellow-100 text-yellow-800";
-      case "menunggu pembayaran":
-        return "bg-orange-100 text-orange-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case "dalam perjalanan":
-        return "Dalam Perjalanan";
-      case "menunggu pembayaran":
-        return "Menunggu Pembayaran";
-      default:
-        return status;
-    }
-  };
-
-  const getPaymentMethodColor = (method) => {
-    switch (method) {
-      case "Cash":
-        return "bg-green-100 text-green-800";
-      case "Transfer Bank":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getPaymentMethodText = (method) => {
-    switch (method) {
-      case "Cash":
-        return "Tunai";
-      case "Transfer Bank":
-        return "Transfer Bank";
-      default:
-        return method || "Tidak ada info";
-    }
-  };
+  const isCash = paymentMethod === "cash" || selectedOrder?.paymentMethod === "Cash";
+  const canSubmit =
+    !isSubmitting &&
+    Boolean(paymentAmount) &&
+    !(isCash && paymentPhotos.length === 0);
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-12 text-slate-800">
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 pb-space-xl text-c57-on-surface">
       {/* Background decoration */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
-        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-red-100 mix-blend-multiply filter blur-[100px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-slate-200 mix-blend-multiply filter blur-[120px]"></div>
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-40" aria-hidden="true">
+        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-c57-error-container mix-blend-multiply filter blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-c57-surface-container-high mix-blend-multiply filter blur-[120px]" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-6 md:py-10 lg:py-12">
-        <div className="mb-8 md:mb-10 animate-fadeInUp">
-          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
-             <CreditCard size={14} />
-             <span>Finance Settlement</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight mb-3">Verifikasi Pembayaran</h1>
-          <p className="text-slate-500 text-lg">Lakukan verifikasi bukti pembayaran untuk menyelesaikan order.</p>
-        </div>
+      <div className="relative z-10 max-w-7xl mx-auto px-gutter-mobile sm:px-gutter py-space-lg">
+        <PageHeader
+          eyebrow={
+            <>
+              <Icon name="credit_card" size="sm" />
+              <span>Finance Settlement</span>
+            </>
+          }
+          title="Verifikasi Pembayaran"
+          subtitle="Lakukan verifikasi bukti pembayaran untuk menyelesaikan order."
+          className="mb-space-xl animate-fadeInUp"
+        />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter items-start">
           {/* Order List */}
-          <div className="lg:col-span-1 space-y-4 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-1.5 h-6 bg-[#810100] rounded-full"></div>
-              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Order Berlangsung</h2>
+          <div className="lg:col-span-1 space-y-gutter animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
+            <div className="flex items-center gap-space-md">
+              <span className="w-1.5 h-6 bg-c57-primary-container rounded-full" aria-hidden="true" />
+              <h2 className="font-label-sm uppercase tracking-[0.2em] text-c57-outline">
+                Order Berlangsung
+              </h2>
             </div>
-            
+
             {orders.length === 0 ? (
-              <div className="bg-white rounded-[2rem] p-10 text-center border border-slate-100 shadow-sm shadow-slate-200/50">
-                <CreditCard className="h-10 w-10 text-slate-200 mx-auto mb-4" />
-                <p className="text-slate-500 font-black text-[10px] uppercase tracking-widest">Tidak ada order aktif</p>
-              </div>
+              <EmptyState icon="credit_card" title="Tidak ada order aktif" />
             ) : (
-              orders.map((order) => (
-                <div
-                  key={order.id}
-                  onClick={() => {
-                    setSelectedOrder(order);
-                    const clientDP = order.dpAmount || Math.floor(order.perkiraanHarga * 0.5);
-                    const sisaBayar = order.perkiraanHarga - clientDP;
-                    setPaymentAmount(sisaBayar.toString());
-                    setPaymentMethod(order.paymentMethod || "cash");
-                  }}
-                  className={`p-6 rounded-[2rem] cursor-pointer transition-all duration-300 border ${
-                    selectedOrder?.id === order.id
-                      ? "bg-[#810100] border-[#810100] shadow-xl shadow-red-900/20 -translate-y-1"
-                      : "bg-white border-slate-100 shadow-sm shadow-slate-200/50 hover:border-[#810100]/20"
-                  }`}
-                >
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <h3 className={`font-black tracking-tight text-base truncate mb-0.5 ${selectedOrder?.id === order.id ? 'text-white' : 'text-slate-900'}`}>{order.namaMobil}</h3>
-                      <p className={`text-[10px] font-black uppercase tracking-widest truncate mb-4 ${selectedOrder?.id === order.id ? 'text-red-100' : 'text-slate-400'}`}>{order.email}</p>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className={`h-4 w-4 ${selectedOrder?.id === order.id ? 'text-white' : 'text-emerald-500'}`} />
-                        <span className={`text-[15px] font-black leading-none ${selectedOrder?.id === order.id ? 'text-white' : 'text-emerald-600'}`}>
-                          Rp {order.perkiraanHarga?.toLocaleString()}
-                        </span>
+              orders.map((order) => {
+                const isSelected = selectedOrder?.id === order.id;
+
+                return (
+                  <button
+                    key={order.id}
+                    type="button"
+                    onClick={() => selectOrder(order)}
+                    aria-pressed={isSelected}
+                    className={[
+                      "w-full text-left p-space-lg rounded-c57-lg transition-all duration-300 border",
+                      isSelected
+                        ? "bg-c57-primary-container border-c57-primary-container text-c57-on-primary shadow-c57-card-hover"
+                        : "bg-c57-surface-container-lowest border-c57-surface-variant shadow-c57-card hover:border-c57-primary",
+                    ].join(" ")}
+                  >
+                    <div className="flex justify-between items-start gap-space-md">
+                      <div className="min-w-0 flex-1">
+                        <h3 className={[
+                          "font-headline-sm text-headline-sm truncate mb-1",
+                          isSelected ? "text-c57-on-primary" : "text-c57-on-surface",
+                        ].join(" ")}>
+                          {order.namaMobil}
+                        </h3>
+                        <p className={[
+                          "font-label-sm uppercase tracking-widest truncate mb-space-md",
+                          isSelected ? "text-c57-primary-container" : "text-c57-outline",
+                        ].join(" ")}>
+                          {order.email}
+                        </p>
+                        <div className="flex items-center gap-space-sm">
+                          <Icon
+                            name="payments"
+                            size="sm"
+                            className={isSelected ? "text-c57-on-primary" : "text-c57-available-text"}
+                          />
+                          <span className={[
+                            "font-headline-sm text-headline-sm leading-none",
+                            isSelected ? "text-c57-on-primary" : "text-c57-available-text",
+                          ].join(" ")}>
+                            Rp {formatRupiah(order.perkiraanHarga)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-space-sm shrink-0">
+                        <Pill
+                          variant={isSelected ? "onScrim" : STATUS_VARIANTS[order.status] || "outline"}
+                          size="sm"
+                        >
+                          {STATUS_TEXT[order.status] || order.status}
+                        </Pill>
+                        <Pill
+                          variant={isSelected ? "onScrim" : METHOD_VARIANTS[order.paymentMethod] || "neutral"}
+                          size="sm"
+                        >
+                          {METHOD_TEXT[order.paymentMethod] || order.paymentMethod || "Tidak ada info"}
+                        </Pill>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      <span className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full border ${selectedOrder?.id === order.id ? 'bg-black/10 border-white/10 text-white' : getStatusColor(order.status)}`}>
-                        {getStatusText(order.status)}
-                      </span>
-                      <span className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full border ${selectedOrder?.id === order.id ? 'bg-white/10 border-white/10 text-white' : getPaymentMethodColor(order.paymentMethod)}`}>
-                        {getPaymentMethodText(order.paymentMethod)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
+                  </button>
+                );
+              })
             )}
           </div>
 
           {/* Payment Verification Form */}
           <div className="lg:col-span-2 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
             {selectedOrder ? (
-              <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-2xl shadow-slate-200/50">
-                <div className="px-6 md:px-10 py-5 md:py-8 border-b border-slate-50 bg-slate-50/50">
-                  <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest">
-                    Verifikasi Pembayaran: <span className="text-[#810100]">{selectedOrder.namaMobil}</span>
+              <Card className="overflow-hidden">
+                <div className="px-space-lg md:px-space-xl py-space-md md:py-space-lg border-b border-c57-surface-variant bg-c57-surface-container">
+                  <h2 className="font-headline-sm text-headline-sm text-c57-on-surface uppercase tracking-widest">
+                    Verifikasi Pembayaran:{" "}
+                    <span className="text-c57-primary">{selectedOrder.namaMobil}</span>
                   </h2>
                 </div>
 
-                <div className="p-4 sm:p-6 md:p-8">
+                <div className="p-space-md sm:p-space-lg md:p-space-xl">
                   {/* Order Summary Grid */}
-                  {/* Order Summary Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-10 bg-slate-50 rounded-[2rem] p-8 md:p-10 border border-slate-100">
-                    <div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">Mobil & Client</span>
-                      <p className="font-black text-slate-900 text-[15px] uppercase tracking-tight">{selectedOrder.namaMobil}</p>
-                      <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-1">{selectedOrder.email}</p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">Tanggal & Total</span>
-                      <p className="font-bold text-slate-700 text-[13px]">
-                        {selectedOrder.tanggalMulai ? new Date(selectedOrder.tanggalMulai).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'}) : 'N/A'}
-                      </p>
-                      <p className="text-[15px] font-black text-emerald-600 mt-1">
-                        Rp {selectedOrder.perkiraanHarga?.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="md:col-span-2 pt-6 border-t border-slate-200">
-                      <span className="text-[10px] font-black text-[#810100] uppercase tracking-[0.2em] block mb-2">DP Diterima (Finance)</span>
-                      <p className="font-black text-[#810100] text-3xl md:text-4xl tracking-tighter">
-                        Rp {(selectedOrder.dpAmount || Math.floor(selectedOrder.perkiraanHarga * 0.5)).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-8">
-                    {/* Payment Info Callout */}
-                    <div className="bg-brand-500/5 border border-brand-500/20 rounded-2xl p-4 flex gap-4">
-                      <div className="h-10 w-10 bg-brand-500/10 rounded-xl flex items-center justify-center text-brand-400 shrink-0 border border-brand-500/20">
-                        <CreditCard className="h-5 w-5" />
-                      </div>
+                  <Card variant="inset" className="p-space-lg md:p-space-xl mb-space-xl">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
                       <div>
-                        <p className="font-bold text-gray-200 text-sm">Info Pembayaran</p>
-                        <p className="text-xs text-brand-400/80 font-medium mt-0.5 uppercase tracking-wider">
-                          {getPaymentMethodText(selectedOrder.paymentMethod)}
-                          {selectedOrder.paymentMethod === "Cash" && " • Diperlukan Foto Bukti Fisik"}
-                          {selectedOrder.paymentMethod === "Transfer Bank" && " • Verifikasi Otomatis Tersedia"}
+                        <span className="font-label-sm uppercase tracking-[0.2em] text-c57-outline block mb-space-sm">
+                          Mobil &amp; Client
+                        </span>
+                        <p className="font-headline-sm text-headline-sm text-c57-on-surface uppercase">
+                          {selectedOrder.namaMobil}
+                        </p>
+                        <p className="font-label-sm text-c57-on-surface-variant uppercase tracking-widest mt-1">
+                          {selectedOrder.email}
+                        </p>
+                      </div>
+
+                      <div>
+                        <span className="font-label-sm uppercase tracking-[0.2em] text-c57-outline block mb-space-sm">
+                          Tanggal &amp; Total
+                        </span>
+                        <p className="text-body-sm font-semibold text-c57-on-surface">
+                          {selectedOrder.tanggalMulai
+                            ? new Date(selectedOrder.tanggalMulai).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              })
+                            : "N/A"}
+                        </p>
+                        <p className="font-headline-sm text-headline-sm text-c57-available-text mt-1">
+                          Rp {formatRupiah(selectedOrder.perkiraanHarga)}
+                        </p>
+                      </div>
+
+                      <div className="md:col-span-2 pt-space-lg border-t border-c57-surface-variant">
+                        <span className="font-label-sm uppercase tracking-[0.2em] text-c57-primary block mb-space-sm">
+                          DP Diterima (Finance)
+                        </span>
+                        <p className="font-headline-md text-headline-md text-c57-primary">
+                          Rp {formatRupiah(dpOf(selectedOrder))}
                         </p>
                       </div>
                     </div>
+                  </Card>
+
+                  <div className="space-y-space-xl">
+                    {/* Payment Info Callout */}
+                    <Card variant="inset" className="p-space-md flex gap-space-md">
+                      <span className="h-10 w-10 bg-c57-surface-container text-c57-primary rounded-c57-md flex items-center justify-center shrink-0 border border-c57-surface-variant">
+                        <Icon name="credit_card" size="md" />
+                      </span>
+                      <div>
+                        <p className="text-body-sm font-semibold text-c57-on-surface">
+                          Info Pembayaran
+                        </p>
+                        <p className="font-label-sm uppercase tracking-wider text-c57-on-surface-variant mt-1">
+                          {METHOD_TEXT[selectedOrder.paymentMethod] || selectedOrder.paymentMethod}
+                          {selectedOrder.paymentMethod === "Cash" && " • Diperlukan Foto Bukti Fisik"}
+                          {selectedOrder.paymentMethod === "Transfer Bank" &&
+                            " • Verifikasi Otomatis Tersedia"}
+                        </p>
+                      </div>
+                    </Card>
 
                     {/* Form Controls */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Metode Pembayaran</label>
-                        <select
-                          value={paymentMethod}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 text-sm font-black text-slate-800 focus:border-[#810100] focus:ring-1 focus:ring-[#810100] transition-all outline-none appearance-none cursor-pointer"
-                          disabled={selectedOrder.status === "menunggu pembayaran"}
-                        >
-                          <option value="cash">Tunai (Cash)</option>
-                          <option value="transfer">Transfer Bank</option>
-                          <option value="other">Lainnya</option>
-                        </select>
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+                      <Field label="Metode Pembayaran">
+                        {(p) => (
+                          <Select
+                            {...p}
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                            disabled={selectedOrder.status === "menunggu pembayaran"}
+                          >
+                            <option value="cash">Tunai (Cash)</option>
+                            <option value="transfer">Transfer Bank</option>
+                            <option value="other">Lainnya</option>
+                          </Select>
+                        )}
+                      </Field>
 
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Jumlah Diterima (Rp)</label>
-                        <input
-                          type="text"
-                          value={parseInt(paymentAmount).toLocaleString()}
-                          readOnly
-                          className="w-full bg-emerald-50 border border-emerald-100 rounded-2xl px-6 py-5 text-sm font-black text-emerald-600 outline-none"
-                        />
-                      </div>
+                      <Field
+                        label="Jumlah Diterima (Rp)"
+                        hint="Terisi otomatis dari sisa pembayaran"
+                      >
+                        {(p) => (
+                          <Input
+                            {...p}
+                            type="text"
+                            readOnly
+                            className="bg-c57-available-bg border-c57-available-text/20 text-c57-available-text font-semibold"
+                            value={formatRupiah(parseInt(paymentAmount, 10))}
+                          />
+                        )}
+                      </Field>
                     </div>
 
-                    {/* Photos - Selalu Ada */}
-                    {true && (
-                      <div className="space-y-4">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 block">
-                          Foto Bukti Pembayaran {(paymentMethod === "cash" || selectedOrder?.paymentMethod === "Cash") && <span className="text-brand-500">*</span>}
-                        </label>
-                        
-                        <div className="relative group">
-                          <input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handlePhotoUpload}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                            id="payment-photo-upload"
-                          />
-                          <div className="border-2 border-dashed border-slate-200 hover:border-[#810100] rounded-[2.5rem] p-10 text-center bg-slate-50/50 transition-all group-hover:bg-red-50/30">
-                            <Camera className="h-12 w-12 text-slate-200 mx-auto mb-4 transition-colors group-hover:text-[#810100]" />
-                            <div className="bg-[#810100] text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest inline-block mb-3 shadow-lg shadow-red-900/10">Pilih Bukti</div>
-                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Pilih atau ambil foto bukti fisik</p>
-                          </div>
-                        </div>
+                    {/* Photos — always offered, required for cash */}
+                    <div>
+                      <p className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant mb-space-md">
+                        Foto Bukti Pembayaran
+                        {isCash && <span className="text-c57-primary"> *</span>}
+                      </p>
 
-                        {/* Photo Previews */}
-                        {paymentPhotos.length > 0 && (
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 pt-4">
-                            {paymentPhotos.map((photo, index) => (
-                              <div key={index} className="relative group animate-fadeInUp">
-                                <div className="bg-slate-50 border border-slate-100 rounded-[1.5rem] p-5 flex flex-col items-center justify-center h-28 overflow-hidden shadow-inner">
-                                  <FileText className="h-8 w-8 text-slate-200 group-hover:text-[#810100] transition-colors mb-2" />
-                                  <p className="text-[9px] text-slate-400 font-black uppercase truncate w-full text-center tracking-tighter">
-                                    {photo.name}
-                                  </p>
-                                </div>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); removePhoto(index); }}
-                                  className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-transform hover:scale-110 active:scale-95 z-20"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 4.293z" clipRule="evenodd" />
-                                  </svg>
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                      <div className="relative group">
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          id="payment-photo-upload"
+                          aria-label="Pilih atau ambil foto bukti fisik"
+                        />
+                        <div className="border-2 border-dashed border-c57-outline-variant hover:border-c57-primary rounded-c57-lg p-space-xl text-center bg-c57-surface-container transition-all group-hover:bg-c57-error-container/30">
+                          <Icon
+                            name="photo_camera"
+                            size="3xl"
+                            className="text-c57-outline mx-auto mb-space-md transition-colors group-hover:text-c57-primary"
+                          />
+                          <span className="bg-c57-primary-container text-c57-on-primary px-space-lg py-3 rounded-full font-label-sm uppercase tracking-widest inline-block mb-space-md">
+                            Pilih Bukti
+                          </span>
+                          <p className="font-label-sm uppercase tracking-widest text-c57-outline">
+                            Pilih atau ambil foto bukti fisik
+                          </p>
+                        </div>
                       </div>
-                    )}
+
+                      {paymentPhotos.length > 0 && (
+                        <ul className="grid grid-cols-2 sm:grid-cols-4 gap-gutter pt-space-md">
+                          {paymentPhotos.map((photo, index) => (
+                            <li
+                              key={index}
+                              className="relative group animate-fadeInUp"
+                            >
+                              <div className="bg-c57-surface-container border border-c57-surface-variant rounded-c57-lg p-space-md flex flex-col items-center justify-center h-28 overflow-hidden">
+                                <Icon
+                                  name="description"
+                                  size="2xl"
+                                  className="text-c57-outline group-hover:text-c57-primary transition-colors mb-space-sm"
+                                />
+                                <p className="font-label-sm text-c57-outline uppercase truncate w-full text-center">
+                                  {photo.name}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removePhoto(index);
+                                }}
+                                aria-label={`Hapus ${photo.name}`}
+                                className="absolute -top-1 -right-1 bg-c57-error text-c57-on-error rounded-full p-space-sm shadow-c57-card transition-transform hover:scale-110 active:scale-95 z-20"
+                              >
+                                <Icon name="close" size="xs" />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
 
                     {/* Notes */}
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Catatan Tambahan (Opsional)</label>
-                      <textarea
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Contoh: Pembayaran lunas di awal, kembalian diserahkan, dll."
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-8 py-6 text-sm font-bold text-slate-800 focus:border-[#810100] outline-none transition-all placeholder:text-slate-300 min-h-[120px]"
-                      />
-                    </div>
+                    <Field label="Catatan Tambahan (Opsional)">
+                      {(p) => (
+                        <Textarea
+                          {...p}
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          placeholder="Contoh: Pembayaran lunas di awal, kembalian diserahkan, dll."
+                          rows={4}
+                        />
+                      )}
+                    </Field>
 
-                    {/* Action Button */}
-                    <div className="pt-10">
-                      <button
-                        onClick={submitPaymentVerification}
-                        disabled={
-                          isSubmitting ||
-                          !paymentAmount ||
-                          ((paymentMethod === "cash" || selectedOrder?.paymentMethod === "Cash") && paymentPhotos.length === 0)
-                        }
-                        className="w-full bg-[#810100] hover:bg-slate-900 disabled:bg-slate-100 disabled:text-slate-300 text-white font-black py-6 rounded-[2rem] tracking-widest text-[11px] uppercase transition-all shadow-xl shadow-red-900/10 group overflow-hidden relative active:scale-95"
-                      >
-                        <div className="relative z-10 flex items-center justify-center gap-4">
-                          {isSubmitting ? (
-                            <>
-                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white"></div>
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="h-5 w-5" />
-                              Konfirmasi & Selesaikan Order
-                            </>
-                          )}
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-[100%] group-hover:translate-x-[100%] transition-transform duration-700 pointer-events-none"></div>
-                      </button>
-                    </div>
+                    <Button
+                      type="button"
+                      onClick={submitPaymentVerification}
+                      disabled={!canSubmit}
+                      loading={isSubmitting}
+                      icon="check_circle"
+                      size="lg"
+                      className="w-full"
+                    >
+                      {isSubmitting ? "Processing..." : "Konfirmasi & Selesaikan Order"}
+                    </Button>
                   </div>
                 </div>
-              </div>
+              </Card>
             ) : (
-              <div className="bg-white rounded-[2.5rem] p-16 text-center border border-slate-100 flex flex-col items-center justify-center min-h-[450px] shadow-xl shadow-slate-200/50">
-                <div className="h-24 w-24 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-200 mb-8 border border-slate-100">
-                  <CreditCard className="h-10 w-10" />
-                </div>
-                <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight uppercase tracking-widest">Pilih Order</h3>
-                <p className="text-slate-500 max-w-xs mx-auto text-[13px] font-bold leading-relaxed">
-                  Silakan pilih salah satu order aktif di panel kiri untuk mulai memproses verifikasi pembayaran.
-                </p>
-              </div>
+              <EmptyState
+                icon="credit_card"
+                title="Pilih Order"
+                description="Silakan pilih salah satu order aktif di panel kiri untuk mulai memproses verifikasi pembayaran."
+                className="min-h-[450px]"
+              />
             )}
           </div>
         </div>

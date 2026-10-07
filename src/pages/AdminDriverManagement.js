@@ -1,15 +1,55 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Camera, CreditCard, User, ArrowRight, Plus, LayoutGrid } from "lucide-react";
-import { db, auth } from "../services/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
+
+import { db, auth } from "../services/firebase";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import Icon from "../components/ui/Icon";
+import PageHeader from "../components/ui/PageHeader";
+import SectionHeading from "../components/ui/SectionHeading";
+import StatCard from "../components/ui/StatCard";
+
+/**
+ * Driver-operations hub: three module links plus a same-day status roll-up.
+ *
+ * The three Firestore subscriptions are unchanged — `vehicleVerifications`
+ * and approved `paymentVerifications` are both filtered to today, drivers are
+ * filtered to `status !== "inactive"`. What the redesign replaced is only the
+ * chrome: the per-module blue/emerald/red tinting, which was the last
+ * multi-palette holdout, is gone in favour of one accent well per tile.
+ */
+
+const MODULES = [
+  {
+    id: "vehicle-verifications",
+    title: "Verifikasi Unit",
+    description: "Pantau kondisi armada sebelum & sesudah operasional.",
+    icon: "camera_alt",
+    path: "/admin-vehicle-verifications",
+  },
+  {
+    id: "payment-verifications",
+    title: "Log Transaksi Cash",
+    description: "Validasi setoran tunai dari mitra pengemudi.",
+    icon: "credit_card",
+    path: "/admin-payment-verifications",
+  },
+  {
+    id: "driver-profiles",
+    title: "Database Mitra",
+    description: "Kelola biodata dan status aktifitas pengemudi.",
+    icon: "person",
+    path: "/admin-driver-profiles",
+  },
+];
 
 export default function AdminDriverManagement() {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({
     vehicleCount: 0,
     cashCount: 0,
-    driverCount: 0
+    driverCount: 0,
   });
 
   useEffect(() => {
@@ -72,119 +112,95 @@ export default function AdminDriverManagement() {
     };
   }, [user]);
 
-  const menuItems = [
-    {
-      id: "vehicle-verifications",
-      title: "Verifikasi Unit",
-      description: "Pantau kondisi armada sebelum & sesudah operasional.",
-      icon: <Camera size={28} />,
-      path: "/admin-vehicle-verifications",
-      color: "text-blue-600",
-      bg: "bg-blue-50"
-    },
-    {
-      id: "payment-verifications",
-      title: "Log Transaksi Cash",
-      description: "Validasi setoran tunai dari mitra pengemudi.",
-      icon: <CreditCard size={28} />,
-      path: "/admin-payment-verifications",
-      color: "text-emerald-600",
-      bg: "bg-emerald-50"
-    },
-    {
-      id: "driver-profiles",
-      title: "Database Mitra",
-      description: "Kelola biodata dan status aktifitas pengemudi.",
-      icon: <User size={28} />,
-      path: "/admin-driver-profiles",
-      color: "text-[#810100]",
-      bg: "bg-red-50"
-    }
-  ];
-
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800">
-      <div className="max-w-7xl mx-auto px-6">
-        
-        {/* Header */}
-        <div className="mb-12">
-          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
-            <LayoutGrid size={14} />
-            <span>Driver Operations</span>
-          </div>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div>
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Manajemen Driver</h1>
-              <p className="text-slate-500 mt-1">Pusat kendali operasional mitra pengemudi Cakra Lima Tujuh.</p>
-            </div>
-            <Link
-              to="/admin-add-driver"
-              className="group bg-[#810100] hover:bg-[#630000] text-white px-8 py-4 rounded-2xl font-bold flex items-center shadow-lg shadow-red-900/10 transition-all active:scale-95"
-            >
-              <Plus className="h-5 w-5 mr-3 group-hover:rotate-90 transition-transform" />
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 pb-space-xl">
+      <div className="max-w-7xl mx-auto px-gutter-mobile sm:px-gutter">
+        <PageHeader
+          eyebrow="Driver Operations"
+          title="Manajemen Driver"
+          subtitle="Pusat kendali operasional mitra pengemudi Cakra Lima Tujuh."
+          actions={
+            <Button as={Link} to="/admin-add-driver" icon="add" size="md">
               Tambah Mitra Baru
-            </Link>
-          </div>
-        </div>
+            </Button>
+          }
+        />
 
-        {/* Menu Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          {menuItems.map((item) => (
-            <Link
-              key={item.id}
-              to={item.path}
-              className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden flex flex-col items-start"
-            >
-              <div className={`w-16 h-16 ${item.bg} ${item.color} rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform`}>
-                {item.icon}
-              </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight group-hover:text-[#810100] transition-colors line-clamp-1">
-                {item.title}
-              </h3>
-              <p className="text-slate-500 text-sm leading-relaxed mb-10 min-h-[40px]">
-                {item.description}
-              </p>
-              <div className="mt-auto flex items-center text-[#810100] font-bold text-xs uppercase tracking-widest group-hover:gap-4 gap-2 transition-all">
-                <span>Akses Modul</span>
-                <ArrowRight size={16} />
-              </div>
-              {/* Subtle background decoration */}
-              <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-slate-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700"></div>
-            </Link>
+        {/* Module Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter mt-space-xl">
+          {MODULES.map((item) => (
+            <ModuleCard key={item.id} module={item} />
           ))}
         </div>
 
-        {/* Summary Banner */}
-        <div className="bg-white rounded-[2.5rem] p-10 border border-slate-200 shadow-sm relative overflow-hidden">
-           <div className="flex items-center gap-4 mb-10 relative z-10">
-              <div className="w-1.5 h-8 bg-[#810100] rounded-full"></div>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Status Operasional Hari Ini</h2>
-           </div>
-           
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
-              {[
-                { label: "Verifikasi Mobil", val: stats.vehicleCount, suffix: "Pemeriksaan", color: "text-blue-600" },
-                { label: "Transaksi Cash", val: stats.cashCount, suffix: "Disetujui", color: "text-emerald-600" },
-                { label: "Mitra Bertugas", val: stats.driverCount, suffix: "Pengemudi", color: "text-[#810100]" },
-              ].map((stat, i) => (
-                <div key={i} className="space-y-3 group">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                  <div className="flex items-baseline gap-3">
-                     <p className="text-5xl font-black text-slate-900">{stat.val}</p>
-                     <span className={`${stat.color} text-[10px] font-bold uppercase tracking-widest group-hover:translate-x-1 transition-transform inline-block`}>{stat.suffix}</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                     <div className={`h-full opacity-30 ${stat.color === 'text-[#810100]' ? 'bg-[#810100]' : stat.color.replace('text-', 'bg-')} transition-all`} style={{ width: stat.val > 0 ? '100%' : '0%' }}></div>
-                  </div>
-                </div>
-              ))}
-           </div>
-           
-           {/* Abstract pattern */}
-           <div className="absolute right-0 top-0 w-64 h-64 bg-slate-50 rounded-full -mr-20 -mt-20 opacity-50"></div>
-        </div>
+        {/* Summary */}
+        <Card variant="inset" className="relative overflow-hidden mt-space-xl p-space-lg sm:p-space-xl">
+          <SectionHeading
+            eyebrow="Ringkasan"
+            title="Status Operasional Hari Ini"
+            className="mb-space-lg"
+          />
 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-space-lg relative z-10">
+            <StatCard
+              label="Verifikasi Mobil"
+              value={stats.vehicleCount}
+              unit="Pemeriksaan"
+              icon="camera_alt"
+            />
+            <StatCard
+              label="Transaksi Cash"
+              value={stats.cashCount}
+              unit="Disetujui"
+              icon="credit_card"
+            />
+            <StatCard
+              label="Mitra Bertugas"
+              value={stats.driverCount}
+              unit="Pengemudi"
+              icon="person"
+            />
+          </div>
+
+          <div
+            className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-c57-primary/5 pointer-events-none"
+            aria-hidden="true"
+          />
+        </Card>
       </div>
     </div>
+  );
+}
+
+function ModuleCard({ module }) {
+  return (
+    <Link to={module.path} className="group block">
+      <Card
+        interactive
+        className="relative overflow-hidden flex flex-col items-start h-full p-space-lg sm:p-space-xl"
+      >
+        <span className="relative z-10 w-14 h-14 rounded-c57-md bg-c57-primary-container text-c57-on-primary flex items-center justify-center mb-space-lg transition-transform duration-500 ease-editorial group-hover:scale-110">
+          <Icon name={module.icon} size="2xl" />
+        </span>
+
+        <h3 className="relative z-10 font-headline-sm text-headline-sm text-c57-on-surface group-hover:text-c57-primary transition-colors duration-300 mb-space-sm">
+          {module.title}
+        </h3>
+
+        <p className="relative z-10 text-body-sm text-c57-on-surface-variant leading-relaxed mb-space-xl">
+          {module.description}
+        </p>
+
+        <span className="relative z-10 mt-auto inline-flex items-center gap-space-sm font-label-sm text-label-sm uppercase tracking-widest text-c57-primary transition-all duration-300 group-hover:gap-space-md">
+          Akses Modul
+          <Icon name="arrow_forward" size="sm" />
+        </span>
+
+        <div
+          className="absolute -right-10 -bottom-10 w-28 h-28 rounded-full bg-c57-surface-container-low group-hover:scale-150 transition-transform duration-700 ease-editorial pointer-events-none"
+          aria-hidden="true"
+        />
+      </Card>
+    </Link>
   );
 }

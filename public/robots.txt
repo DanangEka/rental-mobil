@@ -13,6 +13,8 @@ Disallow: /admin-payment-verifications
 Disallow: /admin-driver-profiles
 Disallow: /admin-add-driver
 Disallow: /admin/open-trip
+Disallow: /admin-testimoni
+Disallow: /laporan-keuangan-rekap-kas
 
 # Disallow driver panels
 Disallow: /driver-dashboard

@@ -1,14 +1,53 @@
 import { useEffect, useState, useCallback } from "react";
-import { auth, db } from "../services/firebase";
-import {
-  collection,
-  getDocs,
-  updateDoc,
-  doc,
-  deleteDoc
-} from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { Search, UserCheck, UserX, Clock, Mail, Phone, Key, Trash2, User, ShieldCheck } from "lucide-react";
+import { collection, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
+
+import { auth, db } from "../services/firebase";
+import Card from "../components/ui/Card";
+import EmptyState from "../components/ui/EmptyState";
+import Icon from "../components/ui/Icon";
+import Input from "../components/ui/Input";
+import PageHeader from "../components/ui/PageHeader";
+import Pill from "../components/ui/Pill";
+import StatCard from "../components/ui/StatCard";
+
+/**
+ * Client database: search, status filter, and per-row identity actions.
+ *
+ * The Firestore and Auth contracts are unchanged — a single `getDocs` over
+ * `users`, `verificationStatus` defaulting to `unverified` in the mapping
+ * step, `deleteDoc` for removal, `updateDoc` for verification, and
+ * `sendPasswordResetEmail` for the reset action.
+ *
+ * Row layout is kept as the flex-row card list it already was rather than
+ * being forced into the `Table` primitive: the columns are a fixed 30/20/15/15
+ * split that has to survive a narrow viewport by stacking, which a real
+ * `<table>` cannot do without per-cell breakpoints.
+ */
+
+/** Status drives a Pill variant and an icon, never colour alone. */
+const STATUS = {
+  verified: { pill: "available", label: "verified" },
+  pending: { pill: "sand", label: "pending" },
+  unverified: { pill: "danger", label: "unverified" },
+};
+
+const FILTERS = [
+  { val: "", label: "Semua Client" },
+  { val: "unverified", label: "Unverified" },
+  { val: "pending", label: "Pending" },
+  { val: "verified", label: "Verified" },
+];
+
+const COLUMNS = (
+  <div className="hidden md:flex items-center px-space-lg font-label-sm text-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+    <div className="w-[30%]">Client / Identitas</div>
+    <div className="w-[20%]">Kontak</div>
+    <div className="w-[15%] text-center">Status</div>
+    <div className="w-[15%] text-center">Bergabung</div>
+    <div className="flex-1 text-right">Aksi</div>
+  </div>
+);
 
 export default function ClientManagement() {
   const [clients, setClients] = useState([]);
@@ -20,12 +59,12 @@ export default function ClientManagement() {
   const fetchClients = useCallback(async () => {
     try {
       const snapC = await getDocs(collection(db, "users"));
-      const clientsData = snapC.docs.map(doc => {
-        const data = doc.data();
+      const clientsData = snapC.docs.map((clientDoc) => {
+        const data = clientDoc.data();
         if (!data.verificationStatus) {
           data.verificationStatus = "unverified";
         }
-        return { id: doc.id, ...data };
+        return { id: clientDoc.id, ...data };
       });
       setClients(clientsData);
     } catch (error) {
@@ -57,8 +96,9 @@ export default function ClientManagement() {
     checkAdmin();
   }, [fetchClients]);
 
-  const filteredClients = clients.filter(c => {
-    const matchesSearch = searchClients === "" ||
+  const filteredClients = clients.filter((c) => {
+    const matchesSearch =
+      searchClients === "" ||
       c.nama?.toLowerCase().includes(searchClients.toLowerCase()) ||
       c.email?.toLowerCase().includes(searchClients.toLowerCase()) ||
       c.nomorTelepon?.includes(searchClients);
@@ -81,7 +121,7 @@ export default function ClientManagement() {
   const handleVerifyClient = async (id, status) => {
     try {
       await updateDoc(doc(db, "users", id), {
-        verificationStatus: status
+        verificationStatus: status,
       });
       fetchClients();
       alert("Status verifikasi diperbarui.");
@@ -102,201 +142,235 @@ export default function ClientManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#810100] rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-c57-surface-container-low pt-30 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-c57-surface-container-highest border-t-c57-primary-container rounded-full animate-spin" role="status" aria-label="Memuat data client" />
       </div>
     );
   }
 
-  if (!isAdmin) return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center p-6 text-center">
-       <div className="bg-white p-10 rounded-3xl shadow-xl shadow-red-900/5 max-w-md w-full border border-red-50">
-          <div className="w-20 h-20 bg-red-50 text-[#810100] rounded-full flex items-center justify-center mx-auto mb-6">
-            <UserX size={40} />
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2">Akses Terbatas</h2>
-          <p className="text-slate-500 mb-8 italic">Otoritas administrator diperlukan untuk akses database client.</p>
-          <div className="h-1.5 w-12 bg-[#810100] mx-auto rounded-full"></div>
-       </div>
-    </div>
-  );
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-c57-surface-container-low pt-30 flex items-center justify-center px-gutter-mobile sm:px-gutter text-center">
+        <Card className="max-w-md w-full p-space-xl">
+          <span className="w-20 h-20 rounded-full bg-c57-error-container text-c57-on-error-container flex items-center justify-center mx-auto mb-space-lg">
+            <Icon name="lock" size="3xl" />
+          </span>
+          <h2 className="font-headline-md text-headline-md text-c57-on-surface mb-space-sm">
+            Akses Terbatas
+          </h2>
+          <p className="text-body-md text-c57-on-surface-variant italic">
+            Otoritas administrator diperlukan untuk akses database client.
+          </p>
+          <div className="h-1.5 w-12 bg-c57-primary-container mx-auto rounded-full mt-space-lg" />
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800 font-sans">
-      <div className="max-w-7xl mx-auto px-6">
-        
-        {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
-            <ShieldCheck size={14} />
-            <span>Keamanan & Data Pengguna</span>
-          </div>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div>
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Manajemen Client</h1>
-              <p className="text-slate-500 mt-1">Kelola hak akses, verifikasi identitas, dan aktivitas pelanggan.</p>
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 pb-space-xl">
+      <div className="max-w-7xl mx-auto px-gutter-mobile sm:px-gutter">
+        <PageHeader
+          eyebrow="Keamanan & Data Pengguna"
+          title="Manajemen Client"
+          subtitle="Kelola hak akses, verifikasi identitas, dan aktivitas pelanggan."
+          actions={
+            <div className="w-full md:w-80">
+              <Input
+                icon="search"
+                label="Cari client"
+                placeholder="Cari nama, email, atau telepon..."
+                value={searchClients}
+                onChange={(e) => setSearchClients(e.target.value)}
+              />
             </div>
-            <div className="flex flex-wrap gap-4 w-full md:w-auto">
-              <div className="relative group flex-1 md:w-80">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#810100] transition-colors" size={18} />
-                <input 
-                  type="text" 
-                  placeholder="Cari nama, email, atau telepon..."
-                  value={searchClients}
-                  onChange={(e) => setSearchClients(e.target.value)}
-                  className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-6 py-3.5 focus:ring-2 focus:ring-red-100 focus:border-[#810100] outline-none transition-all placeholder:text-slate-400 font-medium"
-                />
-              </div>
-            </div>
-          </div>
+          }
+        />
+
+        {/* Status roll-up */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-gutter mt-space-xl">
+          <StatCard
+            label="Belum Verifikasi"
+            value={clients.filter((c) => c.verificationStatus === "unverified").length}
+            icon="person_alert"
+          />
+          <StatCard
+            label="Menunggu Validasi"
+            value={clients.filter((c) => c.verificationStatus === "pending").length}
+            icon="pending"
+          />
+          <StatCard
+            label="Client Terverifikasi"
+            value={clients.filter((c) => c.verificationStatus === "verified").length}
+            icon="verified_user"
+          />
         </div>
 
-        {/* Status Dashboard Mini Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-          {[
-            { label: "Belum Verifikasi", count: clients.filter(c => c.verificationStatus === "unverified").length, icon: <UserX size={20} />, color: "text-red-600", bg: "bg-red-50" },
-            { label: "Menunggu Validasi", count: clients.filter(c => c.verificationStatus === "pending").length, icon: <Clock size={20} />, color: "text-amber-600", bg: "bg-amber-50" },
-            { label: "Client Terverifikasi", count: clients.filter(c => c.verificationStatus === "verified").length, icon: <ShieldCheck size={20} />, color: "text-emerald-600", bg: "bg-emerald-50" },
-          ].map((stat, i) => (
-            <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                <p className="text-3xl font-black text-slate-900">{stat.count}</p>
-              </div>
-              <div className={`p-4 ${stat.bg} ${stat.color} rounded-2xl`}>{stat.icon}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 mb-10 shadow-sm">
-           <div className="flex flex-wrap items-center gap-4">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Filter Status:</span>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { val: "", label: "Semua Client" },
-                  { val: "unverified", label: "Unverified" },
-                  { val: "pending", label: "Pending" },
-                  { val: "verified", label: "Verified" },
-                ].map((f) => (
+        {/* Filter bar */}
+        <Card variant="inset" className="mt-gutter p-space-lg mb-gutter">
+          <div className="flex flex-wrap items-center gap-space-md">
+            <span className="font-label-sm text-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+              Filter Status:
+            </span>
+            <div className="flex flex-wrap gap-space-sm">
+              {FILTERS.map((f) => {
+                const active = filterStatus === f.val;
+                return (
                   <button
                     key={f.val}
+                    type="button"
+                    aria-pressed={active}
                     onClick={() => setFilterStatus(f.val)}
-                    className={`px-5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${filterStatus === f.val ? 'bg-[#810100] text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                    className={[
+                      "px-space-md py-2 rounded-c57-md font-label-sm text-label-sm uppercase tracking-widest",
+                      "transition-all duration-200 focus-visible:outline focus-visible:outline-2",
+                      "focus-visible:outline-offset-2 focus-visible:outline-c57-primary",
+                      active
+                        ? "bg-c57-primary-container text-c57-on-primary shadow-c57-card"
+                        : "bg-c57-surface-container-lowest text-c57-on-surface-variant hover:bg-c57-surface-container",
+                    ].join(" ")}
                   >
                     {f.label}
                   </button>
-                ))}
-              </div>
-           </div>
-        </div>
-
-        {/* Client Table-like List */}
-        <div className="space-y-4">
-          <div className="bg-slate-200/50 rounded-2xl p-4 hidden md:flex items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest px-8">
-            <div className="w-[30%]">Client / Identitas</div>
-            <div className="w-[20%]">Kontak</div>
-            <div className="w-[15%] text-center">Status</div>
-            <div className="w-[15%] text-center">Bergabung</div>
-            <div className="flex-1 text-right">Aksi</div>
+                );
+              })}
+            </div>
           </div>
+        </Card>
+
+        {/* Client list */}
+        <div className="space-y-space-sm">
+          {COLUMNS}
 
           {filteredClients.map((c) => (
-            <div key={c.id} className="bg-white border border-slate-200 rounded-2xl p-6 md:px-8 hover:shadow-md transition-shadow group">
-              <div className="flex flex-col md:flex-row md:items-center gap-6">
-                
-                {/* Identity */}
-                <div className="md:w-[30%] flex items-center gap-4">
-                  <div className="w-14 h-14 bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center text-slate-300">
-                    {c.ktpURL ? (
-                      <img src={c.ktpURL} className="w-full h-full object-cover" alt="KTP" />
-                    ) : (
-                      <User size={24} />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-lg font-bold text-slate-900 truncate">{c.nama || 'User Baru'}</h4>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{c.role || 'Pelanggan'}</p>
-                  </div>
-                </div>
-
-                {/* Contact */}
-                <div className="md:w-[20%] space-y-1">
-                  <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
-                    <Mail size={12} className="text-slate-300" />
-                    <span className="truncate">{c.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
-                    <Phone size={12} className="text-slate-300" />
-                    <span>{c.nomorTelepon || '-'}</span>
-                  </div>
-                </div>
-
-                {/* Status */}
-                <div className="md:w-[15%] flex justify-center">
-                  <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
-                    c.verificationStatus === "verified" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                    c.verificationStatus === "pending" ? "bg-amber-50 text-amber-600 border-amber-100" :
-                    "bg-red-50 text-[#810100] border-red-100"
-                  }`}>
-                    {c.verificationStatus}
-                  </span>
-                </div>
-
-                {/* Joined */}
-                <div className="md:w-[15%] text-center">
-                   <p className="text-xs font-bold text-slate-900">
-                    {c.createdAt ? new Date(c.createdAt.seconds * 1000).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-                  </p>
-                </div>
-
-                {/* Actions */}
-                <div className="flex-1 flex justify-end gap-2">
-                   {c.verificationStatus !== "verified" ? (
-                      <button 
-                        onClick={() => handleVerifyClient(c.id, "verified")}
-                        className="p-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl transition-all"
-                        title="Verifikasi"
-                      >
-                        <UserCheck size={18} />
-                      </button>
-                   ) : (
-                      <button 
-                        onClick={() => handleVerifyClient(c.id, "unverified")}
-                        className="p-2.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-xl transition-all"
-                        title="Batalkan Verifikasi"
-                      >
-                        <UserX size={18} />
-                      </button>
-                   )}
-                   <button 
-                    onClick={() => handleResetPassword(c.email)}
-                    className="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all"
-                    title="Reset Password"
-                   >
-                    <Key size={18} />
-                   </button>
-                   <button 
-                    onClick={() => handleDeleteClient(c.id)}
-                    className="p-2.5 bg-red-50 text-[#810100] hover:bg-[#810100] hover:text-white rounded-xl transition-all"
-                    title="Hapus Client"
-                   >
-                    <Trash2 size={18} />
-                   </button>
-                </div>
-
-              </div>
-            </div>
+            <ClientRow
+              key={c.id}
+              client={c}
+              onVerify={(status) => handleVerifyClient(c.id, status)}
+              onResetPassword={() => handleResetPassword(c.email)}
+              onDelete={() => handleDeleteClient(c.id)}
+            />
           ))}
 
           {filteredClients.length === 0 && (
-            <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200">
-              <p className="text-slate-400 font-bold italic text-sm">Database tidak ditemukan untuk kriteria ini.</p>
-            </div>
+            <EmptyState
+              icon="search"
+              title="Database tidak ditemukan"
+              description="Tidak ada client yang cocok dengan kata kunci atau filter status ini."
+            />
           )}
         </div>
-
       </div>
     </div>
+  );
+}
+
+const ACTION_BASE =
+  "p-2.5 rounded-c57-md transition-colors duration-200 " +
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c57-primary";
+
+function ActionButton({ icon, label, tone = "neutral", onClick }) {
+  const tones = {
+    positive:
+      "bg-c57-available-bg text-c57-available-text hover:bg-c57-available-text hover:text-c57-on-primary",
+    caution:
+      "bg-c57-tertiary-container text-c57-on-tertiary-container hover:bg-c57-tertiary hover:text-c57-on-tertiary",
+    neutral:
+      "bg-c57-surface-container text-c57-on-surface-variant hover:bg-c57-primary-container hover:text-c57-on-primary",
+    danger:
+      "bg-c57-error-container text-c57-on-error-container hover:bg-c57-error hover:text-c57-on-error",
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className={`${ACTION_BASE} ${tones[tone]}`}
+    >
+      <Icon name={icon} size="lg" />
+    </button>
+  );
+}
+
+function ClientRow({ client, onVerify, onResetPassword, onDelete }) {
+  const status = STATUS[client.verificationStatus] || STATUS.unverified;
+  const verified = client.verificationStatus === "verified";
+
+  return (
+    <Card className="p-space-md sm:px-space-lg hover:shadow-c57-card-hover transition-shadow">
+      <div className="flex flex-col md:flex-row md:items-center gap-space-lg">
+        {/* Identity */}
+        <div className="md:w-[30%] flex items-center gap-space-md">
+          <div className="w-14 h-14 rounded-c57-md bg-c57-surface-container-low border border-c57-surface-variant overflow-hidden shrink-0 flex items-center justify-center text-c57-outline">
+            {client.ktpURL ? (
+              <img src={client.ktpURL} className="w-full h-full object-cover" alt="KTP" />
+            ) : (
+              <Icon name="person" size="2xl" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <h4 className="font-headline-sm text-headline-sm text-c57-on-surface truncate">
+              {client.nama || "User Baru"}
+            </h4>
+            <p className="font-label-sm text-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+              {client.role || "Pelanggan"}
+            </p>
+          </div>
+        </div>
+
+        {/* Contact */}
+        <div className="md:w-[20%] space-y-1">
+          <div className="flex items-center gap-space-sm text-body-sm text-c57-on-surface-variant">
+            <Icon name="mail" size="xs" className="text-c57-outline shrink-0" />
+            <span className="truncate">{client.email}</span>
+          </div>
+          <div className="flex items-center gap-space-sm text-body-sm text-c57-on-surface-variant">
+            <Icon name="phone" size="xs" className="text-c57-outline shrink-0" />
+            <span>{client.nomorTelepon || "-"}</span>
+          </div>
+        </div>
+
+        {/* Status */}
+        <div className="md:w-[15%] flex justify-center">
+          <Pill variant={status.pill}>{status.label}</Pill>
+        </div>
+
+        {/* Joined */}
+        <div className="md:w-[15%] text-center">
+          <p className="text-body-md text-c57-on-surface tabular-nums">
+            {client.createdAt
+              ? new Date(client.createdAt.seconds * 1000).toLocaleDateString("id-ID", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "N/A"}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex-1 flex justify-end gap-space-sm">
+          <ActionButton
+            icon={verified ? "person_alert" : "verified_user"}
+            label={verified ? "Batalkan Verifikasi" : "Verifikasi"}
+            tone={verified ? "caution" : "positive"}
+            onClick={() => onVerify(verified ? "unverified" : "verified")}
+          />
+          <ActionButton
+            icon="vpn_key"
+            label="Reset Password"
+            onClick={onResetPassword}
+          />
+          <ActionButton
+            icon="delete"
+            label="Hapus Client"
+            tone="danger"
+            onClick={onDelete}
+          />
+        </div>
+      </div>
+    </Card>
   );
 }

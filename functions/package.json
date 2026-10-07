@@ -1,0 +1,18 @@
+{
+  "name": "cakra57-functions",
+  "description": "Cloud Functions for Cakra Lima Tujuh (testimoni image cleanup)",
+  "private": true,
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions,firestore",
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "cloudinary": "^2.5.1",
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.2.0"
+  }
+}

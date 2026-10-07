@@ -14,9 +14,14 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
+    // `request.auth.token.admin` melempar evaluation error (bukan `false`) bila
+    // custom claim `admin` tidak ada di token. Karena itu keberadaan claim
+    // harus diperiksa lebih dulu, kalau tidak seluruh rule ikut gagal untuk
+    // semua user yang tidak punya claim tersebut.
     function isAdmin() {
       return signedIn() && (
-        request.auth.token.admin == true ||
+        ("admin" in request.auth.token && request.auth.token.admin == true)
+        ||
         (
           exists(/databases/$(database)/documents/users/$(request.auth.uid))
           && userDoc().data.role == "admin"
@@ -32,6 +37,72 @@ service cloud.firestore {
 
     function isOwner(uid) {
       return signedIn() && request.auth.uid == uid;
+    }
+
+    // A driver may see an order only while it is theirs or still unassigned.
+    //
+    // PENTING — jangan pakai `("driverId" in resource.data)` atau
+    // `resource.data.get("driverId", null)` di jalur ini:
+    //   * `resource.data.driverId` melempar evaluation error (bukan `null`) kalau
+    //     field-nya absen, dan
+    //   * baik `in` maupun `.get()` membuat rule dianggap tidak bisa difilter,
+    //     sehingga list query tanpa filter tetap lolos dan mengembalikan order
+    //     milik driver lain.
+    // Akses field langsung + jaminan `driverId` selalu ada saat create (lihat rule
+    // CREATE) menghasilkan satu-satunya bentuk yang menolak query tak-terfilter
+    // sambil tetap mengizinkan dua query scoped yang dipakai aplikasi.
+    function isUnassignedOrder() {
+      return resource.data.driverId == null;
+    }
+
+    function isOwnedByCaller() {
+      return resource.data.uid == request.auth.uid;
+    }
+
+    // Claiming an unassigned order, or touching one already assigned to you.
+    function isDriverClaimingOrder() {
+      return isDriver() && (
+        (
+          isUnassignedOrder()
+          && request.resource.data.driverId == request.auth.uid
+        )
+        ||
+        (
+          resource.data.driverId == request.auth.uid
+          && request.resource.data.driverId == request.auth.uid
+        )
+      );
+    }
+
+    // Order document addressed by id, or null when it does not exist. Used to
+    // prove a caller really owns (or is driving) the order they claim.
+    function orderById(id) {
+      return get(/databases/$(database)/documents/pemesanan/$(id));
+    }
+
+    // Field names a client may change on its own profile. Deliberately excludes
+    // role, verificationStatus, email, uid and the driver bookkeeping fields:
+    // a client must not be able to promote itself or self-attest its KYC.
+    // Versi allowlist profil yang boleh ikut ditulis saat klien mengunggah KTP
+    // baru: sama seperti ownProfileFields() ditambah `verificationStatus`.
+    function ownProfileFieldsWithKtp() {
+      return [
+        "nama", "namaLengkap", "alamat", "provinsi", "kabupaten", "kecamatan",
+        "kelurahan", "rt", "rw", "nomorTelepon", "noTelepon", "penanggungJawab",
+        "penanggungJawabAlamat", "penanggungJawabTelepon", "ktpURL",
+        "simNumber", "tanggalLahir", "birthDate", "displayName", "name",
+        "phone", "updatedAt", "verificationStatus"
+      ];
+    }
+
+    function ownProfileFields() {
+      return [
+        "nama", "namaLengkap", "alamat", "provinsi", "kabupaten", "kecamatan",
+        "kelurahan", "rt", "rw", "nomorTelepon", "noTelepon", "penanggungJawab",
+        "penanggungJawabAlamat", "penanggungJawabTelepon", "ktpURL",
+        "simNumber", "tanggalLahir", "birthDate", "displayName", "name",
+        "phone", "updatedAt"
+      ];
     }
 
     // =====================================================
@@ -51,10 +122,38 @@ service cloud.firestore {
         isAdmin()
       );
 
-      // User update profil sendiri
+      // User update profil sendiri.
+      // Previously this also required "no null values anywhere", which rejected
+      // Profile.js writing `ktpURL: null` to clear a photo. Instead of that
+      // blunt check, restrict *which* fields a self-update may touch.
       allow update: if isOwner(userId)
-        && request.resource.data.role == resource.data.role
-        && !request.resource.data.values().hasAny([null]);
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(ownProfileFields())
+        && request.resource.data.role == resource.data.role;
+
+      // Profile.js mengirim `verificationStatus` bersama `ktpURL` setiap kali
+      // klien mengunggah foto KTP baru, untuk mengembalikan akun ke antrean
+      // review. Field ini sengaja TIDAK ada di ownProfileFields() — kalau
+      // tidak, klien bisa menandai dirinya sendiri sebagai "verified".
+      // Izinkan hanya transisi ke "pending", dan hanya saat KTP ikut dikirim,
+      // sehingga akun yang sudah terverifikasi tidak bisa diturunkan/dinaikkan
+      // statusnya sendiri lewat update biasa.
+      // Catatan: bahasa rules tidak mendukung konkatenasi list
+      // (`ownProfileFields() + [...]`), jadi field ditambahkan eksplisit.
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(ownProfileFieldsWithKtp())
+        && request.resource.data.verificationStatus == "pending"
+        && request.resource.data.ktpURL is string
+        // Wajib benar-benar foto baru: tanpa ini klien cukup menulis ulang
+        // `verificationStatus` memakai ktpURL lama yang sudah tersimpan.
+        && request.resource.data.ktpURL != resource.data.ktpURL
+        // Hanya boleh menulis nilai "pending". Admin yang boleh menaikkan status ke
+        // "verified" lewat `allow write: if isAdmin()` di bawah; klien tidak
+        // pernah bisa menyetujui KYC-nya sendiri. Nilai asal (pending /
+        // unverified / verified) tidak membatasi — klien yang sudah verified
+        // pun tetap boleh mengunggah KTP baru, hanya hasilnya kembali pending.
+        && request.resource.data.role == resource.data.role;
 
       // Admin bebas
       allow write: if isAdmin();
@@ -69,22 +168,46 @@ service cloud.firestore {
       // -------------------------
       // READ
       // -------------------------
+      // Driver hanya melihat order-nya sendiri dan order yang belum dialokasikan.
+      // Sebelumnya `isDriver()` sendiri yang menjadi predicate, sehingga setiap
+      // driver bisa menarik seluruh koleksi (PII klien + URL bukti bayar) lalu
+      // memfilter di sisi klien.
 
-      allow read: if signedIn() && (
-        resource.data.uid == request.auth.uid ||
-        isDriver() ||
-        isAdmin()
-      );
+      // CATATAN `in` vs akses langsung: Firestore menolak list query yang tidak
+      // bisa dibuktikan aman per-dokumen. Operator `in` (dan `.get()`) membuat
+      // rule dianggap tidak bisa difilter sehingga query tanpa filter lolos dan
+      // order milik driver lain ikut terbaca. Karena itu field `driverId` dibaca
+      // langsung, dan keberadaannya dijamin oleh rule CREATE di bawah.
+
+      // get() satu dokumen: cukup membuktikan kepemilikan per-dokumen.
+      allow get: if isAdmin()
+        || (signedIn() && isOwnedByCaller())
+        || (isDriver() && (
+          resource.data.driverId == request.auth.uid || isUnassignedOrder()
+        ));
+
+      // list/query: branch driver wajib tetap per-dokumen agar query tak
+      // terfilter tidak bisa menarik order driver lain.
+      allow list: if isAdmin()
+        || (signedIn() && isOwnedByCaller())
+        || (
+          isDriver()
+          && (resource.data.driverId == request.auth.uid || isUnassignedOrder())
+        );
 
       // -------------------------
       // CREATE
-      // Client membuat pesanan miliknya sendiri, Admin membuat pesanan manual
       // -------------------------
+      // Client membuat pesanan miliknya sendiri, Admin membuat pesanan manual
 
+      // `driverId` wajib ada saat create, boleh bernilai `null` untuk order yang
+      // belum dialokasikan. Ini yang membuat akses `resource.data.driverId`
+      // di rule read selalu aman (tidak melempar evaluation error pada dokumen
+      // lama), sekaligus menjaga list query tetap bisa difilter per-dokumen.
       allow create: if signedIn() && (
         request.resource.data.uid == request.auth.uid ||
         isAdmin()
-      );
+      ) && "driverId" in request.resource.data;
 
       // -------------------------
       // DELETE
@@ -100,55 +223,57 @@ service cloud.firestore {
 
       // -------------------------
       // CLIENT
-      // Upload bukti pembayaran
       // -------------------------
-
+      // Upload bukti pembayaran.
+      // `status` was missing from this list, so handleCancelSubmit() in
+      // HistoryPesanan.js failed with permission-denied. It is allowed here as a
+      // separate branch pinned to the single value "dibatalkan" — adding "status"
+      // to the list below would let a client mark its own order "lunas".
       allow update: if signedIn()
         && resource.data.uid == request.auth.uid
-        && request.resource.data.diff(resource.data).changedKeys()
-          .hasOnly([
-            "paymentMethod",
-            "paymentProof",
-            "paymentStatus",
-            "waktuUpload",
-            "dpAmount"
-          ]);
+        && request.resource.data.uid == request.auth.uid
+        && (
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              "paymentMethod",
+              "paymentProof",
+              "paymentStatus",
+              "waktuUpload",
+              "dpAmount"
+            ])
+          ||
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(["status"])
+            && request.resource.data.status == "dibatalkan"
+          )
+        );
 
       // -------------------------
       // DRIVER
       // -------------------------
+      // `driverVerifiedAt` (DriverOrders.js) and
+      // `vehicleVerificationBefore` / `vehicleVerificationAfter`
+      // (VehicleVerification.js) were written by the app but missing here, so
+      // those writes were rejected.
 
-      allow update: if isDriver()
-        && (
-          // Driver menerima order yang belum memiliki driver
-          (
-            (
-              !("driverId" in resource.data) ||
-              resource.data.driverId == null
-            )
-            && 
-            request.resource.data.driverId == request.auth.uid
-          )
-          ||
-          // Driver yang sudah menerima order
-          (
-            resource.data.driverId == request.auth.uid
-            && request.resource.data.driverId == request.auth.uid
-          )
-        )
-        && request.resource.data.diff(resource.data).changedKeys()
-          .hasOnly([
-            "driverId",
-            "status",
-            "assignedAt",
-            "updatedAt",
-            "actualPaymentAmount",
-            "paymentVerifiedAt"
-          ]);
+      allow update: if isDriverClaimingOrder()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly([
+               "driverId",
+               "status",
+               "assignedAt",
+               "updatedAt",
+               "actualPaymentAmount",
+               "paymentVerifiedAt",
+               "driverVerifiedAt",
+               "vehicleVerificationBefore",
+               "vehicleVerificationAfter"
+             ]);
     }
 
     // =====================================================
-    // MOBIL & SUBCOLLECTION BOOKINGS (Publik Browsing)
+    // MOBIL & SUBCOLLECTIONS
     // =====================================================
 
     match /mobil/{mobilId} {
@@ -158,45 +283,76 @@ service cloud.firestore {
       // Admin bebas
       allow create, delete: if isAdmin();
 
-      allow update: if
-        // Admin bebas
-        isAdmin()
-        ||
-        // Client/user memperbarui status saat pemesanan
-        signedIn()
-        ||
-        // Driver hanya boleh update status mobil
-        (
-          isDriver()
-          && request.resource.data.diff(resource.data).changedKeys()
-              .hasOnly([
-                "status",
-                "tersedia",
-                "updatedAt"
-              ])
+      // Update mobil.
+      //
+      // The previous rule was:
+      //     allow update: if isAdmin() || signedIn() || ( isDriver() && ... )
+      // A bare `signedIn()` meant ANY logged-in account — including a plain
+      // client — could rewrite every field of every vehicle (harga, layanan,
+      // gambar, status). It also short-circuited the driver branch below it,
+      // making that branch unreachable.
+      //
+      // Now: admin is unrestricted; anyone else may only flip availability, and
+      // only while holding a `renters/{uid}` marker that proves they own or are
+      // driving an order for *this* vehicle.
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(["status", "tersedia", "updatedAt"])
+          && exists(/databases/$(database)/documents/mobil/$(mobilId)/renters/$(request.auth.uid))
         );
+
+      // Proof-of-relationship marker. Created only at the moment availability is
+      // released (see releaseVehicle() in src/services/bookingService.js), so
+      // booking creation itself does not need to change.
+      match /renters/{uid} {
+        allow read: if isAdmin() || isOwner(uid);
+
+        allow create: if signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.pemesananId is string
+          && (
+            isAdmin()
+            || (
+              orderById(request.resource.data.pemesananId).data.uid == request.auth.uid
+              || orderById(request.resource.data.pemesananId).data.driverId == request.auth.uid
+            )
+          )
+          && orderById(request.resource.data.pemesananId).data.mobilId == mobilId;
+
+        allow delete: if isAdmin() || isOwner(uid);
+
+        // Markers are single-use: re-pointing one at a different order would
+        // hand the holder a permanent availability toggle on this vehicle.
+        allow update: if false;
+      }
 
       // Subcollection bookings di bawah mobil
       match /bookings/{bookingId} {
+        // Dibaca publik untuk merender kalender tanggal yang sudah terbooked.
+        // Dokumen ini hanya berisi rentang tanggal — jangan pernah menaruh
+        // PII atau id pesanan sungguhan di sini, karena isinya publik.
         allow read: if true;
-        allow create: if signedIn();
+
+        allow create: if isAdmin() || (
+          signedIn()
+          && request.resource.data.start is timestamp
+          && request.resource.data.end is timestamp
+          && request.resource.data.end > request.resource.data.start
+        );
+
         allow update, delete: if isAdmin();
       }
     }
 
-    match /units/{unitId} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin();
-
-      match /bookings/{bookingId} {
-        allow read: if true;
-        allow create: if signedIn();
-        allow update, delete: if isAdmin();
-      }
-    }
+    // `units/*` dan `tour_packages/*` dihapus: tidak ada satu pun call site
+    // Firestore yang menunjuk ke keduanya (seluruh booking lewat
+    // `mobil/{mobilId}/bookings`). Blok `units` juga membuka `read: if true`
+    // pada subcollection bookings tanpa perlu.
 
     // =====================================================
-    // PAKET WISATA & TOUR PACKAGES (Publik Browsing)
+    // PAKET WISATA (Publik Browsing)
     // =====================================================
 
     match /paket_wisata/{docId} {
@@ -204,9 +360,44 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    match /tour_packages/{docId} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin();
+    // =====================================================
+    // TESTIMONI
+    // =====================================================
+    // Tidak ada blok rules sama sekali sebelum ini, sehingga seluruh read dan
+    // write di Testimoni.js / AdminTestimoni.js berakhir ditolak (default deny)
+    // — fitur ini tidak bisa berjalan, bukan cuma tidak aman.
+    // Query publik sekarang harus menyaring `status` dan `published` agar
+    // aturan di bawah benar-benar terpenuhi oleh query tersebut.
+
+    match /testimoni/{docId} {
+      // Publik hanya melihat testimoni yang sudah dimoderasi.
+      // PENTING: `in` guard wajib, bukan akses field telanjang. Akses
+      // `resource.data.status` pada dokumen lama yang belum punya field itu
+      // akan evaluation error, dan satu dokumen seperti itu menggagalkan
+      // SELURUH query list, bukan hanya dokumennya sendiri.
+      allow read: if ("status" in resource.data
+                      && "published" in resource.data)
+                  && resource.data.status == "published"
+                  && resource.data.published == true;
+
+      // Admin melihat semuanya.
+      allow read: if isAdmin();
+
+      // Klien boleh mengirim, tetapi tidak boleh memuat karya sendiri: status dan
+      // published dipaksa ke nilai moderasi.
+      allow create: if isAdmin() || (
+        signedIn()
+        && request.resource.data.source == "client"
+        && request.resource.data.published == false
+        && request.resource.data.status == "pending"
+        && request.resource.data.featured == false
+        && request.resource.data.clientName is string
+        && request.resource.data.testimonial is string
+        && request.resource.data.testimonial.size() >= 20
+      );
+
+      // Moderasi, featured, dan penghapusan hanya admin.
+      allow update, delete: if isAdmin();
     }
 
     // =====================================================
@@ -247,8 +438,15 @@ service cloud.firestore {
         isAdmin()
       );
 
-      // Semua user login boleh membuat notifikasi
-      allow create: if signedIn();
+      // Semua user login boleh membuat notifikasi.
+      // Klien hanya boleh mengirim notifikasi ke dirinya sendiri atau ke kotak
+      // "admin"; driver & admin boleh menghubungi pihak lain.
+      allow create: if signedIn() && (
+        isAdmin()
+        || isDriver()
+        || request.resource.data.userId == request.auth.uid
+        || request.resource.data.userId == "admin"
+      );
 
       // User mengubah notif miliknya
       allow update: if signedIn()
@@ -365,12 +563,24 @@ service cloud.firestore {
       // Admin bisa update semua field (status, quote, dll)
       allow update: if isAdmin();
 
-      // Client bisa update: merespons quote (status, dp_paid) atau menambah catatan
+      // Client bisa update: merespons quote (status, dp_paid) atau meminta
+      // revisi. `quote` ditambahkan karena OpenTrip.js requestRevision()
+      // menulis `status` + `quote: null` dalam satu updateDoc untuk mengosongkan
+      // penawaran lamaran — keduanya harus boleh digabung dalam satu panggilan,
+      // makanya cabangnya `hasOnly(["status", "quote"])`, bukan dua hasOnly terpisah.
       allow update: if signedIn()
         && resource.data.uid == request.auth.uid
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.diff(resource.data).changedKeys()
-            .hasOnly(["status", "dp_paid", "dp_paid_at", "full_paid", "full_paid_at"]);
+        && (
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["status", "dp_paid", "dp_paid_at", "full_paid", "full_paid_at"])
+          ||
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(["status", "quote"])
+            && request.resource.data.quote == null
+          )
+        );
 
       // Hanya admin yang bisa hapus
       allow delete: if isAdmin();
@@ -392,6 +602,12 @@ service cloud.firestore {
         // Revisi bersifat immutable — tidak ada update atau delete
         allow update, delete: if false;
       }
+    }
+
+    // Anything not matched above is denied. Firestore denies by default, but
+    // stating it keeps the intent obvious when new collections are added.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

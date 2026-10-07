@@ -1,97 +1,286 @@
-import React, { useState, useEffect, useRef } from "react";
-import { auth, db } from "../services/firebase";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
-  collection, addDoc, query, where, orderBy, onSnapshot,
-  Timestamp, doc, getDocs, updateDoc
+  Timestamp,
+  addDoc,
+  collection,
+  doc,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  updateDoc,
+  where,
 } from "firebase/firestore";
-import { useToast } from "../components/Toast";
-import { useNavigate, Link } from "react-router-dom";
-import {
-  Map, Users, Calendar, Send, Clock,
-  CheckCircle, XCircle, MessageSquare, ChevronDown, ChevronUp,
-  AlertTriangle, RefreshCw, DollarSign, ArrowRight,
-  Compass, Shield, Zap, Mountain, Coffee, Phone
-} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
-/* ─── Status config ───────────────────────────────────────────────────── */
+import { useToast } from "../components/Toast";
+import { auth, db } from "../services/firebase";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import EmptyState from "../components/ui/EmptyState";
+import Field from "../components/ui/Field";
+import Icon from "../components/ui/Icon";
+import Input from "../components/ui/Input";
+import Pill from "../components/ui/Pill";
+import Select from "../components/ui/Select";
+import Textarea from "../components/ui/Textarea";
+import ConciergeCta from "../components/ConciergeCta";
+import { bespokeJourneys } from "../data/bespokeJourneys";
+
+import {
+  ARMADA_OPTIONS,
+  PAX_OPTIONS,
+  PRICE_BUCKETS,
+  REGION_BUCKETS,
+  availablePeriods,
+  buildConsultationMessage,
+  filterByPeriod,
+  filterJourneys,
+  formatRupiah,
+  normalizeOpenTrip,
+  normalizePaketWisata,
+  tripInquiryMessage,
+  whatsappLink,
+} from "../utils/tourShowcase";
+
+/* ─── Status config for user trip requests ─── */
 const STATUS_META = {
-  submitted:          { label: "Pengajuan Diterima",  bg: "from-blue-500 to-blue-600",   text: "text-blue-100",   ring: "ring-blue-400/30",  icon: <Clock size={13}/> },
-  in_review:          { label: "Sedang Ditinjau",     bg: "from-amber-500 to-orange-500", text: "text-amber-100",  ring: "ring-amber-400/30", icon: <RefreshCw size={13} className="animate-spin"/> },
-  quoted:             { label: "Ada Penawaran! 🎉",   bg: "from-purple-500 to-violet-600",text: "text-purple-100", ring: "ring-purple-400/30",icon: <DollarSign size={13}/> },
-  revision_requested: { label: "Revisi Diminta",      bg: "from-orange-500 to-red-500",   text: "text-orange-100", ring: "ring-orange-400/30",icon: <MessageSquare size={13}/> },
-  confirmed:          { label: "Trip Dikonfirmasi ✓", bg: "from-emerald-500 to-teal-600", text: "text-emerald-100",ring: "ring-emerald-400/30",icon: <CheckCircle size={13}/> },
-  rejected:           { label: "Ditolak",             bg: "from-red-500 to-red-700",      text: "text-red-100",    ring: "ring-red-400/30",   icon: <XCircle size={13}/> },
+  submitted: { label: "Pengajuan Diterima", variant: "neutral", icon: "schedule" },
+  in_review: { label: "Sedang Ditinjau", variant: "sand", icon: "refresh" },
+  quoted: { label: "Ada Penawaran", variant: "signature", icon: "request_quote" },
+  revision_requested: { label: "Revisi Diminta", variant: "sand", icon: "edit_note" },
+  confirmed: { label: "Trip Dikonfirmasi", variant: "available", icon: "event_available" },
+  rejected: { label: "Ditolak", variant: "danger", icon: "cancel" },
 };
 
 const FEATURES = [
-  { icon: <Shield size={22}/>, title: "Aman & Terpercaya", desc: "Driver berpengalaman, kendaraan terawat & diasuransikan" },
-  { icon: <Zap size={22}/>,   title: "Respons Cepat",     desc: "Admin merespons penawaran dalam maksimal 48 jam" },
-  { icon: <Coffee size={22}/>, title: "Paket VIP",         desc: "Tersedia tier VIP lengkap snack & makan 2x perjalanan" },
-  { icon: <Compass size={22}/>,title: "Rute Fleksibel",   desc: "Open Trip harga hemat atau Private Trip eksklusif" },
+  { icon: "verified", title: "Aman & Terpercaya", desc: "Driver berpengalaman, kendaraan terawat & diasuransikan" },
+  { icon: "bolt", title: "Respons Cepat", desc: "Admin merespons penawaran dalam maksimal 48 jam" },
+  { icon: "workspace_premium", title: "Paket VIP", desc: "Tersedia tier VIP lengkap snack & makan 2x perjalanan" },
+  { icon: "explore", title: "Rute Fleksibel", desc: "Open Trip harga hemat atau Private Trip eksklusif" },
 ];
 
-/* ─── main ──────────────────────────────────────────────────────────── */
-export default function OpenTripPage() {
-  const toast    = useToast();
-  const navigate = useNavigate();
-  const heroRef  = useRef(null);
+const CATEGORIES = [
+  { key: "semua", label: "Semua Kategori", icon: "apps" },
+  { key: "open_trip", label: "Open Trip Terjadwal", icon: "groups" },
+  { key: "paket_privat", label: "Paket Wisata Privat", icon: "luggage" },
+  { key: "bespoke", label: "Bespoke Itinerary", icon: "auto_awesome" },
+  { key: "pengajuan", label: "Pengajuan Saya", icon: "confirmation_number" },
+];
 
-  const [user, setUser]             = useState(null);
+const QUICK_FILTERS = [
+  "Bromo Sunrise",
+  "Kawah Ijen Blue Fire",
+  "Borobudur VIP",
+  "Nusa Penida Secret",
+  "Dieng Highland",
+];
+
+const PILLARS = [
+  {
+    icon: "receipt_long",
+    title: "Bebas Biaya Tersembunyi",
+    body: "Tarif all-in telah mencakup bahan bakar, tol, tiket retribusi, parkir, hingga akomodasi & konsumsi chauffeur.",
+    tag: "Transparansi 100%",
+  },
+  {
+    icon: "minor_crash",
+    title: "Armada Bintang Lima",
+    body: "Semua kendaraan dirawat berkala di bengkel resmi ATPM. Kabin disterilisasi sebelum penjemputan.",
+    tag: "Inspeksi 21 Titik",
+  },
+  {
+    icon: "badge",
+    title: "Chauffeur Beretika & Santun",
+    body: "Dididik khusus dalam tata krama hospitality VIP dan bersertifikasi BNSP pariwisata.",
+    tag: "Pemandu Berlisensi",
+  },
+  {
+    icon: "history_toggle_off",
+    title: "Fleksibilitas Reschedule",
+    body: "Kunci tanggal keberangkatan dengan DP 50% terlindungi invoice legal PT. Reschedule H-7 tanpa penalti.",
+    tag: "Faktur Legal PT Resmi",
+  },
+];
+
+const CONCIERGE_PROMISES = [
+  "Respons konsultasi kilat dalam waktu kurang dari 15 menit",
+  "Kustomisasi rute intercity tanpa batasan titik singgah",
+  "Dukungan hotline 24 jam selama ekspedisi berlangsung",
+];
+
+const tomorrow = () => new Date(Date.now() + 86400000).toISOString().split("T")[0];
+
+function formatDate(value, options) {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("id-ID", options);
+}
+
+function quickFilterRegion(label) {
+  const haystack = label.toLowerCase();
+  const bucket = REGION_BUCKETS.find((b) =>
+    b.keywords.some((keyword) => haystack.includes(keyword) || keyword.includes(haystack))
+  );
+  return bucket ? bucket.key : "semua";
+}
+
+export default function OpenTripPage() {
+  const toast = useToast();
+  const navigate = useNavigate();
+  const heroRef = useRef(null);
+
+  const [user, setUser] = useState(null);
+  const [openTrips, setOpenTrips] = useState([]);
+  const [paketWisata, setPaketWisata] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [loadingReq, setLoadingReq] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
-  const [revisions, setRevisions]   = useState({});
-  const [showForm, setShowForm]     = useState(false);
+  const [revisions, setRevisions] = useState({});
+  const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [activeTab, setActiveTab]   = useState("catalog");
-  const [scrollY, setScrollY]       = useState(0);
+  const [category, setCategory] = useState("semua");
+
+  // Filters
+  const [region, setRegion] = useState("semua");
+  const [price, setPrice] = useState("semua");
+  const [period, setPeriod] = useState("semua");
 
   const [formData, setFormData] = useState({
-    type: "open_trip", tier: "reguler",
-    destination: "", proposed_date: "", end_date: "",
-    participant_count: 1, whatsapp: "", notes: "",
+    type: "open_trip",
+    tier: "reguler",
+    destination: "",
+    proposed_date: "",
+    end_date: "",
+    participant_count: 1,
+    whatsapp: "",
+    notes: "",
   });
 
   useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    return onAuthStateChanged(auth, u => {
+    return onAuthStateChanged(auth, (u) => {
       setUser(u);
       if (u && (u.phoneNumber || u.whatsapp)) {
-        setFormData(p => ({ ...p, whatsapp: u.phoneNumber || u.whatsapp || "" }));
+        setFormData((p) => ({ ...p, whatsapp: u.phoneNumber || u.whatsapp || "" }));
       }
     });
   }, []);
 
+  // Fetch Open Trips and Paket Wisata
   useEffect(() => {
-    if (!user) { setMyRequests([]); setLoadingReq(false); return; }
-    const q = query(collection(db, "trip_requests"), where("uid", "==", user.uid), orderBy("created_at", "desc"));
-    return onSnapshot(q, snap => {
-      setMyRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    let cancelled = false;
+    const tripsUnsub = onSnapshot(
+      collection(db, "open_trips"),
+      (snap) => {
+        if (cancelled) return;
+        setOpenTrips(snap.docs.map((doc) => normalizeOpenTrip({ id: doc.id, ...doc.data() })));
+        setLoading(false);
+      },
+      (error) => {
+        if (cancelled) return;
+        console.error("Error open_trips:", error);
+        setLoading(false);
+      }
+    );
+
+    const paketUnsub = onSnapshot(
+      collection(db, "paket_wisata"),
+      (snap) => {
+        if (cancelled) return;
+        setPaketWisata(snap.docs.map((doc) => normalizePaketWisata({ id: doc.id, ...doc.data() })));
+      },
+      (error) => {
+        if (cancelled) return;
+        console.error("Error paket_wisata:", error);
+      }
+    );
+
+    return () => {
+      cancelled = true;
+      tripsUnsub();
+      paketUnsub();
+    };
+  }, []);
+
+  // Fetch User Requests
+  useEffect(() => {
+    if (!user) {
+      setMyRequests([]);
       setLoadingReq(false);
-    });
+      return;
+    }
+    const q = query(collection(db, "trip_requests"), where("uid", "==", user.uid), orderBy("created_at", "desc"));
+    return onSnapshot(
+      q,
+      (snap) => {
+        setMyRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setLoadingReq(false);
+      },
+      (error) => {
+        console.error("Firestore Error trip_requests:", error);
+        setLoadingReq(false);
+      }
+    );
   }, [user]);
+
+  const showOpenTrips = category === "semua" || category === "open_trip";
+  const showPaket = category === "semua" || category === "paket_privat";
+  const showBespoke = category === "semua" || category === "bespoke";
+  const showPengajuan = category === "pengajuan";
+
+  const visibleTrips = useMemo(
+    () => (showOpenTrips ? filterJourneys(filterByPeriod(openTrips, period), { region, price }) : []),
+    [showOpenTrips, openTrips, period, region, price]
+  );
+
+  const visiblePaket = useMemo(
+    () => (showPaket ? filterJourneys(paketWisata, { region, price }) : []),
+    [showPaket, paketWisata, region, price]
+  );
+
+  const periods = useMemo(() => availablePeriods(openTrips), [openTrips]);
+
+  const resetFilters = () => {
+    setRegion("semua");
+    setPrice("semua");
+    setPeriod("semua");
+  };
 
   const loadRevisions = async (id) => {
     if (revisions[id]) return;
-    const snap = await getDocs(query(collection(db, "trip_requests", id, "revisions"), orderBy("created_at", "asc")));
-    setRevisions(p => ({ ...p, [id]: snap.docs.map(d => ({ id: d.id, ...d.data() })) }));
+    const snap = await getDocs(
+      query(collection(db, "trip_requests", id, "revisions"), orderBy("created_at", "asc"))
+    );
+    setRevisions((p) => ({ ...p, [id]: snap.docs.map((d) => ({ id: d.id, ...d.data() })) }));
   };
 
   const toggleExpand = (id) => {
-    if (expandedId === id) { setExpandedId(null); return; }
+    if (expandedId === id) {
+      setExpandedId(null);
+      return;
+    }
     setExpandedId(id);
     loadRevisions(id);
   };
 
+  const openRequestForm = () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    setCategory("pengajuan");
+    setShowForm(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) { navigate("/login"); return; }
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     if (!formData.destination || !formData.proposed_date || !formData.end_date || !formData.whatsapp) {
       toast.warning("Lengkapi destinasi, tanggal mulai & selesai, serta nomor WhatsApp!");
       return;
@@ -102,685 +291,804 @@ export default function OpenTripPage() {
     }
     try {
       setSubmitting(true);
-      const sla = new Date(); sla.setHours(sla.getHours() + 48);
+      const sla = new Date();
+      sla.setHours(sla.getHours() + 48);
       await addDoc(collection(db, "trip_requests"), {
-        uid: user.uid, ...formData,
+        uid: user.uid,
+        ...formData,
         tier: formData.tier,
         participant_count: Number(formData.participant_count),
         destination: formData.destination.trim(),
         whatsapp: formData.whatsapp.trim(),
         notes: formData.notes.trim(),
-        status: "submitted", sla_deadline: Timestamp.fromDate(sla),
-        created_at: Timestamp.now(), dp_paid: false, dp_paid_at: null, full_paid: false, full_paid_at: null, quote: null,
+        status: "submitted",
+        sla_deadline: Timestamp.fromDate(sla),
+        created_at: Timestamp.now(),
+        dp_paid: false,
+        dp_paid_at: null,
+        full_paid: false,
+        full_paid_at: null,
+        quote: null,
       });
       toast.success("Pengajuan terkirim! Tim kami akan merespons maksimal dalam 2x24 jam.");
       setShowForm(false);
       setFormData({
-        type: "open_trip", tier: "reguler", destination: "",
-        proposed_date: "", end_date: "", participant_count: 1,
-        whatsapp: user?.phoneNumber || user?.whatsapp || "", notes: ""
+        type: "open_trip",
+        tier: "reguler",
+        destination: "",
+        proposed_date: "",
+        end_date: "",
+        participant_count: 1,
+        whatsapp: user?.phoneNumber || user?.whatsapp || "",
+        notes: "",
       });
-      setActiveTab("request");
-    } catch (err) { toast.error(err.message); }
-    finally { setSubmitting(false); }
+      setCategory("pengajuan");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const respondQuote = async (req, action) => {
     try {
       if (action === "accept") {
-        await updateDoc(doc(db, "trip_requests", req.id), { status: "confirmed", dp_paid: true, dp_paid_at: Timestamp.now() });
+        await updateDoc(doc(db, "trip_requests", req.id), {
+          status: "confirmed",
+          dp_paid: true,
+          dp_paid_at: Timestamp.now(),
+        });
         toast.success("Setuju! DP dianggap terbayar.");
       } else if (action === "revise") {
         const note = prompt("Catatan revisi untuk admin:");
         if (!note?.trim()) return;
-        await updateDoc(doc(db, "trip_requests", req.id), { status: "revision_requested", quote: null });
-        await addDoc(collection(db, "trip_requests", req.id, "revisions"), { by: "client", note: note.trim(), created_at: Timestamp.now() });
+        await updateDoc(doc(db, "trip_requests", req.id), {
+          status: "revision_requested",
+          quote: null,
+        });
+        await addDoc(collection(db, "trip_requests", req.id, "revisions"), {
+          by: "client",
+          note: note.trim(),
+          created_at: Timestamp.now(),
+        });
         toast.success("Permintaan revisi terkirim");
       } else if (action === "reject") {
         await updateDoc(doc(db, "trip_requests", req.id), { status: "rejected" });
         toast.success("Pengajuan ditolak");
       }
-    } catch (err) { toast.error(err.message); }
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
-  /* parallax value for hero */
-  const parallax = Math.min(scrollY, 300);
-
   return (
-    <div className="min-h-screen bg-[#F7F5F2]">
+    <div className="min-h-screen bg-c57-surface text-c57-on-surface">
+      {/* ── HERO ── */}
+      <section ref={heroRef} className="relative w-full overflow-hidden bg-c57-inverse-surface py-28 lg:py-36 text-c57-surface-bright">
+        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-c57-primary/25 blur-3xl" aria-hidden="true" />
+        <div className="pointer-events-none absolute -bottom-32 -right-10 h-[30rem] w-[30rem] rounded-full bg-c57-tertiary-fixed-dim/10 blur-3xl" aria-hidden="true" />
 
-      {/* ═══════════════════════════ HERO SECTION ═══════════════════════════ */}
-      {/* Task 1: foto destinasi sebagai background dengan overlay gelap */}
-      <div ref={heroRef} className="relative w-full overflow-hidden min-h-[520px] md:min-h-[640px] flex flex-col justify-end">
+        <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-start px-5 md:px-10">
+          <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-c57-tertiary-fixed/25 bg-c57-primary/25 px-4 py-1.5 font-label-sm uppercase tracking-[0.2em] text-c57-tertiary-fixed-dim backdrop-blur-md">
+            <span className="h-2 w-2 rounded-full bg-c57-primary-container" />
+            Open Trip &amp; Private Exploration
+          </p>
 
-        {/* ── Photo background with parallax ── */}
-        <div
-          className="absolute inset-0"
-          style={{ transform: `scale(1.1) translateY(${parallax * 0.05}px)` }}
-        >
-          <img
-            src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&auto=format&fit=crop&q=80"
-            alt="Destinasi wisata alam Indonesia"
-            className="w-full h-full object-cover"
-            loading="eager"
-          />
-        </div>
-
-        {/* ── Dark overlay layers for text contrast ── */}
-        <div className="absolute inset-0 bg-[#07080f]/65" />
-        <div className="absolute inset-0"
-          style={{ background: "linear-gradient(120deg, rgba(7,8,15,0.88) 0%, rgba(7,8,15,0.5) 50%, rgba(7,8,15,0.25) 100%)" }} />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[400px] pointer-events-none"
-          style={{ background: "radial-gradient(ellipse at bottom left, rgba(129,1,0,0.2) 0%, transparent 65%)" }} />
-        <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
-          style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.5) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
-
-        {/* ── Hero content ── */}
-        <div className="relative z-10 w-full pb-20 pt-[120px]">
-          <div className="max-w-7xl mx-auto px-6 lg:px-10">
-            <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full mb-8 backdrop-blur-md"
-              style={{ background: "rgba(129,1,0,0.15)", border: "1px solid rgba(129,1,0,0.25)" }}>
-              <div className="w-1.5 h-1.5 rounded-full bg-[#ff6666] animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[#ff9999]">Trip & Wisata Premium</span>
-            </div>
-
-            {/* ── Task 2: headline yang diperbaiki ── */}
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white leading-[0.95] tracking-tight mb-6"
-              style={{ textShadow: "0 4px 24px rgba(0,0,0,0.5)" }}>
-              Open Trip<br />
-              <span className="text-transparent bg-clip-text"
-                style={{ backgroundImage: "linear-gradient(135deg, #EDEBDD 0%, #C9A84C 50%, #EDEBDD 100%)", WebkitBackgroundClip: "text" }}>
-                dan Private Trip
-              </span>
-              <br />
-              <span className="text-white/30">Impianmu.</span>
+          <div className="max-w-4xl space-y-6">
+            <h1 className="font-headline-xl text-headline-xl-mobile leading-tight tracking-tight md:text-headline-xl">
+              Jelajahi Setiap Detik, Rencanakan Perjalanan Terbaik.
             </h1>
-
-            <p className="text-white/60 text-base md:text-lg max-w-xl leading-relaxed font-medium mb-10"
-              style={{ textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>
-              Ajukan perjalananmu — kami siapkan penawaran terbaik dalam{" "}
-              <span className="text-white font-black px-2 py-0.5 rounded-md" style={{ background: "rgba(129,1,0,0.5)" }}>48 jam</span>.
+            <p className="max-w-2xl font-body-lg font-light leading-relaxed text-c57-surface-container-high">
+              Pilih petualangan terjadwal (<span className="font-medium text-c57-surface-bright">Open Trip</span>) atau nikmati kenyamanan privat tanpa kompromi (<span className="font-medium text-c57-surface-bright">Private Trip &amp; Bespoke Itinerary</span>).
             </p>
+          </div>
 
-            {/* ── Task 3: Jelajahi Katalog → /tour-packages; Ajukan Trip → tab request ── */}
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to="/tour-packages"
-                className="flex items-center gap-2.5 px-7 py-3.5 rounded-full font-black text-[10px] uppercase tracking-[0.2em] text-white transition-all duration-400 hover:scale-105"
-                style={{ background: "linear-gradient(135deg, #810100, #991A19)", boxShadow: "0 8px 24px rgba(129,1,0,0.3)" }}
-              >
-                <Compass size={14}/> Jelajahi Katalog
-              </Link>
+          <div className="mt-8 flex flex-wrap gap-4">
+            <Button size="lg" icon="send" onClick={openRequestForm}>
+              Ajukan Custom Trip
+            </Button>
+            <Button variant="secondary" size="lg" icon="explore" onClick={() => setCategory("semua")}>
+              Jelajahi Katalog
+            </Button>
+          </div>
+
+          <div className="mt-12 grid w-full grid-cols-2 gap-4 rounded-2xl bg-c57-surface-bright/[0.04] p-6 backdrop-blur-sm md:grid-cols-4">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-c57-primary-container/20 text-c57-primary-fixed-dim">
+                  <Icon name={f.icon} size="md" />
+                </div>
+                <div>
+                  <span className="block font-label-sm uppercase tracking-wider text-c57-surface-bright">{f.title}</span>
+                  <span className="font-body-sm text-c57-surface-container-high">{f.desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FILTER PANEL ── */}
+      {!showPengajuan && (
+        <section className="relative z-20 mx-auto -mt-8 w-full max-w-7xl px-5 md:px-10">
+          <div className="rounded-2xl bg-c57-surface-container-lowest p-6 shadow-c57-overlay">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <FilterSelect
+                label="Wilayah Eksplorasi"
+                icon="explore"
+                value={region}
+                onChange={setRegion}
+                options={[{ value: "semua", label: "Semua Wilayah" }, ...REGION_BUCKETS.map((b) => ({ value: b.key, label: b.label }))]}
+              />
+              <FilterSelect
+                label="Periode Keberangkatan"
+                icon="calendar_month"
+                value={period}
+                onChange={setPeriod}
+                options={[{ value: "semua", label: "Semua Periode" }, ...periods.map((p) => ({ value: p, label: p }))]}
+              />
+              <FilterSelect
+                label="Rentang Investasi"
+                icon="payments"
+                value={price}
+                onChange={setPrice}
+                options={PRICE_BUCKETS.map((b) => ({ value: b.key, label: b.label }))}
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 pt-6">
+              <span className="mr-2 font-label-sm uppercase tracking-widest text-c57-secondary">Destinasi Populer:</span>
+              {QUICK_FILTERS.map((label) => (
+                <button
+                  key={label}
+                  onClick={() => setRegion(quickFilterRegion(label))}
+                  className="rounded-full bg-c57-surface-container px-4 py-1.5 font-label-sm uppercase text-c57-on-surface transition-colors hover:bg-c57-primary-container hover:text-white"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── MAIN CONTENT AREA ── */}
+      <div className="mx-auto max-w-7xl px-5 pb-24 md:px-10">
+        {/* Category Tabs */}
+        <div className="flex flex-wrap items-center gap-2 pt-12">
+          {CATEGORIES.map((item) => {
+            const active = category === item.key;
+            return (
               <button
-                onClick={() => {
-                  if (!user) {
-                    navigate("/login");
-                  } else {
-                    setActiveTab("request");
-                    setShowForm(true);
-                  }
-                }}
-                className="flex items-center gap-2.5 px-7 py-3.5 rounded-full font-black text-[10px] uppercase tracking-[0.2em] text-white transition-all duration-400 hover:scale-105"
-                style={{ background: "linear-gradient(135deg, #991A19, #810100)", boxShadow: "0 8px 24px rgba(129,1,0,0.3)" }}>
-                <Send size={14}/> Ajukan Trip Kamu
+                key={item.key}
+                onClick={() => setCategory(item.key)}
+                aria-pressed={active}
+                className={`flex items-center gap-2 rounded-full px-6 py-2.5 font-label-md uppercase tracking-wider transition-colors ${
+                  active ? "bg-c57-primary-container text-c57-on-primary shadow-sm" : "text-c57-on-surface-variant hover:bg-c57-surface-container hover:text-c57-on-surface"
+                }`}
+              >
+                <Icon name={item.icon} size="sm" />
+                {item.label}
               </button>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
-        {/* ── Bottom fade into page bg ── */}
-        <div className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none"
-          style={{ background: "linear-gradient(to top, #F7F5F2 0%, rgba(247,245,242,0.6) 40%, transparent 100%)" }} />
-        <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
-          style={{ background: "linear-gradient(to top, #F7F5F2, transparent)" }} />
-      </div>
-
-      {/* ═══════════════════════════ FEATURES STRIP ═══════════════════════════ */}
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 -mt-6 mb-16 relative z-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {FEATURES.map((f, i) => (
-            <div key={i} className="group bg-white rounded-2xl border border-[#EDEBDD]/30 p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-400" style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}>
-              <div className="w-10 h-10 rounded-xl bg-[#F5E6E6] text-[#810100] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform duration-400">
-                {f.icon}
+        {/* SECTION: OPEN TRIP TERJADWAL */}
+        {showOpenTrips && (
+          <Section eyebrow="Koleksi Terjadwal" title="Jadwal Open Trip Terdekat" description="Pemberangkatan terjadwal bersama sesama penikmat lanskap Nusantara.">
+            {loading ? (
+              <GridSkeleton />
+            ) : visibleTrips.length === 0 ? (
+              <EmptyState
+                icon="event_available"
+                title="Belum ada jadwal yang cocok"
+                description="Belum ada open trip pada filter ini. Tim kami bisa menyusun jadwal privat untuk rute yang Anda inginkan."
+                action="Reset Filter"
+                onAction={resetFilters}
+                className="py-16"
+              />
+            ) : (
+              <div className="grid grid-cols-1 gap-gutter md:grid-cols-2 xl:grid-cols-3">
+                {visibleTrips.map((trip) => (
+                  <OpenTripCard key={trip.id} trip={trip} />
+                ))}
               </div>
-              <p className="font-black text-[#1B1717] text-sm mb-1 tracking-tight">{f.title}</p>
-              <p className="text-[#3D3636]/40 text-[10px] font-medium leading-relaxed">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ═══════════════════════════ CONTENT ═══════════════════════════ */}
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 pb-28">
-
-        {/* Banner khusus non-login (selalu tampil saat client belum login) */}
-        {!user && (
-          <div className="mb-12 relative overflow-hidden rounded-3xl p-10 flex flex-col md:flex-row items-center justify-between gap-8"
-            style={{ background: "linear-gradient(135deg, #1B1717 0%, #1e2d47 50%, #1B1717 100%)" }}>
-            <div className="absolute inset-0 opacity-5"
-              style={{ backgroundImage: "repeating-linear-gradient(45deg, white 0, white 1px, transparent 0, transparent 50%)", backgroundSize: "20px 20px" }} />
-            <div className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-10"
-              style={{ background: "radial-gradient(circle, #EDEBDD, transparent 70%)" }} />
-
-            <div className="relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#EDEBDD] mb-3">Buat Pengajuan Baru</p>
-              <h2 className="text-3xl md:text-4xl font-black text-white mb-3">Rencanakan<br />Petualanganmu</h2>
-              <p className="text-slate-400 max-w-md text-sm leading-relaxed">
-                Pilih <strong className="text-white">Open Trip</strong> (sharing, lebih hemat) atau{" "}
-                <strong className="text-white">Private Trip</strong> (eksklusif untuk grupmu).
-              </p>
-            </div>
-
-            <div className="relative z-10 shrink-0">
-              <Link to="/login"
-                className="group flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-sm uppercase tracking-wider text-white transition-all duration-300 hover:scale-105"
-                style={{ background: "linear-gradient(135deg, #810100, #cc0000)", boxShadow: "0 20px 40px rgba(153,0,0,0.4)" }}>
-                Login untuk Mengajukan <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform"/>
-              </Link>
-            </div>
-          </div>
+            )}
+          </Section>
         )}
 
-        {/* ─── TAB CATALOG ─── */}
-        {activeTab === "catalog" && (
-          <CatalogTab onAjukan={() => {
-            if (!user) {
-              navigate("/login");
-            } else {
-              setActiveTab("request");
-              setShowForm(true);
-            }
-          }} />
+        {/* SECTION: PAKET WISATA PRIVAT */}
+        {showPaket && (
+          <Section eyebrow="Kurasi Privat" title="Paket Wisata Privat" description="Paket harga tetap dengan fasilitas lengkap, disusun untuk keluarga maupun kolega.">
+            {visiblePaket.length === 0 ? (
+              <EmptyState
+                icon="luggage"
+                title="Belum ada paket privat"
+                description="Paket privat yang cocok belum tersedia. Konsultasikan rute custom Anda langsung ke tim kami."
+                action="Konsultasi via WhatsApp"
+                onAction={() => window.open(whatsappLink(buildConsultationMessage()), "_blank", "noopener")}
+                className="py-16"
+              />
+            ) : (
+              <div className="grid grid-cols-1 gap-gutter md:grid-cols-2 xl:grid-cols-3">
+                {visiblePaket.map((paket) => (
+                  <PaketCard key={paket.id} paket={paket} />
+                ))}
+              </div>
+            )}
+          </Section>
         )}
 
-        {/* ─── TAB REQUEST ─── */}
-        {activeTab === "request" && (
-          <div className="space-y-10">
+        {/* SECTION: BESPOKE ITINERARY */}
+        {showBespoke && (
+          <Section eyebrow="Bespoke Itinerary" title="Perjalanan Privat yang Dirancang Untuk Anda" description="Rute, akomodasi, dan pengalaman disesuaikan penuh.">
+            <div className="space-y-8">
+              {bespokeJourneys.map((journey) => (
+                <BespokeCard key={journey.id} journey={journey} />
+              ))}
+            </div>
+          </Section>
+        )}
 
-            {/* Form trigger banner untuk user yang sudah login */}
+        {/* SECTION: PENGAJUAN SAYA */}
+        {showPengajuan && (
+          <div className="pt-10 space-y-space-xl">
+            {!user && !showForm && (
+              <RequestPrompt title="Login untuk melihat pengajuanmu" icon="person" action="Login Sekarang" onAction={() => navigate("/login")} />
+            )}
+
             {user && !showForm && (
-              <div className="relative overflow-hidden rounded-3xl p-10 flex flex-col md:flex-row items-center justify-between gap-8"
-                style={{ background: "linear-gradient(135deg, #1B1717 0%, #1e2d47 50%, #1B1717 100%)" }}>
-                <div className="absolute inset-0 opacity-5"
-                  style={{ backgroundImage: "repeating-linear-gradient(45deg, white 0, white 1px, transparent 0, transparent 50%)", backgroundSize: "20px 20px" }} />
-                <div className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-10"
-                  style={{ background: "radial-gradient(circle, #EDEBDD, transparent 70%)" }} />
-
-                <div className="relative z-10">
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#EDEBDD] mb-3">Buat Pengajuan Baru</p>
-                  <h2 className="text-3xl md:text-4xl font-black text-white mb-3">Rencanakan<br />Petualanganmu</h2>
-                  <p className="text-slate-400 max-w-md text-sm leading-relaxed">
-                    Pilih <strong className="text-white">Open Trip</strong> (sharing, lebih hemat) atau{" "}
-                    <strong className="text-white">Private Trip</strong> (eksklusif untuk grupmu).
-                  </p>
-                </div>
-
-                <div className="relative z-10 shrink-0">
-                  <button onClick={() => setShowForm(true)}
-                    className="group flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-sm uppercase tracking-wider transition-all duration-300 hover:scale-105"
-                    style={{ background: "linear-gradient(135deg, #810100, #cc0000)", boxShadow: "0 20px 40px rgba(153,0,0,0.4)" }}>
-                    <Send size={18}/> Ajukan Sekarang
-                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform"/>
-                  </button>
-                </div>
-              </div>
+              <RequestPrompt
+                title="Rencanakan Petualanganmu"
+                description="Pilih Open Trip (sharing, lebih hemat) atau Private Trip (eksklusif untuk grupmu)."
+                icon="send"
+                action="Ajukan Sekarang"
+                onAction={() => setShowForm(true)}
+              />
             )}
 
-            {/* ─── FORM ─── */}
             {showForm && (
-              <form onSubmit={handleSubmit} className="max-w-2xl mx-auto bg-white rounded-[1.5rem] shadow-[0_12px_48px_rgba(0,0,0,0.06)] overflow-hidden border border-[#EDEBDD]/30">
-                {/* form header */}
-                <div className="px-6 py-5 flex items-center justify-between"
-                  style={{ background: "#1B1717" }}>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#EDEBDD]/40 mb-0.5">FORM PENGAJUAN</p>
-                    <h3 className="text-lg font-bold text-white tracking-tight">Detail perjalananmu</h3>
-                  </div>
-                  <button type="button" onClick={() => setShowForm(false)}
-                    className="w-8 h-8 rounded-full bg-white/[0.06] hover:bg-white/10 text-white flex items-center justify-center font-bold text-lg transition-all duration-300">
-                    ×
-                  </button>
-                </div>
-
-                <div className="p-6 space-y-5">
-                  {/* TIPE TRIP */}
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 block">TIPE TRIP</label>
-                    <div className="grid grid-cols-2 gap-3.5">
-                      <label className="cursor-pointer">
-                        <input type="radio" name="type" value="open_trip" checked={formData.type === "open_trip"}
-                          onChange={e => setFormData(p => ({ ...p, type: e.target.value }))} className="sr-only"/>
-                        <div className={`p-4 rounded-xl border text-left transition-all ${
-                          formData.type === "open_trip"
-                            ? "border-2 border-[#810100] bg-white"
-                            : "border-slate-200 bg-white hover:border-slate-300"
-                        }`}>
-                          <div className={`mb-2 ${formData.type === "open_trip" ? "text-[#810100]" : "text-slate-700"}`}>
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M8 6v6"/>
-                              <path d="M16 6v6"/>
-                              <path d="M2 12h20"/>
-                              <path d="M18 18h2a1 1 0 0 0 1-1V9a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v8a1 1 0 0 0 1 1h2"/>
-                              <circle cx="7" cy="18" r="2"/>
-                              <circle cx="17" cy="18" r="2"/>
-                            </svg>
-                          </div>
-                          <p className={`font-bold text-sm mb-0.5 ${formData.type === "open_trip" ? "text-[#810100]" : "text-slate-800"}`}>Open trip</p>
-                          <p className="text-xs text-slate-500 font-normal">Sharing seat, harga hemat</p>
-                        </div>
-                      </label>
-
-                      <label className="cursor-pointer">
-                        <input type="radio" name="type" value="private_trip" checked={formData.type === "private_trip"}
-                          onChange={e => setFormData(p => ({ ...p, type: e.target.value }))} className="sr-only"/>
-                        <div className={`p-4 rounded-xl border text-left transition-all ${
-                          formData.type === "private_trip"
-                            ? "border-2 border-[#810100] bg-white"
-                            : "border-slate-200 bg-white hover:border-slate-300"
-                        }`}>
-                          <div className={`mb-2 ${formData.type === "private_trip" ? "text-[#810100]" : "text-slate-700"}`}>
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9C2.1 11.2 2 11.6 2 12v4c0 .6.4 1 1 1h2"/>
-                              <circle cx="7" cy="17" r="2"/>
-                              <circle cx="17" cy="17" r="2"/>
-                            </svg>
-                          </div>
-                          <p className={`font-bold text-sm mb-0.5 ${formData.type === "private_trip" ? "text-[#810100]" : "text-slate-800"}`}>Private trip</p>
-                          <p className="text-xs text-slate-500 font-normal">Eksklusif untuk grupmu</p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* PILIH TIER TRIP */}
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 block">PILIH TIER TRIP</label>
-                    <div className="grid grid-cols-2 gap-3.5">
-                      <label className="cursor-pointer">
-                        <input type="radio" name="tier" value="vip" checked={formData.tier === "vip"}
-                          onChange={e => setFormData(p => ({ ...p, tier: e.target.value }))} className="sr-only"/>
-                        <div className={`p-4 rounded-xl border text-left transition-all ${
-                          formData.tier === "vip"
-                            ? "border-2 border-[#810100] bg-white"
-                            : "border-slate-200 bg-white hover:border-slate-300"
-                        }`}>
-                          <p className={`font-bold text-sm mb-0.5 ${formData.tier === "vip" ? "text-[#810100]" : "text-slate-800"}`}>VIP</p>
-                          <p className="text-xs text-slate-500 font-normal">Snack + makan 2x</p>
-                        </div>
-                      </label>
-
-                      <label className="cursor-pointer">
-                        <input type="radio" name="tier" value="reguler" checked={formData.tier === "reguler"}
-                          onChange={e => setFormData(p => ({ ...p, tier: e.target.value }))} className="sr-only"/>
-                        <div className={`p-4 rounded-xl border text-left transition-all ${
-                          formData.tier === "reguler"
-                            ? "border-2 border-[#810100] bg-white"
-                            : "border-slate-200 bg-white hover:border-slate-300"
-                        }`}>
-                          <p className={`font-bold text-sm mb-0.5 ${formData.tier === "reguler" ? "text-[#810100]" : "text-slate-800"}`}>Reguler</p>
-                          <p className="text-xs text-slate-500 font-normal">Tanpa snack dan makan</p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* DESTINASI / RUTE */}
-                  <div>
-                    <label className="text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-2 block">DESTINASI / RUTE</label>
-                    <input type="text" required value={formData.destination}
-                      onChange={e => setFormData(p => ({ ...p, destination: e.target.value }))}
-                      placeholder="Bromo, Malang, Batu..."
-                      className="w-full px-4 py-3 bg-[#FAFAF6] border border-[#EDEBDD]/40 rounded-xl text-sm font-medium text-[#1B1717] focus:outline-none focus:border-[#810100]/30 placeholder:text-[#3D3636]/25 transition-all duration-300"/>
-                  </div>
-
-                  {/* TANGGAL MULAI & TANGGAL SELSEAI */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-2 block">TANGGAL MULAI</label>
-                      <input type="date" required min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
-                        value={formData.proposed_date}
-                        onChange={e => setFormData(p => ({ ...p, proposed_date: e.target.value }))}
-                        className="w-full px-4 py-3 bg-[#FAFAF6] border border-[#EDEBDD]/40 rounded-xl text-sm font-medium text-[#1B1717] focus:outline-none focus:border-[#810100]/30 transition-all duration-300"/>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-2 block">TANGGAL SELESAI</label>
-                      <input type="date" required min={formData.proposed_date || new Date(Date.now() + 86400000).toISOString().split("T")[0]}
-                        value={formData.end_date}
-                        onChange={e => setFormData(p => ({ ...p, end_date: e.target.value }))}
-                        className="w-full px-4 py-3 bg-[#FAFAF6] border border-[#EDEBDD]/40 rounded-xl text-sm font-medium text-[#1B1717] focus:outline-none focus:border-[#810100]/30 transition-all duration-300"/>
-                    </div>
-                  </div>
-
-                  {/* JUMLAH PESERTA & NOMOR WHATSAPP */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-2 block">JUMLAH PESERTA</label>
-                      <input type="number" min={1} max={50} value={formData.participant_count}
-                        onChange={e => setFormData(p => ({ ...p, participant_count: e.target.value }))}
-                        className="w-full px-4 py-3 bg-[#FAFAF6] border border-[#EDEBDD]/40 rounded-xl text-sm font-medium text-[#1B1717] focus:outline-none focus:border-[#810100]/30 transition-all duration-300"/>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-2 block">NOMOR WHATSAPP</label>
-                      <input type="tel" required value={formData.whatsapp}
-                        onChange={e => setFormData(p => ({ ...p, whatsapp: e.target.value }))}
-                        placeholder="0812..."
-                        className="w-full px-4 py-3 bg-[#FAFAF6] border border-[#EDEBDD]/40 rounded-xl text-sm font-medium text-[#1B1717] focus:outline-none focus:border-[#810100]/30 placeholder:text-[#3D3636]/25 transition-all duration-300"/>
-                    </div>
-                  </div>
-
-                  {/* CATATAN TAMBAHAN */}
-                  <div>
-                    <label className="text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-2 block">CATATAN TAMBAHAN</label>
-                    <textarea rows={3} value={formData.notes}
-                      onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))}
-                      placeholder="Permintaan khusus, kebutuhan khusus, jalur favorit..."
-                      className="w-full px-4 py-3 bg-[#FAFAF6] border border-[#EDEBDD]/40 rounded-xl text-sm font-medium text-[#1B1717] resize-none focus:outline-none focus:border-[#810100]/30 placeholder:text-[#3D3636]/25 transition-all duration-300"/>
-                  </div>
-
-                  {/* SUBMIT BUTTON & SLA */}
-                  <div className="pt-2">
-                    <button type="submit" disabled={submitting}
-                      className="w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-white transition-all duration-300 flex items-center justify-center gap-2.5 hover:shadow-[0_8px_32px_rgba(129,1,0,0.25)] disabled:opacity-60 active:scale-[0.98]"
-                      style={{ background: submitting ? "#999" : "linear-gradient(135deg, #810100, #991A19)" }}>
-                      {submitting ? <><RefreshCw size={14} className="animate-spin"/> Mengirim…</> : <><Send size={14}/> Kirim pengajuan trip</>}
-                    </button>
-                    <p className="text-center text-[10px] text-[#3D3636]/30 font-bold uppercase tracking-[0.15em] mt-3">
-                      Tim kami akan merespons pengajuanmu maksimal dalam 2x24 jam
-                    </p>
-                  </div>
-                </div>
-              </form>
+              <RequestForm
+                formData={formData}
+                setFormData={setFormData}
+                submitting={submitting}
+                onSubmit={handleSubmit}
+                onCancel={() => setShowForm(false)}
+              />
             )}
 
-            {/* ─── MY REQUESTS ─── */}
             {user && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
+              <section className="pt-6">
+                <div className="flex items-center justify-between mb-space-lg">
                   <div>
-                    <p className="text-[10px] font-black text-[#810100] uppercase tracking-[0.3em] mb-2">Pengajuan Saya</p>
-                    <h2 className="text-3xl font-black text-[#1B1717] tracking-tight">Pantau Status <span className="text-[#810100]">Trip Anda</span></h2>
+                    <p className="text-label-md uppercase tracking-editorial text-c57-primary mb-space-xs">Pengajuan Saya</p>
+                    <h2 className="font-headline-sm text-headline-sm text-c57-on-surface">Pantau Status Trip Anda</h2>
                   </div>
-                  {myRequests.length > 0 && (
-                    <span className="px-4 py-2 rounded-full bg-[#810100]/10 text-[#810100] text-[10px] font-black uppercase tracking-[0.2em]">
-                      {myRequests.length} Pengajuan
-                    </span>
-                  )}
+                  {myRequests.length > 0 && <Pill variant="signature">{myRequests.length} Pengajuan</Pill>}
                 </div>
 
                 {loadingReq ? (
-                  <div className="flex flex-col items-center py-20 gap-4">
-                    <div className="w-10 h-10 border-4 border-[#EDEBDD] border-t-[#810100] rounded-full animate-spin"/>
-                    <p className="text-[#3D3636]/30 font-bold text-[10px] uppercase tracking-[0.2em]">Memuat…</p>
+                  <div className="flex flex-col items-center py-space-xl gap-space-md" role="status">
+                    <span className="w-10 h-10 rounded-full border-4 border-c57-surface-variant border-t-c57-primary animate-spin" />
+                    <p className="text-label-md uppercase tracking-wider text-c57-on-surface-variant">Memuat…</p>
                   </div>
                 ) : myRequests.length === 0 ? (
-                  <div className="bg-white rounded-[1.5rem] border border-[#EDEBDD]/30 border-dashed py-20 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-[#FAFAF6] flex items-center justify-center mx-auto mb-4">
-                      <Map size={28} className="text-[#3D3636]/20"/>
-                    </div>
-                    <p className="font-black text-[#3D3636]/30 mb-1">Belum ada pengajuan</p>
-                    <p className="text-[#3D3636]/20 text-sm">Klik "Ajukan Sekarang" untuk memulai</p>
-                  </div>
+                  <EmptyState
+                    icon="map"
+                    title="Belum ada pengajuan"
+                    description='Klik "Ajukan Sekarang" untuk memulai'
+                    action="Ajukan Sekarang"
+                    onAction={() => setShowForm(true)}
+                  />
                 ) : (
-                  <div className="space-y-4">
-                    {myRequests.map(req => {
-                      const meta = STATUS_META[req.status] || {};
-                      const isExp = expandedId === req.id;
-                      const isQuoted = req.status === "quoted" && req.quote;
-                      return (
-                        <div key={req.id} className="bg-white rounded-[1.5rem] border border-[#EDEBDD]/30 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.06)] transition-all duration-300 overflow-hidden" style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}>
-                          {/* top gradient bar by status */}
-                          <div className={`h-1 w-full bg-gradient-to-r ${meta.bg || "from-slate-300 to-slate-400"}`}/>
-                          <div className="p-6 flex flex-wrap gap-4 items-center cursor-pointer" onClick={() => toggleExpand(req.id)}>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap gap-2 mb-2 items-center">
-                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-gradient-to-r text-white ${meta.bg || "from-slate-400 to-slate-500"}`}>
-                                  {meta.icon} {meta.label}
-                                </span>
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">
-                                  {(req.type === "open_trip" ? "Open Trip" : "Private Trip") + (req.tier ? ` · ${req.tier.toUpperCase()}` : "")}
-                                </span>
-                                {req.dp_paid && <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">✓ DP Lunas</span>}
-                              </div>
-                              <p className="font-black text-slate-900 text-lg">{req.destination}</p>
-                              <div className="flex flex-wrap gap-3 mt-1 text-[11px] font-bold text-slate-400">
-                                <span className="flex items-center gap-1">
-                                  <Calendar size={11}/>
-                                  {req.proposed_date ? new Date(req.proposed_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-"}
-                                  {req.end_date ? ` — ${new Date(req.end_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}` : ""}
-                                </span>
-                                <span className="flex items-center gap-1"><Users size={11}/> {req.participant_count} peserta</span>
-                                {req.whatsapp && <span className="flex items-center gap-1"><Phone size={11}/> {req.whatsapp}</span>}
-                              </div>
-                            </div>
-                            {isExp ? <ChevronUp size={18} className="text-slate-300 shrink-0"/> : <ChevronDown size={18} className="text-slate-300 shrink-0"/>}
-                          </div>
-
-                          {isExp && (
-                            <div className="border-t border-[#EDEBDD]/30 px-6 pb-6 pt-5 space-y-5">
-                              {/* SLA notice */}
-                              {["submitted","in_review"].includes(req.status) && req.sla_deadline && (() => {
-                                const dl = req.sla_deadline?.toDate?.() || new Date(req.sla_deadline);
-                                const h = (dl - new Date()) / 3600000;
-                                return h > 0 ? (
-                                  <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#FAFAF6] border border-[#EDEBDD]/30">
-                                    <Clock size={16} className="text-amber-500 shrink-0"/>
-                                    <p className="text-sm font-bold text-amber-700">Admin merespons sebelum <strong>{dl.toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</strong></p>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-3 p-4 rounded-2xl bg-red-50 border border-red-100">
-                                    <AlertTriangle size={16} className="text-red-500 shrink-0"/>
-                                    <p className="text-sm font-bold text-red-700">SLA terlewati — hubungi admin segera.</p>
-                                  </div>
-                                );
-                              })()}
-
-                              {/* Quote card */}
-                              {isQuoted && (
-                                <div className="rounded-[1.5rem] overflow-hidden border border-purple-100">
-                                  <div className="px-6 py-4" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>
-                                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-purple-200 mb-0.5">Penawaran Harga dari Admin</p>
-                                    <p className="text-white font-black text-2xl">Rp {Number(req.quote.total).toLocaleString()}</p>
-                                  </div>
-                                  <div className="p-6 bg-purple-50/50 space-y-3">
-                                    {req.quote.line_items?.map((item, i) => (
-                                      <div key={i} className="flex justify-between text-sm">
-                                        <span className="text-slate-600 font-medium">{item.label}</span>
-                                        <span className="font-black text-slate-900">Rp {Number(item.amount).toLocaleString()}</span>
-                                      </div>
-                                    ))}
-                                    <div className="border-t border-purple-200 pt-3 flex justify-between text-sm">
-                                      <span className="text-slate-500 font-bold">Down Payment (DP)</span>
-                                      <span className="font-black text-[#810100]">Rp {Number(req.quote.dp_amount).toLocaleString()}</span>
-                                    </div>
-                                  </div>
-                                  <div className="px-6 pb-6 pt-2 bg-purple-50/50 grid grid-cols-3 gap-3">
-                                    <button onClick={() => respondQuote(req, "accept")}
-                                      className="col-span-2 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-white transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
-                                      style={{ background: "linear-gradient(135deg, #059669, #10b981)", boxShadow: "0 8px 24px rgba(5,150,105,0.2)" }}>
-                                      <CheckCircle size={14}/> Setuju &amp; Bayar DP
-                                    </button>
-                                    <button onClick={() => respondQuote(req, "revise")}
-                                      className="py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-orange-600 bg-orange-100 hover:bg-orange-200 transition-all duration-300 flex items-center justify-center gap-1">
-                                      <MessageSquare size={12}/> Revisi
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Revisions */}
-                              {(revisions[req.id] || []).length > 0 && (
-                                <div className="space-y-2">
-                                  <p className="text-[10px] font-black text-[#3D3636]/30 uppercase tracking-[0.2em]">Riwayat Komunikasi</p>
-                                  {revisions[req.id].map((rv, i) => (
-                                    <div key={i} className={`p-4 rounded-2xl text-sm ${rv.by === "admin" ? "bg-blue-50/50 border border-blue-100/60" : "bg-orange-50/50 border border-orange-100/60"}`}>
-                                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#3D3636]/30 mb-1">
-                                        {rv.by === "admin" ? "👤 Admin" : "🙋 Kamu"}
-                                      </p>
-                                      <p className="text-[#1B1717]">{rv.note}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                  <div className="space-y-space-md">
+                    {myRequests.map((req) => (
+                      <RequestCard
+                        key={req.id}
+                        req={req}
+                        expanded={expandedId === req.id}
+                        revisions={revisions[req.id] || []}
+                        onToggle={() => toggleExpand(req.id)}
+                        onQuoteAction={(action) => respondQuote(req, action)}
+                      />
+                    ))}
                   </div>
                 )}
-              </div>
-            )}
-
-            {!user && !showForm && (
-              <div className="bg-white rounded-[1.5rem] border border-[#EDEBDD]/30 py-20 text-center shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                <div className="w-20 h-20 rounded-full bg-[#FAFAF6] flex items-center justify-center mx-auto mb-5">
-                  <Users size={32} className="text-[#3D3636]/20"/>
-                </div>
-                <p className="font-black text-[#3D3636]/40 mb-2">Login untuk melihat pengajuanmu</p>
-                <Link to="/login"
-                  className="inline-flex items-center gap-2 mt-4 px-8 py-3.5 rounded-full font-black text-[10px] uppercase tracking-[0.2em] text-white transition-all hover:scale-105 duration-300"
-                  style={{ background: "linear-gradient(135deg, #810100, #991A19)", boxShadow: "0 10px 30px rgba(129,1,0,0.25)" }}>
-                  Login Sekarang <ArrowRight size={14}/>
-                </Link>
-              </div>
+              </section>
             )}
           </div>
         )}
       </div>
+
+      {/* PILLARS & CONSULTATION */}
+      {!showPengajuan && (
+        <>
+          <PillarsSection />
+          <ConsultationForm />
+          <ConciergeCta
+            title="Siap Menyusun Perjalanan Privat Anda?"
+            description="Ceritakan rute yang Anda impikan, dan tim concierge kami akan menyusun itinerary, estimasi tarif, serta rekomendasi armada terbaik."
+            planLabel="Mulai Konsultasi"
+            planTo="/open-trip"
+            planIcon="explore"
+          />
+        </>
+      )}
     </div>
   );
 }
 
-/* ═══════════════════════════ CATALOG TAB ═══════════════════════════ */
-function CatalogTab({ onAjukan }) {
-  const [trips, setTrips]     = useState([]);
-  const [loading, setLoading] = useState(true);
+/* ── HELPER COMPONENTS ── */
 
-  useEffect(() => {
-    const q = query(collection(db, "open_trips"), orderBy("tanggalBerangkat", "asc"));
-    return onSnapshot(q, snap => {
-      setTrips(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(t => t.status === "Tersedia"));
-      setLoading(false);
-    }, () => setLoading(false));
-  }, []);
-
-  if (loading) return (
-    <div className="flex flex-col items-center py-24 gap-4">
-      <div className="w-10 h-10 border-4 border-[#EDEBDD] border-t-[#810100] rounded-full animate-spin"/>
-      <p className="text-[#3D3636]/30 font-bold text-[10px] uppercase tracking-[0.2em]">Memuat Katalog…</p>
+function FilterSelect({ label, icon, value, onChange, options }) {
+  return (
+    <div className="flex flex-col justify-between rounded-xl bg-c57-surface-container-low p-4 transition-colors hover:bg-c57-surface-container">
+      <div className="mb-1 flex items-center justify-between">
+        <span className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">{label}</span>
+        <Icon name={icon} size="md" className="text-c57-primary-container" />
+      </div>
+      <Select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
+        className="border-0 bg-transparent px-0 font-headline-sm text-headline-sm font-semibold text-c57-on-surface focus:border-0"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </Select>
     </div>
   );
+}
 
-  if (trips.length === 0) return (
-    <div className="text-center py-16 space-y-8">
-      <div className="relative inline-block">
-        <div className="w-40 h-40 rounded-full mx-auto flex items-center justify-center bg-[#FAFAF6]">
-          <Mountain size={56} className="text-[#3D3636]/15"/>
+function Section({ eyebrow, title, description, children }) {
+  return (
+    <section className="pt-16">
+      <div className="mb-8 max-w-3xl">
+        <p className="font-label-sm uppercase tracking-[0.25em] text-c57-primary-container">{eyebrow}</p>
+        <h2 className="mt-2 font-headline-lg text-headline-lg-mobile leading-tight text-c57-on-surface md:text-headline-lg">{title}</h2>
+        <p className="mt-2 font-body-md leading-relaxed text-c57-secondary">{description}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function OpenTripCard({ trip }) {
+  const full = trip.sisaKursi === 0;
+  return (
+    <article className="group flex flex-col overflow-hidden rounded-2xl bg-c57-surface-container-lowest shadow-c57-card transition-shadow duration-300 hover:shadow-c57-card-hover">
+      <div className="relative h-64 overflow-hidden">
+        <div
+          className="h-full w-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+          style={{ backgroundImage: `url(${trip.imageUrl || "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&auto=format&fit=crop&q=80"})` }}
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-c57-scrim/80 via-transparent to-c57-scrim/20" aria-hidden="true" />
+        <span className="absolute left-4 top-4 rounded-full bg-c57-surface-bright/95 px-3 py-1 font-label-sm uppercase tracking-wider text-c57-on-surface shadow-sm backdrop-blur-md">
+          {trip.durasi || "Jadwal Terjadwal"}
+        </span>
+        <span className={`absolute right-4 top-4 rounded-full px-3 py-1 font-label-sm uppercase tracking-wider shadow-sm ${full ? "bg-c57-on-surface-variant text-white" : "bg-c57-error-container text-c57-on-error-container"}`}>
+          {full ? "Kursi Penuh" : `Sisa ${trip.sisaKursi} Kursi`}
+        </span>
+        <div className="absolute bottom-4 left-4 right-4 text-white">
+          <span className="font-label-sm uppercase tracking-wider text-c57-tertiary-fixed-dim">{trip.tanggalLabel}</span>
+          <p className="mt-0.5 font-headline-sm text-headline-sm leading-tight text-white drop-shadow-sm">{trip.judul}</p>
         </div>
-        <div className="absolute -top-2 -right-2 text-3xl animate-bounce">🗺️</div>
       </div>
-      <div>
-        <h3 className="text-2xl font-black text-[#1B1717] mb-2">Belum Ada Jadwal Open Trip</h3>
-        <p className="text-[#3D3636]/40 max-w-md mx-auto text-sm">Jadwal open trip segera hadir. Sementara itu, ajukan <strong>Private Trip</strong> eksklusif untuk grupmu!</p>
+
+      <div className="flex flex-1 flex-col justify-between space-y-6 p-6">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <span className="font-label-sm uppercase tracking-widest text-c57-secondary">Fasilitas Utama:</span>
+            <ul className="space-y-1.5">
+              <li className="flex items-center gap-2 font-body-sm text-body-sm text-c57-secondary">
+                <Icon name="check_circle" size="sm" className="text-c57-primary-container" />
+                {trip.mobilUtama || "Armada tour"}
+              </li>
+              <li className="flex items-center gap-2 font-body-sm text-body-sm text-c57-secondary">
+                <Icon name="check_circle" size="sm" className="text-c57-primary-container" />
+                {trip.destinasi}
+              </li>
+              <li className="flex items-center gap-2 font-body-sm text-body-sm text-c57-secondary">
+                <Icon name="check_circle" size="sm" className="text-c57-primary-container" />
+                Titik kumpul {trip.titikKumpul || "sesuai konfirmasi"}
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-1.5 pt-2">
+            <div className="flex justify-between font-label-sm text-label-sm text-c57-secondary">
+              <span>Keterisian Kuota</span>
+              <span className="font-semibold text-c57-primary-container">{trip.kuotaTerisi} / {trip.kapasitasMaks} Terisi</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-c57-surface-container" role="progressbar">
+              <div className="h-full rounded-full bg-c57-primary-container" style={{ width: `${trip.persenTerisi}%` }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-4">
+          <div className="flex items-baseline justify-between">
+            <span className="font-label-sm uppercase tracking-wider text-c57-secondary">Tarif per Orang</span>
+            <div className="text-right">
+              <span className="font-headline-md text-headline-md font-semibold text-c57-primary-container">{formatRupiah(trip.hargaPerPax)}</span>
+              <span className="-mt-1 block font-body-sm text-body-sm text-c57-secondary">/ pax all-in</span>
+            </div>
+          </div>
+          <Button onClick={() => window.open(whatsappLink(tripInquiryMessage(trip)), "_blank", "noopener")} className="w-full" icon="arrow_forward">
+            Reservasi Kursi
+          </Button>
+        </div>
       </div>
-      <button onClick={onAjukan}
-        className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-white transition-all hover:scale-105 duration-300"
-        style={{ background: "linear-gradient(135deg, #810100, #991A19)", boxShadow: "0 16px 40px rgba(129,1,0,0.25)" }}>
-        <Send size={14}/> Ajukan Private Trip <ArrowRight size={14}/>
-      </button>
-    </div>
+    </article>
   );
+}
+
+function PaketCard({ paket }) {
+  return (
+    <article className="group flex flex-col overflow-hidden rounded-2xl bg-c57-surface-container-lowest shadow-c57-card transition-shadow duration-300 hover:shadow-c57-card-hover">
+      <div className="relative h-56 overflow-hidden">
+        {paket.imageUrl ? (
+          <img src={paket.imageUrl} alt={paket.judul} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+        ) : (
+          <div className="h-full w-full bg-c57-surface-container" aria-hidden="true" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-c57-scrim/75 to-transparent" aria-hidden="true" />
+        {paket.durasi && (
+          <span className="absolute left-4 top-4 rounded-full bg-c57-surface-bright/95 px-3 py-1 font-label-sm uppercase tracking-wider text-c57-on-surface shadow-sm">
+            {paket.durasi}
+          </span>
+        )}
+        <div className="absolute bottom-4 left-4 right-4">
+          <span className="font-label-sm uppercase tracking-wider text-c57-tertiary-fixed-dim">{paket.destinasi}</span>
+          <p className="mt-0.5 font-headline-sm text-headline-sm leading-tight text-white drop-shadow-sm">{paket.judul}</p>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col justify-between space-y-5 p-6">
+        {paket.description && <p className="font-body-sm leading-relaxed text-c57-secondary">{paket.description}</p>}
+
+        {paket.fasilitas.length > 0 && (
+          <ul className="space-y-1.5">
+            {paket.fasilitas.map((item) => (
+              <li key={item} className="flex items-center gap-2 font-body-sm text-body-sm text-c57-secondary">
+                <Icon name="check_circle" size="sm" className="text-c57-primary-container" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="space-y-3 pt-2">
+          <div className="flex items-baseline justify-between">
+            <span className="font-label-sm uppercase tracking-wider text-c57-secondary">Mulai Dari</span>
+            <span className="font-headline-md text-headline-md font-semibold text-c57-primary-container">{formatRupiah(paket.harga)}</span>
+          </div>
+          <Button
+            onClick={() => window.open(whatsappLink(buildConsultationMessage({ destination: paket.destinasi, armada: "" })), "_blank", "noopener")}
+            variant="secondary"
+            className="w-full"
+            icon="arrow_forward"
+          >
+            Konsultasi Paket Ini
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function BespokeCard({ journey }) {
+  const flipped = journey.id === "east-java-highland";
+  return (
+    <article className="grid grid-cols-1 overflow-hidden rounded-3xl bg-c57-surface-container-lowest shadow-c57-card transition-shadow duration-500 hover:shadow-c57-card-hover lg:grid-cols-12">
+      <div className={`relative min-h-[20rem] overflow-hidden lg:col-span-6 lg:min-h-[26rem] ${flipped ? "lg:order-2" : ""}`}>
+        <img src={journey.image} alt={journey.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+        <span className="absolute left-6 top-6 rounded-full bg-c57-surface-bright/95 px-4 py-1.5 font-label-sm uppercase tracking-widest text-c57-on-surface shadow-md backdrop-blur-md">
+          {journey.badge}
+        </span>
+      </div>
+
+      <div className={`flex flex-col justify-between space-y-8 p-8 lg:col-span-6 lg:p-12 ${flipped ? "lg:order-1" : ""}`}>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <span className="font-label-sm uppercase tracking-widest text-c57-on-secondary-container">{journey.region}</span>
+            <h3 className="font-headline-md text-headline-md leading-tight text-c57-on-surface">{journey.title}</h3>
+            <p className="font-body-md leading-relaxed text-c57-secondary">{journey.description}</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
+            <div className="space-y-1 rounded-xl bg-c57-surface-container-low p-4">
+              <span className="font-label-sm uppercase tracking-wider text-c57-secondary">Armada Pilihan</span>
+              <p className="flex items-center gap-1.5 font-body-md font-medium text-c57-on-surface"><Icon name="directions_car" size="md" className="text-c57-primary-container" />{journey.armada}</p>
+            </div>
+            <div className="space-y-1 rounded-xl bg-c57-surface-container-low p-4">
+              <span className="font-label-sm uppercase tracking-wider text-c57-secondary">Kurasi Akomodasi</span>
+              <p className="flex items-center gap-1.5 font-body-md font-medium text-c57-on-surface"><Icon name="hotel" size="md" className="text-c57-primary-container" />{journey.akomodasi}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-start justify-between gap-4 pt-6 sm:flex-row sm:items-center">
+          <div>
+            <span className="font-label-sm uppercase tracking-widest text-c57-secondary">Investasi Mulai</span>
+            <div className="flex items-baseline gap-1">
+              <span className="font-headline-md text-headline-md font-semibold text-c57-primary-container">{formatRupiah(journey.hargaMulai)}</span>
+              <span className="font-body-sm text-body-sm text-c57-secondary">/ orang (min. {journey.minPax} pax)</span>
+            </div>
+          </div>
+          <Button
+            onClick={() => window.open(whatsappLink(buildConsultationMessage({ destination: journey.region, schedule: journey.badge, armada: journey.armada })), "_blank", "noopener")}
+            icon="edit_calendar"
+          >
+            Rancang Paket Ini
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function PillarsSection() {
+  return (
+    <section className="w-full bg-c57-surface-container-low py-20">
+      <div className="mx-auto max-w-7xl px-5 md:px-10">
+        <div className="mx-auto mb-12 max-w-3xl space-y-3 text-center">
+          <p className="font-label-md uppercase tracking-[0.2em] font-semibold text-c57-primary-container">Komitmen Unggul</p>
+          <h2 className="font-headline-lg text-headline-lg-mobile tracking-tight text-c57-on-surface md:text-headline-lg">Standar Layanan &amp; Transparansi Mutlak</h2>
+          <p className="font-body-md leading-relaxed text-c57-secondary">Setiap jengkal perjalanan dikawal oleh kepastian standar kelas hospitality.</p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {PILLARS.map((pillar) => (
+            <div key={pillar.title} className="flex flex-col justify-between space-y-4 rounded-2xl bg-c57-surface-container-lowest p-6 shadow-c57-card">
+              <div className="space-y-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-c57-surface-container text-c57-primary-container">
+                  <Icon name={pillar.icon} size="2xl" />
+                </div>
+                <h3 className="font-headline-sm text-headline-sm text-c57-on-surface">{pillar.title}</h3>
+                <p className="font-body-sm leading-relaxed text-c57-secondary">{pillar.body}</p>
+              </div>
+              <span className="font-label-sm uppercase tracking-wider text-c57-primary-container">{pillar.tag}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ConsultationForm() {
+  const [form, setForm] = useState({
+    destination: "",
+    schedule: "",
+    pax: PAX_OPTIONS[0].value,
+    armada: ARMADA_OPTIONS[0],
+    notes: "",
+  });
+  const [error, setError] = useState(null);
+
+  const update = (key) => (event) => {
+    setForm((prev) => ({ ...prev, [key]: event.target.value }));
+    if (error) setError(null);
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (!form.destination.trim()) {
+      setError("Isi Destinasi Tujuan terlebih dahulu.");
+      return;
+    }
+    window.open(whatsappLink(buildConsultationMessage(form)), "_blank", "noopener");
+  };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-[10px] font-black text-[#810100] uppercase tracking-[0.3em] mb-2">Katalog Open Trip</p>
-          <h2 className="text-3xl font-black text-[#1B1717] tracking-tight">Jadwal Open Trip <span className="text-[#810100]">Aktif</span></h2>
-          <p className="text-[#3D3636]/40 text-sm font-bold mt-1">{trips.length} perjalanan tersedia</p>
+    <section className="mx-auto max-w-7xl px-5 py-20 md:px-10">
+      <div className="relative overflow-hidden rounded-3xl bg-c57-inverse-surface p-8 text-white shadow-c57-overlay lg:p-14">
+        <div className="relative z-10 grid grid-cols-1 gap-12 lg:grid-cols-12">
+          <div className="space-y-6 lg:col-span-5">
+            <p className="inline-flex items-center gap-2 rounded-full bg-c57-surface-bright/10 px-3 py-1 font-label-sm uppercase tracking-widest text-c57-tertiary-fixed-dim">
+              Private Concierge Desk
+            </p>
+            <h3 className="font-headline-lg text-headline-lg-mobile leading-tight md:text-headline-lg">Punya Rencana Perjalanan Impian Sendiri?</h3>
+            <p className="font-body-md font-light leading-relaxed text-c57-surface-container-high">
+              Ceritakan preferensi waktu, tempat, atau tema perjalanan Anda. Tim Concierge Cakra Lima Tujuh akan menyusun rute terpersonalisasi.
+            </p>
+            <div className="flex flex-col gap-3 pt-2">
+              {CONCIERGE_PROMISES.map((promise) => (
+                <div key={promise} className="flex items-center gap-3 font-body-sm text-c57-surface-container-high">
+                  <Icon name="check_circle" size="lg" className="text-c57-primary-fixed-dim" />
+                  <span>{promise}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex flex-col justify-between space-y-6 rounded-2xl bg-c57-surface-bright/5 p-6 backdrop-blur-md lg:col-span-7 lg:p-8">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field tone="dark" label="Destinasi Tujuan" error={error} required>
+                {(p) => <Input tone="dark" {...p} icon="location_on" error={error} value={form.destination} onChange={update("destination")} placeholder="Contoh: Bromo, Malang & Batu" />}
+              </Field>
+
+              <Field tone="dark" label="Estimasi Tanggal / Durasi">
+                {(p) => <Input tone="dark" {...p} icon="event" value={form.schedule} onChange={update("schedule")} placeholder="Contoh: 12 - 15 Mei 2025 (4D3N)" />}
+              </Field>
+
+              <Field tone="dark" label="Jumlah Peserta">
+                {(p) => (
+                  <Select tone="dark" {...p} value={form.pax} onChange={update("pax")}>
+                    {PAX_OPTIONS.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
+                  </Select>
+                )}
+              </Field>
+
+              <Field tone="dark" label="Pilihan Preferensi Armada">
+                {(p) => (
+                  <Select tone="dark" {...p} value={form.armada} onChange={update("armada")}>
+                    {ARMADA_OPTIONS.map((a) => (<option key={a} value={a}>{a}</option>))}
+                  </Select>
+                )}
+              </Field>
+
+              <Field tone="dark" label="Catatan Khusus" className="md:col-span-2">
+                {(p) => <Textarea tone="dark" {...p} rows={2} value={form.notes} onChange={update("notes")} placeholder="Catatan khusus, rekomendasi hotel, dll..." />}
+              </Field>
+            </div>
+
+            <Button type="submit" size="lg" icon="send" className="w-full">
+              Konsultasikan Rencana (&lt; 15 Menit)
+            </Button>
+          </form>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {trips.map((trip, idx) => {
-          const filled = Math.round((trip.kuotaTerisi / trip.kapasitasMaks) * 100);
-          const isFull = trip.kuotaTerisi >= trip.kapasitasMaks;
-          return (
-            <div key={trip.id} className="group bg-white rounded-[1.5rem] overflow-hidden border border-[#EDEBDD]/30 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-500 flex flex-col" style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}>
-              <div className="relative h-24 flex items-center justify-center overflow-hidden"
-                style={{ background: `linear-gradient(135deg, hsl(${(idx * 47) % 360}, 70%, 20%), hsl(${(idx * 47 + 40) % 360}, 60%, 30%))` }}>
-                <div className="absolute inset-0 opacity-20"
-                  style={{ backgroundImage: "repeating-linear-gradient(45deg, white 0, white 1px, transparent 0, transparent 50%)", backgroundSize: "15px 15px" }}/>
-                <Mountain size={40} className="text-white/30"/>
-                <div className="absolute top-3 left-4">
-                  <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] ${isFull ? "bg-red-500 text-white" : "bg-emerald-400 text-emerald-900"}`}>
-                    {isFull ? "Penuh" : "Tersedia"}
-                  </span>
-                </div>
-                <div className="absolute top-3 right-4">
-                  <span className="px-3 py-1 rounded-full bg-white/20 text-white text-[9px] font-bold backdrop-blur-sm">{trip.mobilUtama}</span>
-                </div>
-              </div>
+    </section>
+  );
+}
 
-              <div className="p-6 flex-1 flex flex-col">
-                <h3 className="font-black text-[#1B1717] text-lg group-hover:text-[#810100] transition-colors duration-300 line-clamp-2 mb-1">{trip.judul}</h3>
+function RequestPrompt({ title, description, icon, action, onAction }) {
+  return (
+    <Card variant="scrim" className="relative overflow-hidden p-8">
+      <div className="relative flex flex-col md:flex-row items-center justify-between gap-space-lg">
+        <div className="text-center md:text-left max-w-xl">
+          <p className="text-label-md uppercase tracking-editorial text-c57-tertiary mb-space-sm">Buat Pengajuan Baru</p>
+          <h2 className="font-headline-sm text-headline-sm text-c57-on-scrim">{title}</h2>
+          {description && <p className="text-body-sm text-c57-on-scrim/70 mt-space-sm">{description}</p>}
+        </div>
+        <Button size="lg" icon={icon} iconPosition="right" className="shrink-0" onClick={onAction}>
+          {action}
+        </Button>
+      </div>
+    </Card>
+  );
+}
 
-                <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-2xl font-black text-[#810100]">Rp {trip.hargaPerPax?.toLocaleString()}</span>
-                  <span className="text-[10px] font-bold text-[#3D3636]/30 uppercase tracking-[0.1em]">/seat</span>
-                </div>
+function RequestForm({ formData, setFormData, submitting, onSubmit, onCancel }) {
+  return (
+    <Card className="max-w-2xl mx-auto overflow-hidden">
+      <div className="px-6 py-4 bg-c57-scrim flex items-center justify-between">
+        <div>
+          <p className="text-label-sm uppercase tracking-wider text-c57-on-scrim/60">Form Pengajuan</p>
+          <h3 className="font-headline-sm text-headline-sm text-c57-on-scrim">Detail perjalananmu</h3>
+        </div>
+        <button type="button" onClick={onCancel} className="p-2 rounded-full text-c57-on-scrim/70 hover:text-c57-on-scrim">
+          <Icon name="close" size="md" />
+        </button>
+      </div>
 
-                <div className="space-y-2.5 mb-5 flex-1">
-                  <div className="flex items-center gap-2.5 text-[11px] font-bold text-slate-500">
-                    <div className="w-6 h-6 rounded-lg bg-[#FAFAF6] flex items-center justify-center shrink-0">
-                      <Map size={12} className="text-[#3D3636]/30"/>
-                    </div>
-                    <span className="truncate text-[#3D3636]/60">{trip.destinasi}</span>
-                  </div>
-                  <div className="flex items-center gap-2.5 text-[11px] font-bold text-[#3D3636]/50">
-                    <div className="w-6 h-6 rounded-lg bg-[#FAFAF6] flex items-center justify-center shrink-0">
-                      <Calendar size={12} className="text-[#3D3636]/30"/>
-                    </div>
-                    <span>{new Date(trip.tanggalBerangkat).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })}</span>
-                  </div>
-                  {trip.waktuKumpul && (
-                    <div className="flex items-center gap-2.5 text-[11px] font-bold text-[#3D3636]/50">
-                      <div className="w-6 h-6 rounded-lg bg-[#FAFAF6] flex items-center justify-center shrink-0">
-                        <Clock size={12} className="text-[#3D3636]/30"/>
-                      </div>
-                      <span>{trip.waktuKumpul}{trip.titikKumpul ? ` · ${trip.titikKumpul}` : ""}</span>
-                    </div>
-                  )}
-                </div>
+      <form onSubmit={onSubmit} className="p-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Tipe Trip">
+            {(p) => (
+              <Select {...p} value={formData.type} onChange={(e) => setFormData((prev) => ({ ...prev, type: e.target.value }))}>
+                <option value="open_trip">Open Trip (Sharing seat)</option>
+                <option value="private_trip">Private Trip (Eksklusif)</option>
+              </Select>
+            )}
+          </Field>
+          <Field label="Tier Trip">
+            {(p) => (
+              <Select {...p} value={formData.tier} onChange={(e) => setFormData((prev) => ({ ...prev, tier: e.target.value }))}>
+                <option value="reguler">Reguler (Tanpa snack/makan)</option>
+                <option value="vip">VIP (Snack + Makan 2x)</option>
+              </Select>
+            )}
+          </Field>
+        </div>
 
-                {/* occupancy bar */}
-                <div className="mb-5">
-                  <div className="flex justify-between text-[10px] font-black text-[#3D3636]/30 uppercase tracking-[0.2em] mb-2">
-                    <span>Kursi Terisi</span>
-                    <span>{trip.kuotaTerisi}/{trip.kapasitasMaks}</span>
-                  </div>
-                  <div className="h-2 bg-[#FAFAF6] rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-1000"
-                      style={{
-                        width: `${filled}%`,
-                        background: filled >= 100 ? "#ef4444" : filled >= 75 ? "#f97316" : "linear-gradient(90deg, #810100, #991A19)"
-                      }}/>
-                  </div>
-                </div>
+        <Field label="Destinasi / Rute" required>
+          {(p) => <Input {...p} value={formData.destination} onChange={(e) => setFormData((prev) => ({ ...prev, destination: e.target.value }))} placeholder="Bromo, Malang, Batu..." required />}
+        </Field>
 
-                <Link to="/login"
-                  className={`w-full py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-center transition-all duration-300 flex items-center justify-center gap-2 ${
-                    isFull
-                      ? "bg-[#FAFAF6] text-[#3D3636]/30 cursor-not-allowed"
-                      : "text-white hover:scale-[1.02] group-hover:shadow-lg"
-                  }`}
-                  style={!isFull ? { background: "linear-gradient(135deg, #810100, #991A19)", boxShadow: "0 8px 20px rgba(129,1,0,0.2)" } : {}}>
-                  {isFull ? "Penuh" : <><Users size={14}/> Daftar Sekarang</>}
-                </Link>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Tanggal Mulai" required>
+            {(p) => <Input {...p} type="date" min={tomorrow()} value={formData.proposed_date} onChange={(e) => setFormData((prev) => ({ ...prev, proposed_date: e.target.value }))} required />}
+          </Field>
+          <Field label="Tanggal Selesai" required>
+            {(p) => <Input {...p} type="date" min={formData.proposed_date || tomorrow()} value={formData.end_date} onChange={(e) => setFormData((prev) => ({ ...prev, end_date: e.target.value }))} required />}
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Jumlah Peserta" required>
+            {(p) => <Input {...p} type="number" min={1} max={50} value={formData.participant_count} onChange={(e) => setFormData((prev) => ({ ...prev, participant_count: e.target.value }))} required />}
+          </Field>
+          <Field label="Nomor WhatsApp" required>
+            {(p) => <Input {...p} type="tel" value={formData.whatsapp} onChange={(e) => setFormData((prev) => ({ ...prev, whatsapp: e.target.value }))} placeholder="0812..." required />}
+          </Field>
+        </div>
+
+        <Field label="Catatan Tambahan">
+          {(p) => <Textarea {...p} rows={3} value={formData.notes} onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))} placeholder="Permintaan khusus, jalur favorit..." />}
+        </Field>
+
+        <Button type="submit" size="lg" icon="send" loading={submitting} className="w-full">
+          {submitting ? "Mengirim…" : "Kirim Pengajuan Trip"}
+        </Button>
+      </form>
+    </Card>
+  );
+}
+
+function RequestCard({ req, expanded, revisions, onToggle, onQuoteAction }) {
+  const meta = STATUS_META[req.status] || { label: req.status, variant: "neutral" };
+  return (
+    <Card className="overflow-hidden">
+      <button type="button" onClick={onToggle} aria-expanded={expanded} className="w-full p-6 flex flex-wrap gap-4 items-center text-left">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap gap-2 mb-2 items-center">
+            <Pill variant={meta.variant} icon={meta.icon}>{meta.label}</Pill>
+            <Pill variant="outline">{(req.type === "open_trip" ? "Open Trip" : "Private Trip") + (req.tier ? ` · ${req.tier.toUpperCase()}` : "")}</Pill>
+          </div>
+          <p className="font-headline-sm text-headline-sm text-c57-on-surface">{req.destination}</p>
+          <div className="flex flex-wrap gap-4 mt-2 text-body-sm text-c57-on-surface-variant">
+            <span>📅 {formatDate(req.proposed_date, { day: "numeric", month: "short", year: "numeric" })}</span>
+            <span>👥 {req.participant_count} peserta</span>
+            {req.whatsapp && <span>📱 {req.whatsapp}</span>}
+          </div>
+        </div>
+        <Icon name="expand_more" size="md" className={`text-c57-on-surface-variant shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </button>
+
+      {expanded && (
+        <div className="border-t border-c57-surface-variant p-6 space-y-4">
+          {req.status === "quoted" && req.quote && (
+            <div className="p-4 rounded-xl bg-c57-surface-container">
+              <p className="font-label-sm uppercase text-c57-primary mb-1">Penawaran Admin</p>
+              <p className="font-headline-md text-headline-md font-bold text-c57-on-surface">Rp {Number(req.quote.total).toLocaleString("id-ID")}</p>
+              <div className="flex gap-2 mt-4">
+                <Button size="sm" icon="task_alt" onClick={() => onQuoteAction("accept")}>Setuju &amp; Bayar DP</Button>
+                <Button size="sm" variant="secondary" icon="edit_note" onClick={() => onQuoteAction("revise")}>Revisi</Button>
               </div>
             </div>
-          );
-        })}
-      </div>
+          )}
+
+          {revisions.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-label-sm uppercase text-c57-on-surface-variant">Riwayat Komunikasi</p>
+              {revisions.map((rv, i) => (
+                <div key={rv.id || i} className="p-3 rounded-lg bg-c57-surface-container-low">
+                  <p className="text-label-sm text-c57-primary">{rv.by === "admin" ? "Admin" : "Kamu"}</p>
+                  <p className="text-body-sm text-c57-on-surface">{rv.note}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function GridSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-gutter md:grid-cols-2 xl:grid-cols-3">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="h-96 animate-pulse rounded-2xl bg-c57-surface-container" />
+      ))}
     </div>
   );
 }

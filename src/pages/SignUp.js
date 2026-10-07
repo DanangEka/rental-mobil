@@ -4,7 +4,12 @@ import { auth, db } from "../services/firebase";
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { setDoc, doc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "../components/Toast";
-import { Eye, EyeOff, UserPlus, Loader2, Shield, MapPin, Phone, User, CheckCircle } from "lucide-react";
+import Button from "../components/ui/Button";
+import Field from "../components/ui/Field";
+import Input from "../components/ui/Input";
+import Textarea from "../components/ui/Textarea";
+import Icon from "../components/ui/Icon";
+import Pill from "../components/ui/Pill";
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -45,14 +50,26 @@ export default function SignUp() {
     if (pass.match(/[^a-zA-Z\d]/)) score += 25;
     return score;
   };
-  
+
   const passStrength = calculatePasswordStrength(form.password);
+  const strengthLabel =
+    passStrength <= 25 ? 'Weak' : passStrength <= 50 ? 'Moderate' : passStrength <= 75 ? 'Strong' : 'Excellent';
+  // Strength is a progress bar plus a word — colour alone must not carry the
+  // signal, so each band also gets its own label.
+  const strengthBar =
+    passStrength <= 25
+      ? 'w-1/4 bg-c57-error'
+      : passStrength <= 50
+        ? 'w-2/4 bg-c57-tertiary'
+        : passStrength <= 75
+          ? 'w-3/4 bg-c57-outline'
+          : 'w-full bg-c57-available-text';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (
       !form.nama || !form.email || !form.password || !form.nomorTelepon ||
-      !form.alamat || !form.provinsi || !form.kabupaten || !form.kecamatan || 
+      !form.alamat || !form.provinsi || !form.kabupaten || !form.kecamatan ||
       !form.kelurahan || !form.rt || !form.rw
     ) {
       toast.warning("Mohon lengkapi seluruh field wajib.");
@@ -84,7 +101,7 @@ export default function SignUp() {
       });
 
       await signOut(auth);
-      
+
       toast.success("Pendaftaran berhasil!", "Silakan masuk dan lakukan verifikasi KTP.");
       navigate("/login");
     } catch (error) {
@@ -97,199 +114,374 @@ export default function SignUp() {
     }
   };
 
+  const SectionTitle = ({ step, icon, title, description }) => (
+    <div className="flex items-start gap-space-md border-b border-c57-surface-variant pb-space-md">
+      <span
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-c57-md bg-c57-surface-container text-c57-primary"
+        aria-hidden="true"
+      >
+        <Icon name={icon} size="lg" />
+      </span>
+      <div className="min-w-0">
+        <p className="font-label-sm uppercase tracking-[0.28em] text-c57-outline">
+          Langkah {step}
+        </p>
+        <h3 className="font-headline-sm text-headline-sm text-c57-on-surface mt-1">
+          {title}
+        </h3>
+        {description && (
+          <p className="text-body-sm text-c57-on-surface-variant mt-1">{description}</p>
+        )}
+      </div>
+    </div>
+  );
+
+  const PassToggle = (
+    <button
+      type="button"
+      onClick={() => setShowPass(!showPass)}
+      className="rounded-full p-1 text-c57-on-surface-variant transition-colors hover:text-c57-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c57-primary"
+      aria-label={showPass ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+      aria-pressed={showPass}
+    >
+      <Icon name={showPass ? "visibility_off" : "visibility"} size="md" />
+    </button>
+  );
+
   return (
-    <div className="min-h-screen bg-[#FAFAF6] pt-[100px] pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden flex items-center justify-center">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_#fff1f1_0%,_#FAFAF6_50%,_#ffffff_100%)]"></div>
-        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-[#810100]/[0.02] mix-blend-multiply filter blur-[120px] animate-breathe"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-slate-200/30 mix-blend-multiply filter blur-[120px] animate-breathe" style={{ animationDelay: '2s' }}></div>
+    <div className="relative min-h-screen bg-c57-surface pt-30 pb-16 px-gutter-mobile sm:px-gutter">
+      {/* Warm ambient wash. Subtle enough to stay under the 4.5:1 contrast
+          floor for the body copy that sits on top of it. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[520px] overflow-hidden" aria-hidden="true">
+        <div className="absolute inset-0 bg-c57-surface-container-low" />
+        <div className="absolute -left-24 -top-24 h-[420px] w-[420px] rounded-full bg-c57-primary-container/5 blur-[120px]" />
+        <div className="absolute -right-32 top-32 h-[360px] w-[360px] rounded-full bg-c57-secondary/5 blur-[120px]" />
       </div>
 
-      <div className="w-full max-w-4xl z-10 animate-fadeInUp mt-6 md:mt-8">
-        <div className="text-center mb-10 md:mb-14">
-          <div className="inline-flex items-center justify-center p-3.5 rounded-2xl bg-white border border-[#EDEBDD]/30 shadow-[0_8px_32px_rgba(0,0,0,0.06)] mb-6">
-            <UserPlus className="text-[#810100] w-7 h-7" />
-          </div>
-          <h2 className="text-3xl md:text-5xl font-black text-[#1B1717] tracking-tight mb-4">Mulai Perjalanan Anda<span className="text-[#810100]">.</span></h2>
-          <p className="text-[#3D3636]/50 text-base max-w-2xl mx-auto font-medium">Bergabung dengan ribuan pelanggan puas kami dan rasakan kemudahan sewa mobil dengan layanan premium.</p>
-        </div>
+      <div className="relative z-10 mx-auto w-full max-w-4xl animate-fadeInUp">
+        <header className="mb-space-xl text-center">
+          <Pill variant="signature" icon="verified_user" className="mb-space-md">
+            Registrasi Member Baru
+          </Pill>
+          <h1 className="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-c57-on-surface leading-[1.1]">
+            Mulai Perjalanan Anda
+            <em className="font-normal italic text-c57-primary-container"> bersama kami</em>
+          </h1>
+          <p className="text-body-lg text-c57-on-surface-variant mt-space-md max-w-2xl mx-auto font-light">
+            Daftar untuk verifikasi sewa lepas kunci, reservasi chauffeur, dan akses tarif
+            khusus paket open trip kurasi kami.
+          </p>
+        </header>
 
-        <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-10 md:p-14 rounded-[2.5rem] shadow-[0_12px_48px_rgba(0,0,0,0.04)] border border-[#EDEBDD]/30 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#810100]/10 to-transparent" />
-          <div className="space-y-16">
-            {/* Section 1: Akun */}
-            <div className="space-y-8">
-              <div className="flex items-center gap-4 border-b border-[#EDEBDD]/30 pb-6">
-                <div className="w-10 h-10 bg-[#F5E6E6] text-[#810100] rounded-xl flex items-center justify-center">
-                  <Shield className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-black text-[#1B1717] tracking-tight">Informasi Akun</h3>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                <div>
-                  <label className="block text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-3 ml-1">Nama Lengkap*</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-[#3D3636]/20 group-focus-within:text-[#810100] transition-colors duration-300">
-                      <User size={16} />
-                    </div>
-                    <input type="text" name="nama" value={form.nama} onChange={handleChange} className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 pl-12 py-4 rounded-2xl outline-none focus:border-[#810100]/40 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all duration-300 font-semibold" placeholder="Sesuai KTP" required />
-                  </div>
-                </div>
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-c57-lg border border-c57-surface-variant bg-c57-surface-container-lowest p-6 shadow-c57-card sm:p-10 md:p-14"
+        >
+          <div className="space-y-space-xl">
+            {/* Step 1 — Account */}
+            <section className="space-y-space-lg">
+              <SectionTitle
+                step="01"
+                icon="shield"
+                title="Informasi Akun"
+                description="Kredensial login dan kontak resmi untuk konfirmasi reservasi."
+              />
 
-                <div>
-                  <label className="block text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-3 ml-1">Nomor Telepon / WhatsApp*</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-[#3D3636]/20 group-focus-within:text-[#810100] transition-colors duration-300">
-                      <Phone size={16} />
-                    </div>
-                    <input type="tel" name="nomorTelepon" value={form.nomorTelepon} onChange={handleChange} className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 pl-12 py-4 rounded-2xl outline-none focus:border-[#810100]/40 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all duration-300 font-semibold" placeholder="081234567890" required />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-3 ml-1">Email*</label>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 px-5 py-4 rounded-2xl outline-none focus:border-[#810100]/40 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all duration-300 font-semibold" placeholder="nama@email.com" required />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-3 ml-1">Password*</label>
-                  <div className="relative group">
-                    <input type={showPass ? "text" : "password"} name="password" value={form.password} onChange={handleChange} className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 px-5 pr-12 py-4 rounded-2xl outline-none focus:border-[#810100]/40 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all duration-300 font-semibold" placeholder="Minimal 6 karakter" required minLength="6" />
-                    <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#3D3636]/20 hover:text-[#810100] transition-colors duration-300">
-                      {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                  {form.password && (
-                    <div className="mt-3 px-1">
-                      <div className="flex h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div className={`h-full transition-all duration-500 ${passStrength <= 25 ? 'w-1/4 bg-red-400' : passStrength <= 50 ? 'w-2/4 bg-amber-400' : passStrength <= 75 ? 'w-3/4 bg-blue-400' : 'w-full bg-emerald-400'}`}></div>
-                      </div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-right mt-1.5 text-slate-400">
-                        Strength: {passStrength <= 25 ? 'Weak' : passStrength <= 50 ? 'Moderate' : passStrength <= 75 ? 'Strong' : 'Excellent'}
-                      </p>
-                    </div>
+              <div className="grid grid-cols-1 gap-space-lg md:grid-cols-2">
+                <Field label="Nama Lengkap" required>
+                  {(p) => (
+                    <Input
+                      {...p}
+                      name="nama"
+                      icon="person"
+                      value={form.nama}
+                      onChange={handleChange}
+                      placeholder="Sesuai KTP"
+                      required
+                    />
                   )}
-                </div>
+                </Field>
+
+                <Field
+                  label="Nomor WhatsApp"
+                  required
+                  hint="Dipakai untuk e-voucher dan koordinasi driver."
+                >
+                  {(p) => (
+                    <Input
+                      {...p}
+                      type="tel"
+                      name="nomorTelepon"
+                      icon="phone"
+                      value={form.nomorTelepon}
+                      onChange={handleChange}
+                      placeholder="+62 812-3456-7890"
+                      required
+                    />
+                  )}
+                </Field>
+
+                <Field label="Alamat Email" required hint="Faktur resmi dikirim ke sini.">
+                  {(p) => (
+                    <Input
+                      {...p}
+                      type="email"
+                      name="email"
+                      icon="mail"
+                      value={form.email}
+                      onChange={handleChange}
+                      placeholder="nama@email.com"
+                      required
+                    />
+                  )}
+                </Field>
+
+                <Field label="Kata Sandi" required hint="Minimal 6 karakter.">
+                  {(p) => (
+                    <Input
+                      {...p}
+                      type={showPass ? "text" : "password"}
+                      name="password"
+                      icon="lock"
+                      trailing={PassToggle}
+                      value={form.password}
+                      onChange={handleChange}
+                      placeholder="Minimal 6 karakter"
+                      minLength="6"
+                      required
+                    />
+                  )}
+                </Field>
               </div>
-            </div>
 
-            {/* Section 2: Alamat */}
-            <div className="space-y-8">
-              <div className="flex items-center gap-4 border-b border-[#EDEBDD]/30 pb-6">
-                <div className="w-10 h-10 bg-[#F5E6E6] text-[#810100] rounded-xl flex items-center justify-center">
-                  <MapPin className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-black text-[#1B1717] tracking-tight">Domisili Sesuai KTP</h3>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-                <div className="md:col-span-2 lg:col-span-4">
-                  <label className="block text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-3 ml-1">Provinsi*</label>
-                  <input type="text" name="provinsi" value={form.provinsi} onChange={handleChange} onBlur={() => {
-                    const prov = form.provinsi.toLowerCase().trim();
-                    setShowPenanggungJawab(prov && !javaProvinces.some(jp => prov.includes(jp)));
-                  }} className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 px-5 py-4 rounded-2xl outline-none focus:border-[#810100]/40 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all duration-300 font-semibold" placeholder="Contoh: Jawa Timur" required />
-                </div>
-                
-                <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-3 ml-1">Kabupaten / Kota*</label>
-                  <input type="text" name="kabupaten" value={form.kabupaten} onChange={handleChange} className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 px-5 py-4 rounded-2xl outline-none focus:border-[#810100]/40 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all duration-300 font-semibold" placeholder="Contoh: Surabaya" required />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-3 ml-1">Kecamatan*</label>
-                  <input type="text" name="kecamatan" value={form.kecamatan} onChange={handleChange} className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 px-5 py-4 rounded-2xl outline-none focus:border-[#810100]/40 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all duration-300 font-semibold" required />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-3 ml-1">Kelurahan / Desa*</label>
-                  <input type="text" name="kelurahan" value={form.kelurahan} onChange={handleChange} className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 px-5 py-4 rounded-2xl outline-none focus:border-[#810100]/40 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all duration-300 font-semibold" required />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 md:col-span-2">
-                  <div>
-                    <label className="block text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-3 ml-1">RT*</label>
-                    <input type="text" name="rt" value={form.rt} onChange={handleChange} className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 px-5 py-4 rounded-2xl outline-none focus:border-[#810100]/40 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all duration-300 font-semibold" placeholder="001" required />
+              {form.password && (
+                <div className="px-1">
+                  <div
+                    className="h-1.5 w-full overflow-hidden rounded-full bg-c57-surface-container"
+                    role="progressbar"
+                    aria-valuenow={passStrength}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`Kekuatan kata sandi: ${strengthLabel}`}
+                  >
+                    <div className={`h-full transition-all duration-500 ${strengthBar}`} />
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-3 ml-1">RW*</label>
-                    <input type="text" name="rw" value={form.rw} onChange={handleChange} className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 px-5 py-4 rounded-2xl outline-none focus:border-[#810100]/40 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all duration-300 font-semibold" placeholder="002" required />
-                  </div>
+                  <p className="font-label-sm uppercase tracking-widest text-c57-outline mt-2 text-right">
+                    {strengthLabel}
+                  </p>
+                </div>
+              )}
+            </section>
+
+            {/* Step 2 — Address */}
+            <section className="space-y-space-lg">
+              <SectionTitle
+                step="02"
+                icon="home_pin"
+                title="Domisili Sesuai KTP"
+                description="Wajib untuk standardisasi verifikasi sewa dan polis asuransi."
+              />
+
+              <div className="grid grid-cols-1 gap-space-lg md:grid-cols-2 lg:grid-cols-4">
+                <Field label="Provinsi" required className="md:col-span-2 lg:col-span-4">
+                  {(p) => (
+                    <Input
+                      {...p}
+                      name="provinsi"
+                      icon="location_on"
+                      value={form.provinsi}
+                      onChange={handleChange}
+                      onBlur={() => {
+                        const prov = form.provinsi.toLowerCase().trim();
+                        setShowPenanggungJawab(prov && !javaProvinces.some((jp) => prov.includes(jp)));
+                      }}
+                      placeholder="Contoh: Jawa Timur"
+                      required
+                    />
+                  )}
+                </Field>
+
+                <Field label="Kabupaten / Kota" required>
+                  {(p) => (
+                    <Input
+                      {...p}
+                      name="kabupaten"
+                      icon="location_city"
+                      value={form.kabupaten}
+                      onChange={handleChange}
+                      placeholder="Contoh: Surabaya"
+                      required
+                    />
+                  )}
+                </Field>
+
+                <Field label="Kecamatan" required>
+                  {(p) => (
+                    <Input
+                      {...p}
+                      name="kecamatan"
+                      value={form.kecamatan}
+                      onChange={handleChange}
+                      required
+                    />
+                  )}
+                </Field>
+
+                <Field label="Kelurahan / Desa" required>
+                  {(p) => (
+                    <Input
+                      {...p}
+                      name="kelurahan"
+                      value={form.kelurahan}
+                      onChange={handleChange}
+                      required
+                    />
+                  )}
+                </Field>
+
+                <div className="grid grid-cols-2 gap-space-md md:col-span-2">
+                  <Field label="RT" required>
+                    {(p) => (
+                      <Input {...p} name="rt" value={form.rt} onChange={handleChange} placeholder="001" required />
+                    )}
+                  </Field>
+                  <Field label="RW" required>
+                    {(p) => (
+                      <Input {...p} name="rw" value={form.rw} onChange={handleChange} placeholder="002" required />
+                    )}
+                  </Field>
                 </div>
 
-                <div className="md:col-span-2 lg:col-span-4">
-                  <label className="block text-[10px] font-black text-[#3D3636]/40 uppercase tracking-[0.2em] mb-3 ml-1">Alamat Detail*</label>
-                  <textarea name="alamat" value={form.alamat} onChange={handleChange} rows="3" className="w-full bg-[#FAFAF6] border border-[#EDEBDD]/40 px-5 py-4 rounded-2xl outline-none focus:border-[#810100]/40 focus:ring-4 focus:ring-[#810100]/[0.06] transition-all duration-300 font-semibold resize-none" placeholder="Nama Jalan, Gedung, No. Rumah" required></textarea>
-                </div>
+                <Field
+                  label="Alamat Spesifik"
+                  required
+                  hint="Nama jalan, komplek, atau nomor rumah."
+                  className="md:col-span-2 lg:col-span-4"
+                >
+                  {(p) => (
+                    <Textarea
+                      {...p}
+                      name="alamat"
+                      value={form.alamat}
+                      onChange={handleChange}
+                      rows={3}
+                      placeholder="Nama Jalan, Gedung, No. Rumah"
+                      required
+                    />
+                  )}
+                </Field>
               </div>
-            </div>
+            </section>
 
-            {/* Section 3: Penanggung Jawab */}
+            {/* Step 3 — Guarantor, only for non-Java addresses */}
             {showPenanggungJawab && (
-              <div className="space-y-8 bg-brand-50/50 border border-brand-100 p-8 md:p-12 rounded-[2.5rem] animate-fadeInUp">
-                <div className="flex items-start gap-4 border-b border-brand-100/50 pb-6 mb-2">
-                  <div className="bg-brand-600 text-white p-3 rounded-2xl shrink-0">
-                    <UserPlus size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Data Penanggung Jawab</h3>
-                    <p className="text-slate-500 font-medium mt-1">Domisili luar pulau Jawa memerlukan data kerabat sebagai penanggung jawab.</p>
-                  </div>
-                </div>
+              <section className="space-y-space-lg rounded-c57-lg border border-c57-outline-variant bg-c57-surface-container p-6 animate-fadeInUp md:p-10">
+                <SectionTitle
+                  step="03"
+                  icon="family_restroom"
+                  title="Data Penanggung Jawab"
+                  description="Domisili luar pulau Jawa memerlukan data kerabat sebagai penanggung jawab."
+                />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Nama Penanggung Jawab*</label>
-                    <input type="text" name="penanggungJawab" value={form.penanggungJawab} onChange={handleChange} className="w-full bg-white border border-brand-100 px-5 py-4 rounded-2xl outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50/50 transition-all font-semibold" required />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Nomor Telepon*</label>
-                    <input type="tel" name="penanggungJawabTelepon" value={form.penanggungJawabTelepon} onChange={handleChange} className="w-full bg-white border border-brand-100 px-5 py-4 rounded-2xl outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50/50 transition-all font-semibold" required />
-                  </div>
+                <div className="grid grid-cols-1 gap-space-lg md:grid-cols-2">
+                  <Field label="Nama Penanggung Jawab" required>
+                    {(p) => (
+                      <Input
+                        {...p}
+                        name="penanggungJawab"
+                        value={form.penanggungJawab}
+                        onChange={handleChange}
+                        required
+                      />
+                    )}
+                  </Field>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Alamat Lengkap Penanggung Jawab*</label>
-                    <textarea name="penanggungJawabAlamat" value={form.penanggungJawabAlamat} onChange={handleChange} rows="2" className="w-full bg-white border border-brand-100 px-5 py-4 rounded-2xl outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50/50 transition-all font-semibold resize-none" required></textarea>
-                  </div>
+                  <Field label="Nomor Telepon" required>
+                    {(p) => (
+                      <Input
+                        {...p}
+                        type="tel"
+                        name="penanggungJawabTelepon"
+                        icon="phone"
+                        value={form.penanggungJawabTelepon}
+                        onChange={handleChange}
+                        required
+                      />
+                    )}
+                  </Field>
+
+                  <Field label="Alamat Lengkap Penanggung Jawab" required className="md:col-span-2">
+                    {(p) => (
+                      <Textarea
+                        {...p}
+                        name="penanggungJawabAlamat"
+                        value={form.penanggungJawabAlamat}
+                        onChange={handleChange}
+                        rows={2}
+                        required
+                      />
+                    )}
+                  </Field>
                 </div>
-              </div>
+              </section>
             )}
           </div>
 
-          <div className="mt-14 pt-10 border-t border-[#EDEBDD]/30">
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full relative group overflow-hidden bg-[#810100] hover:bg-[#630000] disabled:bg-[#EDEBDD] disabled:text-[#3D3636]/30 text-white font-black py-5 rounded-2xl transition-all duration-400 flex items-center justify-center shadow-[0_8px_32px_rgba(129,1,0,0.25)] ${!loading ? 'hover:-translate-y-0.5 hover:shadow-[0_12px_48px_rgba(129,1,0,0.35)]' : ''}`}
-              style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}
-            >
-              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer"></div>
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                  <span className="text-[10px] uppercase tracking-[0.2em]">Memproses Pendaftaran...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-5 h-5 mr-3" />
-                  <span className="text-[10px] uppercase tracking-[0.2em]">Daftar Akun Sekarang</span>
-                </>
-              )}
-            </button>
+          <div className="mt-space-xl border-t border-c57-surface-variant pt-space-xl">
+            <Button type="submit" size="lg" loading={loading} className="w-full">
+              {loading ? "Memproses Pendaftaran" : "Daftar Akun Sekarang"}
+            </Button>
 
-            <div className="mt-8 text-center">
-              <p className="text-[#3D3636]/40 text-[10px] font-bold uppercase tracking-[0.15em]">
-                Sudah memiliki akun?{" "}
-                <Link to="/login" className="text-[#810100] font-black hover:text-[#630000] transition-colors duration-300">
-                  MASUK DI SINI
-                </Link>
-              </p>
-            </div>
+            <p className="mt-space-lg text-center text-body-sm text-c57-on-surface-variant">
+              Sudah memiliki akun terdaftar?{" "}
+              <Link
+                to="/login"
+                className="font-label-md uppercase tracking-wider text-c57-primary underline decoration-c57-primary/40 underline-offset-4 transition-colors hover:text-c57-primary-container hover:decoration-c57-primary-container"
+              >
+                Masuk di sini
+              </Link>
+            </p>
           </div>
         </form>
+
+        {/* Member privileges */}
+        <section className="mt-space-xl">
+          <div className="grid grid-cols-1 gap-space-md md:grid-cols-3">
+            {[
+              {
+                icon: "directions_car",
+                title: "Lepas Kunci Tanpa Ribet",
+                body: "Verifikasi KTP sekali di awal, reservasi armada instan untuk perjalanan berikutnya.",
+              },
+              {
+                icon: "star",
+                title: "Chauffeur Berpengalaman",
+                body: "Pengemudi profesional beretika perhotelan untuk perjalanan bisnis dan keluarga.",
+              },
+              {
+                icon: "verified",
+                title: "Tarif Transparan & Asuransi",
+                body: "Bebas biaya tersembunyi dengan perlindungan perjalanan di setiap kilometer.",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="rounded-c57-lg border border-c57-surface-variant bg-c57-surface-container-lowest p-6 shadow-c57-card"
+              >
+                <span
+                  className="flex h-10 w-10 items-center justify-center rounded-c57-md bg-c57-surface-container text-c57-primary"
+                  aria-hidden="true"
+                >
+                  <Icon name={item.icon} size="lg" />
+                </span>
+                <h4 className="font-headline-sm text-body-lg text-c57-on-surface mt-space-md">
+                  {item.title}
+                </h4>
+                <p className="text-body-sm text-c57-on-surface-variant mt-space-sm">{item.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );

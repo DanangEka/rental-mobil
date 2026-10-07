@@ -1,7 +1,50 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { collection, query, orderBy, onSnapshot, doc as firestoreDoc, getDoc } from "firebase/firestore";
-import { CreditCard, DollarSign, Eye, FileText, Filter, Clock } from "lucide-react";
+
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import EmptyState from "../components/ui/EmptyState";
+import Icon from "../components/ui/Icon";
+import Modal from "../components/ui/Modal";
+import PageHeader from "../components/ui/PageHeader";
+import Pill from "../components/ui/Pill";
+
+/**
+ * Cash-deposit audit for driver settlements.
+ *
+ * The Firestore contract is untouched: `paymentVerifications` ordered by
+ * `timestamp` desc behind the auth gate, plus the per-`orderId` `pemesanan`
+ * reads that fill in `dpAmount` / `totalAmount` for the audit dialog. The
+ * fallback chain for the client's down payment — verification field, then
+ * linked order, then half of `totalAmount`, then half of `perkiraanHarga` — is
+ * preserved exactly, because it is the number finance reconciles against.
+ *
+ * The dialog is now the `Modal` primitive. The hand-rolled version it replaced
+ * closed on backdrop click only, so a keyboard user could not dismiss it and
+ * body scroll was never locked.
+ */
+
+const FILTERS = [
+  { id: "all", label: "Semua Laporan" },
+  { id: "pending", label: "Menunggu Approval" },
+  { id: "approved", label: "Disetujui" },
+  { id: "rejected", label: "Ditolak" },
+  { id: "today", label: "Hari Ini" },
+];
+
+/**
+ * `approved` / `pending` / `rejected` -> one pill each. The old markup branched
+ * on emerald/amber/red in four separate places, including an eight-pixel label
+ * that a Pill with the 11px floor replaces.
+ */
+const STATUS_PILL = {
+  approved: { variant: "available", icon: "check_circle" },
+  rejected: { variant: "danger", icon: "cancel" },
+  pending: { variant: "sand", icon: "hourglass_top" },
+};
+
+const statusPill = (status) => STATUS_PILL[status] || STATUS_PILL.pending;
 
 export default function AdminPaymentVerifications() {
   const [user, setUser] = useState(null);
@@ -9,6 +52,19 @@ export default function AdminPaymentVerifications() {
   const [selectedVerification, setSelectedVerification] = useState(null);
   const [filter, setFilter] = useState("all");
   const [orderDataMap, setOrderDataMap] = useState({});
+
+  /**
+   * Mirror of `orderDataMap` for reads inside the onSnapshot callback.
+   *
+   * The snapshot callback closes over the `orderDataMap` that existed when the
+   * effect ran, not the one being built now, so the `!orderDataMap[v.orderId]`
+   * cache check below was reading a permanently-empty object and re-fetching
+   * every linked pemesanan document on every snapshot. A ref is the right
+   * container because it is a cache lookup, not reactive state: the rule
+   * ignores refs in the dependency array, so the effect still subscribes once
+   * per `user` rather than once per cache miss.
+   */
+  const orderDataMapRef = useRef({});
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
@@ -34,11 +90,12 @@ export default function AdminPaymentVerifications() {
       // Fetch linked pemesanan documents to get dpAmount & totalAmount
       const newOrderDataMap = {};
       const fetchPromises = verificationsData.map(async (v) => {
-        if (v.orderId && !orderDataMap[v.orderId]) {
+        if (v.orderId && !orderDataMapRef.current[v.orderId]) {
           try {
             const orderDoc = await getDoc(firestoreDoc(db, "pemesanan", v.orderId));
             if (orderDoc.exists()) {
               newOrderDataMap[v.orderId] = orderDoc.data();
+              orderDataMapRef.current[v.orderId] = orderDoc.data();
             }
           } catch (err) {
             console.error("Error fetching order:", v.orderId, err);
@@ -79,200 +136,291 @@ export default function AdminPaymentVerifications() {
     return true;
   });
 
+  const pendingCount = verifications.filter((v) => v.status === "pending").length;
+
+  // Mirrors the original four-term fallback. Kept as a function so the audit
+  // dialog and any future summary read the same reconciliation figure.
+  const resolveDownPayment = (verification) =>
+    verification.dpAmount
+    || orderDataMap[verification.orderId]?.dpAmount
+    || (verification.totalAmount ? verification.totalAmount * 0.5 : 0)
+    || ((orderDataMap[verification.orderId]?.perkiraanHarga || 0) * 0.5);
+
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800 font-sans">
-      <div className="max-w-7xl mx-auto px-6">
-        
-        {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
-            <DollarSign size={14} />
-            <span>Financial Logistics</span>
-          </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Verifikasi Pembayaran</h1>
-          <p className="text-slate-500 mt-1">Audit setoran tunai dari mitra pengemudi untuk validasi harian.</p>
-        </div>
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 pb-space-xl">
+      <div className="max-w-7xl mx-auto px-gutter-mobile sm:px-gutter">
+        <PageHeader
+          eyebrow="Financial Logistics"
+          title="Verifikasi Pembayaran"
+          subtitle="Audit setoran tunai dari mitra pengemudi untuk validasi harian."
+        />
 
-        {/* Filters and Stats Summary */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-10">
-          
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                <Filter size={14} /> Log Filter
+        <div className="grid grid-cols-1 gap-space-xl lg:grid-cols-4 mt-space-xl">
+          <div className="space-y-space-lg">
+            <Card variant="inset" className="p-space-lg sm:p-space-xl">
+              <h3 className="flex items-center gap-space-sm font-label-sm uppercase tracking-widest text-c57-on-surface-variant mb-space-lg">
+                <Icon name="filter_list" size="sm" />
+                Log Filter
               </h3>
-              <div className="flex flex-col gap-2">
-                {[
-                  { id: "all", label: "Semua Laporan" },
-                  { id: "pending", label: "Menunggu Approval" },
-                  { id: "approved", label: "Disetujui" },
-                  { id: "rejected", label: "Ditolak" },
-                  { id: "today", label: "Hari Ini" },
-                ].map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setFilter(f.id)}
-                    className={`px-5 py-3 rounded-xl text-left text-xs font-bold uppercase tracking-widest transition-all ${filter === f.id ? 'bg-[#810100] text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            <div className="bg-[#810100] rounded-3xl p-8 text-white shadow-lg overflow-hidden relative">
-               <div className="relative z-10">
-                  <p className="text-[10px] font-bold text-red-200 uppercase tracking-widest mb-1">Menunggu Review</p>
-                  <p className="text-4xl font-black">{verifications.filter(v => v.status === "pending").length}</p>
-               </div>
-               <div className="absolute right-0 bottom-0 p-6 opacity-20 relative z-0">
-                  <Clock size={60} />
-               </div>
-            </div>
+              <div className="flex flex-col gap-space-sm" role="group" aria-label="Filter log pembayaran">
+                {FILTERS.map((f) => {
+                  const active = filter === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setFilter(f.id)}
+                      aria-pressed={active}
+                      className={[
+                        "rounded-full px-space-md py-2.5 text-left font-label-sm uppercase tracking-widest",
+                        "transition-colors duration-300 ease-editorial",
+                        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c57-primary",
+                        active
+                          ? "bg-c57-primary-container text-c57-on-primary shadow-c57-card"
+                          : "bg-c57-surface-container-lowest text-c57-on-surface-variant hover:bg-c57-surface-container",
+                      ].join(" ")}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </Card>
+
+            <PendingPanel count={pendingCount} />
           </div>
 
           <div className="lg:col-span-3">
-             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden h-full">
-                <div className="bg-slate-50 px-8 py-5 border-b border-slate-100 flex items-center justify-between">
-                   <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">Daftar Setoran</h2>
-                   <span className="text-[10px] font-bold text-slate-400">{filteredVerifications.length} Entries</span>
-                </div>
+            <Card className="h-full overflow-hidden">
+              <div className="flex items-center justify-between gap-space-md border-b border-c57-surface-variant bg-c57-surface-container px-space-lg py-space-md">
+                <h2 className="font-label-md uppercase tracking-widest text-c57-on-surface">
+                  Daftar Setoran
+                </h2>
+                <Pill variant="outline">{filteredVerifications.length} Entri</Pill>
+              </div>
 
-                <div className="divide-y divide-slate-100 overflow-y-auto max-h-[600px]">
-                  {filteredVerifications.length === 0 ? (
-                    <div className="p-20 text-center">
-                       <FileText size={40} className="mx-auto text-slate-200 mb-4" />
-                       <p className="text-slate-400 font-bold italic text-sm">Tidak ada log pembayaran ditemukan.</p>
-                    </div>
-                  ) : (
-                    filteredVerifications.map((v) => (
-                      <div key={v.id} className="p-6 md:px-8 hover:bg-slate-50 transition-colors group">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                           <div className="flex items-center gap-6 flex-1">
-                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${v.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                 <CreditCard size={24} />
-                              </div>
-                              <div>
-                                 <div className="flex items-center gap-3 mb-1">
-                                    <h4 className="text-lg font-black text-slate-900">{formatCurrency(v.amount)}</h4>
-                                    <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${
-                                      v.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                      v.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-100' :
-                                      'bg-amber-50 text-amber-600 border-amber-100'
-                                    }`}>
-                                      {v.status}
-                                    </span>
-                                 </div>
-                                 <p className="text-xs font-bold text-slate-400">Driver: {v.driverId} • {formatDate(v.timestamp)}</p>
-                              </div>
-                           </div>
+              <div className="divide-y divide-c57-surface-variant overflow-y-auto max-h-[600px]">
+                {filteredVerifications.length === 0 ? (
+                  <EmptyState
+                    icon="description"
+                    title="Tidak ada log pembayaran"
+                    description="Belum ada setoran tunai yang cocok dengan filter ini."
+                    className="m-space-lg border-0 bg-transparent py-space-xl"
+                  />
+                ) : (
+                  filteredVerifications.map((v) => {
+                    const pill = statusPill(v.status);
+                    return (
+                      <div
+                        key={v.id}
+                        className="p-space-lg transition-colors hover:bg-c57-surface-container-low"
+                      >
+                        <div className="flex flex-col gap-space-md md:flex-row md:items-center md:justify-between">
+                          <div className="flex flex-1 items-center gap-space-md">
+                            <span
+                              className={[
+                                "flex h-12 w-12 shrink-0 items-center justify-center rounded-c57-md",
+                                v.status === "approved"
+                                  ? "bg-c57-available-bg text-c57-available-text"
+                                  : "bg-c57-tertiary-container text-c57-on-tertiary-container",
+                              ].join(" ")}
+                              aria-hidden="true"
+                            >
+                              <Icon name="credit_card" size="2xl" />
+                            </span>
 
-                           <div className="flex items-center gap-4">
-                              <div className="text-right hidden sm:block">
-                                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Order ID</p>
-                                 <p className="text-[10px] font-mono text-slate-900">#{v.orderId?.substring(0, 8)}</p>
+                            <div className="min-w-0">
+                              <div className="mb-1 flex flex-wrap items-center gap-space-sm">
+                                <h4 className="font-headline-sm text-body-lg text-c57-on-surface tabular-nums">
+                                  {formatCurrency(v.amount)}
+                                </h4>
+                                <Pill variant={pill.variant} icon={pill.icon}>
+                                  {v.status}
+                                </Pill>
                               </div>
-                              <button 
-                                onClick={() => setSelectedVerification(v)}
-                                className="bg-slate-900 hover:bg-black text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
-                              >
-                                Detail
-                              </button>
-                           </div>
+                              <p className="text-body-sm text-c57-on-surface-variant">
+                                Driver: {v.driverId} &bull; {formatDate(v.timestamp)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-space-md">
+                            <div className="hidden text-right sm:block">
+                              <p className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                                Order ID
+                              </p>
+                              <p className="font-mono text-body-sm text-c57-on-surface">
+                                #{v.orderId?.substring(0, 8)}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => setSelectedVerification(v)}
+                            >
+                              Detail
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
-             </div>
+                    );
+                  })
+                )}
+              </div>
+            </Card>
           </div>
-
         </div>
+      </div>
 
-        {/* Modal Selection */}
+      <Modal
+        open={!!selectedVerification}
+        onClose={() => setSelectedVerification(null)}
+        title="Audit Transaksi"
+        subtitle={
+          selectedVerification
+            ? `Report #${selectedVerification.id.substring(0, 8)}`
+            : undefined
+        }
+        size="lg"
+      >
         {selectedVerification && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white rounded-[2.5rem] w-full max-w-4xl shadow-2xl overflow-hidden animate-scaleUp">
-              <div className="px-10 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                 <div>
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Audit Transaksi</h3>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Report #{selectedVerification.id.substring(0, 8)}</p>
-                 </div>
-                 <button onClick={() => setSelectedVerification(null)} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors text-2xl font-black">×</button>
+          <div className="grid grid-cols-1 gap-space-xl md:grid-cols-2">
+            <div className="space-y-space-lg">
+              <div className="grid grid-cols-2 gap-space-md">
+                <div className="rounded-c57-lg border border-c57-surface-variant bg-c57-surface-container-low p-space-md">
+                  <p className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant mb-2">
+                    DP Diterima (Client)
+                  </p>
+                  <p className="font-headline-sm text-headline-sm text-c57-available-text tabular-nums">
+                    {formatCurrency(resolveDownPayment(selectedVerification))}
+                  </p>
+                </div>
+
+                <div className="rounded-c57-lg border border-c57-surface-variant bg-c57-surface-container-low p-space-md">
+                  <p className="font-label-sm uppercase tracking-widest text-c57-primary mb-2">
+                    Pelunasan (Driver)
+                  </p>
+                  <p className="font-headline-sm text-headline-sm text-c57-primary tabular-nums">
+                    {formatCurrency(selectedVerification.amount || 0)}
+                  </p>
+                </div>
               </div>
 
-              <div className="p-10">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                    <div className="space-y-8">
-                       <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">DP Diterima (Client)</p>
-                             <p className="text-2xl font-black text-emerald-600 tracking-tighter">
-                               {formatCurrency(
-                                 selectedVerification.dpAmount
-                                 || orderDataMap[selectedVerification.orderId]?.dpAmount
-                                 || (selectedVerification.totalAmount ? selectedVerification.totalAmount * 0.5 : 0)
-                                 || ((orderDataMap[selectedVerification.orderId]?.perkiraanHarga || 0) * 0.5)
-                               )}
-                             </p>
-                          </div>
-                          
-                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                             <p className="text-[10px] font-bold text-[#810100] uppercase tracking-widest mb-2">Pelunasan (Driver)</p>
-                             <p className="text-2xl font-black text-[#810100] tracking-tighter">
-                               {formatCurrency(selectedVerification.amount || 0)}
-                             </p>
-                          </div>
-                       </div>
-                       
-                       <div className="space-y-4 pt-4">
-                          <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                             <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">Driver ID</span>
-                             <span className="text-xs font-semibold text-slate-700">{selectedVerification.driverId}</span>
-                          </div>
-                          <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                             <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">Waktu Setor</span>
-                             <span className="text-sm font-black text-slate-900">{formatDate(selectedVerification.timestamp)}</span>
-                          </div>
-                          <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                             <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">Metode Pembayaran</span>
-                             <span className="text-sm font-black text-slate-500 uppercase">{selectedVerification.method || selectedVerification.paymentMethod || "Tunai (Cash)"}</span>
-                          </div>
-                       </div>
+              <dl className="space-y-space-sm">
+                <AuditRow label="Driver ID" value={selectedVerification.driverId} />
+                <AuditRow
+                  label="Waktu Setor"
+                  value={formatDate(selectedVerification.timestamp)}
+                  emphasis
+                />
+                <AuditRow
+                  label="Metode Pembayaran"
+                  value={
+                    selectedVerification.method
+                    || selectedVerification.paymentMethod
+                    || "Tunai (Cash)"
+                  }
+                  emphasis
+                />
+              </dl>
 
-                       {selectedVerification.notes && (
-                         <div className="p-6 bg-red-50/50 border border-red-100 rounded-2xl">
-                            <p className="text-[10px] font-bold text-[#810100] uppercase tracking-widest mb-1 italic">Catatan Driver:</p>
-                            <p className="text-sm text-slate-600 font-medium italic">"{selectedVerification.notes}"</p>
-                         </div>
-                       )}
-                    </div>
+              {selectedVerification.notes && (
+                <blockquote className="rounded-c57-md border border-c57-error-container bg-c57-error-container/40 p-space-md">
+                  <p className="font-label-sm uppercase tracking-widest text-c57-on-error-container mb-1">
+                    Catatan Driver
+                  </p>
+                  <p className="text-body-md text-c57-on-surface italic">
+                    &ldquo;{selectedVerification.notes}&rdquo;
+                  </p>
+                </blockquote>
+              )}
+            </div>
 
-                    <div>
-                       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Lampiran Bukti</p>
-                       {selectedVerification.paymentProof ? (
-                         <div className="bg-slate-100 rounded-[2rem] overflow-hidden aspect-[3/4] border border-slate-200 shadow-inner group relative">
-                            <img src={selectedVerification.paymentProof} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Proof" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-6">
-                               <a href={selectedVerification.paymentProof} target="_blank" rel="noreferrer" className="bg-white text-slate-900 px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-xl flex items-center gap-2">
-                                  <Eye size={16} /> Buka Gambar
-                               </a>
-                            </div>
-                         </div>
-                       ) : (
-                         <div className="bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 h-80 flex flex-col items-center justify-center text-slate-300">
-                            <FileText size={48} className="mb-4" />
-                            <p className="text-xs font-bold uppercase">No Image Provided</p>
-                         </div>
-                       )}
-                    </div>
-                 </div>
-              </div>
+            <div>
+              <p className="font-label-md uppercase tracking-widest text-c57-on-surface-variant mb-space-md">
+                Lampiran Bukti
+              </p>
+              {selectedVerification.paymentProof ? (
+                <div className="group relative aspect-[3/4] overflow-hidden rounded-c57-lg border border-c57-surface-variant bg-c57-surface-container">
+                  <img
+                    src={selectedVerification.paymentProof}
+                    alt="Bukti pembayaran"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-c57-scrim/50 p-space-md opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                    <Button
+                      as="a"
+                      href={selectedVerification.paymentProof}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      size="sm"
+                      icon="open_in_new"
+                    >
+                      Buka Gambar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex h-80 flex-col items-center justify-center rounded-c57-lg border-2 border-dashed border-c57-outline-variant bg-c57-surface-container-low text-c57-outline">
+                  <Icon name="description" size="3xl" className="mb-space-md" />
+                  <p className="font-label-sm uppercase tracking-widest">No Image Provided</p>
+                </div>
+              )}
             </div>
           </div>
         )}
+      </Modal>
+    </div>
+  );
+}
 
+/**
+ * The one crimson panel on the page: how many deposits are still waiting. Kept
+ * out of `StatCard` because that primitive pins its own label and value colours
+ * for use on a light surface, and a crimson fill needs the on-primary pair.
+ */
+function PendingPanel({ count }) {
+  return (
+    <div className="relative overflow-hidden rounded-c57-lg bg-c57-primary-container p-space-lg text-c57-on-primary shadow-c57-card sm:p-space-xl">
+      <div className="relative z-10">
+        <p className="font-label-sm uppercase tracking-widest text-c57-on-primary/70">
+          Menunggu Review
+        </p>
+        <p className="mt-1 font-headline-lg text-headline-lg text-c57-on-primary tabular-nums">
+          {count}
+        </p>
+        <p className="mt-space-sm text-body-sm text-c57-on-primary/70">
+          Setoran perlu diverifikasi sebelum masuk ke pembukuan harian.
+        </p>
       </div>
+      <span
+        className="pointer-events-none absolute -bottom-4 -right-4 text-c57-on-primary/10"
+        aria-hidden="true"
+      >
+        <Icon name="hourglass_top" size={96} />
+      </span>
+    </div>
+  );
+}
+
+/** One label/value pair in the audit dialog. `emphasis` marks the operative figure. */
+function AuditRow({ label, value, emphasis = false }) {
+  return (
+    <div className="flex items-center justify-between gap-space-md border-b border-c57-surface-variant py-2">
+      <dt className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+        {label}
+      </dt>
+      <dd
+        className={
+          emphasis
+            ? "text-body-md text-c57-on-surface"
+            : "text-body-sm text-c57-on-surface-variant"
+        }
+      >
+        {value}
+      </dd>
     </div>
   );
 }

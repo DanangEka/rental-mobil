@@ -1,12 +1,110 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, getDocs, addDoc } from "firebase/firestore";
-import axios from "axios";
-import { CheckCircle, Clock, MapPin, Phone, Calendar, DollarSign, Car, FileText, Upload, CreditCard, AlertCircle, Camera, Search, ClipboardList } from "lucide-react";
+import { releaseVehicle } from "../services/bookingService";
+import { collection, query, onSnapshot, doc, updateDoc, getDoc, getDocs, addDoc, serverTimestamp, where } from "firebase/firestore";
 import InvoiceGenerator from "../components/InvoiceGenerator";
 import { useToast } from "../components/Toast";
-import { serverTimestamp } from "firebase/firestore";
+import { uploadImage, validateImageFile } from "../utils/uploadImage";
 import { sendWhatsApp } from "../services/fonnte";
+import { resolveOrderAddress } from "../utils/address";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import EmptyState from "../components/ui/EmptyState";
+import Icon from "../components/ui/Icon";
+import PageHeader from "../components/ui/PageHeader";
+import Pill from "../components/ui/Pill";
+import SectionHeading from "../components/ui/SectionHeading";
+
+/**
+ * Driver order management: available pool, active tasks, history, and an
+ * "all" tab.
+ *
+ * Firestore behaviour is preserved exactly, including the two-step
+ * `mobil` write on completion (`tersedia: true` alongside `status: "normal"`)
+ * and the Fonnte WhatsApp reminder to the driver on delivery jobs.
+ *
+ * Three corrections came out of the redesign pass:
+ *
+ *  1. The ordered-query listener had a leak. On index failure the error
+ *     callback built a second `onSnapshot` and assigned it to
+ *     `unsubscribeFallback`, but it *returned* from inside a callback, so the
+ *     effect's cleanup only ever held the first (already-dead) unsubscribe.
+ *     The fallback listener was never torn down. DriverDashboard had already
+ *     solved this with a shared `let`, so it uses the same pattern now.
+ *
+ *  2. `OrderCard` was declared inside the component body, so it was a new
+ *     component type on every render and React remounted the whole card
+ *     subtree — including the file input and its selected-file state — on
+ *     every snapshot. It is hoisted to module scope and receives callbacks as
+ *     props.
+ *
+ *  3. All ten `toast` calls passed (shortLabel, longSentence) against the
+ *     `toast[type](message, title)` signature, so every title rendered as the
+ *     long sentence and the real message was dropped.
+ */
+
+const TABS = [
+  { id: "available", label: "Order Baru", icon: "directions_car" },
+  { id: "active", label: "Tugas Aktif", icon: "schedule" },
+  { id: "history", label: "Riwayat", icon: "check_circle" },
+  { id: "all", label: "Semua", icon: "search" },
+];
+
+const EMPTY_COPY = {
+  available: {
+    icon: "directions_car",
+    title: "Belum Ada Order Baru",
+    description: "Saat ini tidak ada order yang menunggu untuk diambil oleh driver.",
+  },
+  active: {
+    icon: "schedule",
+    title: "Tidak Ada Tugas Aktif",
+    description: "Tidak ada tugas aktif yang sedang Anda kerjakan.",
+  },
+  history: {
+    icon: "check_circle",
+    title: "Belum Ada Riwayat",
+    description: "Anda belum memiliki riwayat order yang selesai.",
+  },
+  all: {
+    icon: "directions_car",
+    title: "Belum Ada Data Order",
+    description: "Belum ada data order sama sekali.",
+  },
+};
+
+const SECTION_TITLES = {
+  available: "Order Baru Tersedia",
+  active: "Tugas Aktif",
+  history: "Riwayat Perjalanan",
+  all: "Semua Order",
+};
+
+/** Order status → Pill variant. Replaces nine hand-written colour triples. */
+const STATUS_VARIANTS = {
+  disetujui: "neutral",
+  "dalam perjalanan": "sand",
+  "menunggu pembayaran": "sand",
+  selesai: "available",
+  lunas: "available",
+  dibatalkan: "danger",
+  driver_verified: "available",
+  cash_submitted: "neutral",
+};
+
+const STATUS_TEXT = {
+  disetujui: "Disetujui",
+  "dalam perjalanan": "Dalam Perjalanan",
+  "menunggu pembayaran": "Menunggu Pembayaran",
+  selesai: "Selesai",
+  lunas: "Lunas",
+  dibatalkan: "Dibatalkan",
+  driver_verified: "Driver Verified",
+  cash_submitted: "Cash Submitted",
+};
+
+/** Payment-verification step counts as done at any of these states. */
+const PAYMENT_DONE = ["pembayaran berhasil", "selesai", "lunas"];
 
 export default function DriverOrders() {
   const [user, setUser] = useState(null);
@@ -60,54 +158,47 @@ export default function DriverOrders() {
   useEffect(() => {
     if (!user) return;
 
-    // Fetch all orders from the same source as admin
-    const fetchOrders = async () => {
+    // Rules scope a driver's read of `pemesanan` to orders that are theirs or
+    // still unassigned, so the filter has to live in the query. Firestore has no
+    // OR, so this runs two listeners and merges them. Orders always carry an
+    // explicit `driverId` (null when unassigned) — firestore.rules reads that
+    // field directly, so it can never be absent.
+    const scopes = [
+      query(collection(db, "pemesanan"), where("driverId", "==", user.uid)),
+      query(collection(db, "pemesanan"), where("driverId", "==", null)),
+    ];
+
+    // One map per scope: a snapshot replaces only its own scope's rows, so one
+    // branch updating cannot evict the other branch's documents.
+    const byScope = scopes.map(() => new Map());
+    const unsubscribes = [];
+
+    scopes.forEach((scopeQuery, index) => {
       try {
-        // Try with ordered query first
-        const unsubscribe = onSnapshot(
-          query(collection(db, "pemesanan"), orderBy("tanggal", "desc")),
-          (querySnapshot) => {
-            const ordersData = [];
-            querySnapshot.forEach((doc) => {
-              ordersData.push({ id: doc.id, ...doc.data() });
-            });
-
-            processOrders(ordersData);
-          },
-          (error) => {
-            console.error("Error with ordered query:", error);
-            // Fallback to unordered query if ordered query fails
-            const unsubscribeFallback = onSnapshot(
-              collection(db, "pemesanan"),
-              (querySnapshot) => {
-                const ordersData = [];
-                querySnapshot.forEach((doc) => {
-                  ordersData.push({ id: doc.id, ...doc.data() });
-                });
-
-                // Sort by date client-side as fallback
-                ordersData.sort((a, b) => {
-                  const dateA = a.tanggal ? new Date(a.tanggal) : new Date(0);
-                  const dateB = b.tanggal ? new Date(b.tanggal) : new Date(0);
-                  return dateB - dateA;
-                });
-
-                processOrders(ordersData);
-              }
-            );
-
-            return unsubscribeFallback;
-          }
+        unsubscribes.push(
+          onSnapshot(
+            scopeQuery,
+            (snap) => {
+              const rows = new Map();
+              snap.forEach((d) => rows.set(d.id, { id: d.id, ...d.data() }));
+              byScope[index] = rows;
+              const merged = new Map();
+              byScope.forEach((m) => m.forEach((v, k) => merged.set(k, v)));
+              processOrders([...merged.values()]);
+            },
+            (error) => {
+              console.error("Error with scoped pemesanan query in DriverOrders:", error);
+            }
+          )
         );
-
-        return unsubscribe;
       } catch (error) {
         console.error("Error setting up orders listener:", error);
-        return () => {};
       }
-    };
+    });
 
-    const processOrders = (ordersData) => {
+    // Declared as a function so it is hoisted — the listener callbacks above
+    // call it synchronously on their first snapshot.
+    function processOrders(ordersData) {
       // Separate orders by status and driver assignment
       const available = ordersData.filter(order =>
         (order.status === "pembayaran berhasil" || order.status === "approve sewa" || order.status === "disetujui") &&
@@ -130,13 +221,16 @@ export default function DriverOrders() {
       setOrderHistory(history);
     };
 
-    const unsubscribe = fetchOrders();
     return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
+      unsubscribes.forEach((un) => {
+        if (typeof un === "function") un();
+      });
     };
   }, [user]);
+
+  const addressFor = (order) => resolveOrderAddress(order, { users, companyProfile });
+
+  const clientFor = (order) => users.find((u) => u.id === order.uid);
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
@@ -152,37 +246,34 @@ export default function DriverOrders() {
 
       // If order is completed, update driver stats and make car available again
       if (newStatus === "selesai" && orderData.mobilId) {
-        await updateDoc(doc(db, "mobil", orderData.mobilId), {
-          tersedia: true,
-          status: "normal"
-        });
+        await releaseVehicle(orderData.mobilId, orderId);
         console.log(`Car ${orderData.mobilId} made available again`);
-        toast.success("Order Berhasil", "Status order telah diperbarui menjadi Selesai.");
+        toast.success("Status order telah diperbarui menjadi Selesai.", "Order Berhasil");
       }
     } catch (error) {
       console.error("Error updating order status:", error);
-      toast.error("Gagal", "Tidak dapat memperbarui status order.");
+      toast.error("Tidak dapat memperbarui status order.", "Gagal");
     }
   };
 
   const handleAcceptOrder = async (orderId) => {
     try {
       if (!user || !user.uid) {
-        toast.error("Error", "User tidak ditemukan. Silakan login kembali.");
+        toast.error("User tidak ditemukan. Silakan login kembali.", "Error");
         return;
       }
 
       const orderRef = doc(db, "pemesanan", orderId);
       const orderDoc = await getDoc(orderRef);
-      
+
       if (!orderDoc.exists()) {
-        toast.error("Error", "Order tidak ditemukan.");
+        toast.error("Order tidak ditemukan.", "Error");
         return;
       }
 
       const orderData = orderDoc.data();
       if (orderData.driverId) {
-        toast.error("Error", "Order telah diambil oleh driver lain.");
+        toast.error("Order telah diambil oleh driver lain.", "Error");
         return;
       }
 
@@ -217,7 +308,7 @@ export default function DriverOrders() {
         if (isDelivery) {
           const driverPhone = user.phone || user.nomorTelepon;
           const client = users.find(u => u.id === orderData.uid);
-          
+
           if (driverPhone) {
             const message = `*🔔 REMINDER TUGAS PENGANTARAN*
             
@@ -231,7 +322,7 @@ Anda telah menerima tugas baru untuk pengantaran unit.
 
 *LOKASI PENYERAHAN:*
 📍 *Tipe:* ${orderData.lokasiPenyerahan}
-🏠 *Alamat:* ${getFullAddress(orderData)}
+🏠 *Alamat:* ${addressFor(orderData)}
 
 *JAM MULAI:*
 ⏰ ${orderData.tanggalMulai ? new Date(orderData.tanggalMulai).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
@@ -247,35 +338,27 @@ _Terima kasih, selamat bertugas!_`;
         console.error("Notification/WA error:", notifErr);
       }
 
-      toast.success("Order Diterima", "Berhasil menerima order. Silakan cek Tugas Aktif.");
+      toast.success("Berhasil menerima order. Silakan cek Tugas Aktif.", "Order Diterima");
       setActiveTab("active");
     } catch (error) {
       console.error("Error accepting order:", error);
-      toast.error("Error", "Terjadi kesalahan saat menerima order.");
+      toast.error("Terjadi kesalahan saat menerima order.", "Error");
     }
   };
 
-
-
   const handlePaymentProofUpload = async (orderId, order) => {
     if (!paymentProof[orderId]) {
-      toast.warning("File Belum Dipilih", "Silakan pilih file bukti pembayaran terlebih dahulu.");
+      toast.warning("Silakan pilih file bukti pembayaran terlebih dahulu.", "File Belum Dipilih");
+      return;
+    }
+    const problem = validateImageFile(paymentProof[orderId], "proof");
+    if (problem) {
+      toast.warning(problem, "File ditolak");
       return;
     }
 
     try {
-      // Upload image to Cloudinary
-      const formData = new FormData();
-      formData.append("file", paymentProof[orderId]);
-      formData.append("upload_preset", process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET);
-
-      const cloudinaryRes = await axios.post(
-        `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        formData
-      );
-
-      const paymentProofURL = cloudinaryRes.data.secure_url;
-
+      const paymentProofURL = await uploadImage(paymentProof[orderId], { limit: "proof" });
       // Update order with payment proof
       const orderRef = doc(db, "pemesanan", orderId);
       await updateDoc(orderRef, {
@@ -296,11 +379,10 @@ _Terima kasih, selamat bertugas!_`;
       setShowPaymentSection(prev => ({ ...prev, [orderId]: false }));
       setPaymentProof(prev => ({ ...prev, [orderId]: null }));
 
-      toast.success("Berhasil", "Bukti pembayaran berhasil diunggah dan order telah diverifikasi!");
-
+      toast.success("Bukti pembayaran berhasil diunggah dan order telah diverifikasi!", "Berhasil");
     } catch (error) {
       console.error("Error uploading payment proof:", error);
-      toast.error("Gagal", "Terjadi kesalahan saat mengunggah bukti pembayaran. Silakan coba lagi.");
+      toast.error("Terjadi kesalahan saat mengunggah bukti pembayaran. Silakan coba lagi.", "Gagal");
     }
   };
 
@@ -311,484 +393,516 @@ _Terima kasih, selamat bertugas!_`;
     }));
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "disetujui":
-        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-      case "dalam perjalanan":
-        return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
-      case "menunggu pembayaran":
-        return "bg-orange-500/10 text-orange-400 border-orange-500/20";
-      case "selesai":
-        return "bg-green-500/10 text-green-400 border-green-500/20";
-      case "lunas":
-        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-      case "dibatalkan":
-        return "bg-red-500/10 text-red-400 border-red-500/20";
-      case "driver_verified":
-        return "bg-purple-500/10 text-purple-400 border-purple-500/20";
-      case "cash_submitted":
-        return "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
-      default:
-        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+  const pickProof = (orderId, file) => {
+    const problem = file && validateImageFile(file, "proof");
+    if (problem) {
+      toast.warning(problem, "File ditolak");
+      return;
     }
+    setPaymentProof(prev => ({ ...prev, [orderId]: file || null }));
   };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case "disetujui":
-        return "Disetujui";
-      case "dalam perjalanan":
-        return "Dalam Perjalanan";
-      case "menunggu pembayaran":
-        return "Menunggu Pembayaran";
-      case "selesai":
-        return "Selesai";
-      case "lunas":
-        return "Lunas";
-      case "dibatalkan":
-        return "Dibatalkan";
-      case "driver_verified":
-        return "Driver Verified";
-      case "cash_submitted":
-        return "Cash Submitted";
-      default:
-        return status;
-    }
-  };
+  const tabOrders = {
+    available: availableOrders,
+    active: activeOrders,
+    history: orderHistory,
+    all: allOrders,
+  }[activeTab];
 
-  const getFullAddress = (order) => {
-    const client = users.find(u => u.id === order.uid);
-
-    switch (order.lokasiPenyerahan) {
-      case "Rumah":
-        // Prioritaskan deliveryAddress yang diisi user saat booking
-        if (order.deliveryAddress) return order.deliveryAddress;
-        if (client) {
-          const addressParts = [
-            client.alamat,
-            client.kelurahan,
-            client.kecamatan,
-            client.kabupaten,
-            client.provinsi
-          ].filter(part => part && part.trim() !== "");
-
-          const rtRw = [];
-          if (client.rt) rtRw.push(`RT ${client.rt}`);
-          if (client.rw) rtRw.push(`RW ${client.rw}`);
-
-          if (rtRw.length > 0) {
-            addressParts.push(rtRw.join("/"));
-          }
-
-          return addressParts.length > 0 ? addressParts.join(", ") : "Alamat client tidak lengkap";
-        }
-        return "Alamat client tidak tersedia";
-      case "Kantor":
-        return companyProfile?.alamat || "Alamat perusahaan tidak tersedia";
-      case "Titik Temu":
-        // Prioritaskan deliveryAddress yang diisi user saat booking
-        return order.deliveryAddress || order.titikTemuAddress || "Alamat titik temu tidak tersedia";
-      default:
-        return "Lokasi tidak ditentukan";
-    }
-  };
-
-  const OrderCard = ({ order, isActive = true }) => {
-    // Get client data from users collection
-    const client = users.find(u => u.id === order.uid);
-
-    // Check if payment method is digital (transfer bank or QRIS)
-    const isDigitalPayment = order.paymentMethod === "Transfer Bank" || order.paymentMethod === "E-Wallet";
-
-    return (
-      <div className="bg-white rounded-[2rem] overflow-hidden border border-slate-100 hover:border-[#810100]/30 transition-all duration-300 p-6 md:p-8 lg:p-10 mb-8 animate-fadeInUp shadow-sm shadow-slate-200/50">
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-[#810100] shadow-sm border border-red-100">
-                <Car size={32} />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-slate-900 tracking-tight">{order.namaMobil}</h3>
-              <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest mt-0.5">{order.email}</p>
-              {order.paymentMethod && (
-                <div className="flex items-center mt-2.5 px-3 py-1 bg-slate-50 rounded-xl w-fit border border-slate-100">
-                  <CreditCard className="h-3.5 w-3.5 mr-2 text-slate-400" />
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.15em]">{order.paymentMethod}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          <span className={`px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border shadow-sm ${getStatusColor(order.status)}`}>
-            {order.status === "selesai" ? "Order Selesai" : getStatusText(order.status)}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-8 md:mb-10 pt-8 border-t border-slate-50">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-slate-50 rounded-xl text-slate-400 border border-slate-100">
-              <Calendar size={18} />
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Rent Period</p>
-              <p className="text-[13px] font-bold text-slate-700">
-                {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : 'N/A'} - {order.tanggalSelesai ? new Date(order.tanggalSelesai).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : 'N/A'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-slate-50 rounded-xl text-slate-400 border border-slate-100">
-              <Phone size={18} />
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Client Contact</p>
-              <p className="text-[13px] font-bold text-slate-700 truncate max-w-[150px]">
-                {client?.nomorTelepon || order.noTelepon || 'N/A'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-4 col-span-1 sm:col-span-2 lg:col-span-1">
-            <div className="p-3 bg-slate-50 rounded-xl text-slate-400 border border-slate-100">
-              <MapPin size={18} />
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Location</p>
-              <p className="text-[13px] font-black text-slate-900 line-clamp-1">{order.lokasiPenyerahan || 'N/A'}</p>
-              <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5 uppercase tracking-wide font-medium" title={getFullAddress(order)}>{getFullAddress(order)}</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600 border border-emerald-100">
-              <DollarSign size={18} />
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Amount</p>
-              <p className="text-[15px] font-black text-emerald-600">Rp {order.perkiraanHarga?.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-
-        {order.catatan && (
-          <div className="mb-8 md:mb-10 p-5 bg-red-50/50 rounded-[1.5rem] border border-red-100/50 italic">
-            <p className="text-[13px] text-slate-500 leading-relaxed font-medium">
-              <span className="text-[#810100] font-black not-italic mr-2 uppercase tracking-widest text-[10px]">Catatan:</span> {order.catatan}
-            </p>
-          </div>
-        )}
-
-        {/* Payment Proof Section - Only show for cash payments */}
-        {order.paymentMethod === "Cash" && order.status === "menunggu pembayaran" && (
-          <div className="mb-6 md:mb-8 p-4 md:p-6 bg-yellow-500/5 border border-yellow-500/10 rounded-2xl md:rounded-3xl">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-3">
-                 <div className="p-2 bg-yellow-500/20 rounded-lg text-yellow-400">
-                    <AlertCircle size={20} />
-                 </div>
-                 <h4 className="font-bold text-yellow-500 uppercase tracking-wider text-sm">Verifikasi Pembayaran Cash</h4>
-              </div>
-              <button
-                onClick={() => togglePaymentSection(order.id)}
-                className="text-[11px] font-black uppercase tracking-widest px-4 py-1.5 bg-gray-800 text-gray-300 rounded-full hover:bg-yellow-500 hover:text-white transition-all"
-              >
-                {showPaymentSection[order.id] ? "Tutup" : "Klik Verifikasi"}
-              </button>
-            </div>
-
-            {showPaymentSection[order.id] && (
-              <div className="space-y-4 pt-4 border-t border-yellow-500/10 animate-fadeInUp">
-                <div className="group relative">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1.5 ml-1">Upload Bukti Fisik</label>
-                  <div className="relative h-14 bg-black/40 border border-gray-700 rounded-xl flex items-center px-4 hover:border-yellow-500/50 transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setPaymentProof(prev => ({ ...prev, [order.id]: e.target.files[0] }))}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    <Upload className="h-5 w-5 text-gray-500 mr-3" />
-                    <span className="text-sm text-gray-400 truncate">
-                       {paymentProof[order.id]?.name || "Pilih foto bukti pembayaran..."}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handlePaymentProofUpload(order.id, order)}
-                  className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-yellow-900/20"
-                >
-                  <CheckCircle className="h-5 w-5" />
-                  Konfirmasi Sekarang
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Digital Payment Info - Hide upload for digital payments */}
-        {isDigitalPayment && order.status === "menunggu pembayaran" && (
-          <div className="mb-6 md:mb-8 p-4 md:p-6 bg-blue-500/5 border border-blue-500/10 rounded-2xl md:rounded-3xl">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-500/20 rounded-2xl text-blue-400">
-                <CreditCard className="h-6 w-6" />
-              </div>
-              <div>
-                <h4 className="font-bold text-blue-400 uppercase tracking-wider text-sm mb-1">Pembayaran Digital</h4>
-                <p className="text-gray-400 text-sm">
-                   Verifikasi otomatis {order.paymentMethod} oleh sistem pusat.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {isActive ? (
-          <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-800/50">
-            {/* Action Buttons for Active Orders */}
-            {(order.lokasiPenyerahan === "Rumah" || order.lokasiPenyerahan === "Titik Temu") && (
-              <div className="flex flex-col gap-4 w-full">
-                {/* Step 1: Vehicle Verification */}
-                <div className={`p-4 rounded-2xl border ${order.vehicleVerificationBefore ? 'bg-green-500/10 border-green-500/30' : 'bg-brand-500/5 border-brand-500/20'}`}>
-                   <div className="flex justify-between items-center mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${order.vehicleVerificationBefore ? 'bg-green-500 text-white' : 'bg-brand-500 text-white'}`}>1</div>
-                        <h4 className={`text-sm font-bold ${order.vehicleVerificationBefore ? 'text-green-400' : 'text-brand-400'}`}>Verifikasi Mobil</h4>
-                      </div>
-                      {order.vehicleVerificationBefore && <CheckCircle size={16} className="text-green-400" />}
-                   </div>
-                   <a
-                     href={`/vehicle-verification?orderId=${order.id}`}
-                     className={`w-full py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${order.vehicleVerificationBefore ? 'bg-gray-800 text-gray-400' : 'bg-brand-600 hover:bg-brand-500 text-white'}`}
-                   >
-                     <Camera size={14} /> {order.vehicleVerificationBefore ? 'Update Verifikasi' : 'Mulai Verifikasi Mobil'}
-                   </a>
-                </div>
-
-                {/* Step 2: Journey / Payment Verification */}
-                <div className={`p-4 rounded-2xl border ${(order.status === "pembayaran berhasil" || order.status === "selesai" || order.status === "lunas") ? 'bg-green-500/10 border-green-500/30' : 'bg-orange-500/5 border-orange-500/20'}`}>
-                   <div className="flex justify-between items-center mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${(order.status === "pembayaran berhasil" || order.status === "selesai" || order.status === "lunas") ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'}`}>2</div>
-                        <h4 className={`text-sm font-bold ${(order.status === "pembayaran berhasil" || order.status === "selesai" || order.status === "lunas") ? 'text-green-400' : 'text-orange-400'}`}>Verifikasi Pembayaran</h4>
-                      </div>
-                      {(order.status === "pembayaran berhasil" || order.status === "selesai" || order.status === "lunas") && <CheckCircle size={16} className="text-green-400" />}
-                   </div>
-                   
-                   <div className="flex gap-2">
-                     {order.status === "disetujui" && (
-                       <button
-                         onClick={() => updateOrderStatus(order.id, "dalam perjalanan")}
-                         className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2"
-                       >
-                         <Car size={14} /> Mulai Jalan
-                       </button>
-                     )}
-                     {order.status === "dalam perjalanan" && (
-                       <button
-                         onClick={() => updateOrderStatus(order.id, "menunggu pembayaran")}
-                         className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2"
-                       >
-                         <CheckCircle size={14} /> Selesai Jalan
-                       </button>
-                     )}
-                     <a
-                       href={`/payment-verification?orderId=${order.id}`}
-                       className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${(order.status === "pembayaran berhasil" || order.status === "selesai" || order.status === "lunas") ? 'bg-gray-800 text-gray-400' : 'bg-orange-600/20 text-orange-400 border border-orange-500/30'}`}
-                     >
-                       <CreditCard size={14} /> Verifikasi Bayar
-                     </a>
-                   </div>
-                </div>
-
-                {order.status === "menunggu pembayaran" && order.paymentMethod !== "Cash" && (
-                  <button
-                    onClick={() => updateOrderStatus(order.id, "selesai")}
-                    className="w-full py-3.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold transition-all shadow-green-900/20"
-                  >
-                    Konfirmasi Pembayaran Selesai (Digital)
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Invoices */}
-            {order.status === "pembayaran berhasil" && (
-              <button
-                onClick={() => InvoiceGenerator.generateDriverInvoice(order, client)}
-                className="w-full py-3.5 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-600/30 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-              >
-                <FileText className="h-5 w-5" />
-                Cetak Invoice DP
-              </button>
-            )}
-            {order.status === "selesai" && (
-              <button
-                onClick={() => InvoiceGenerator.generateFullInvoice(order, client)}
-                className="w-full py-3.5 bg-green-600/10 hover:bg-green-600/20 text-green-400 border border-green-600/30 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-              >
-                <FileText className="h-5 w-5" />
-                Cetak Invoice Penuh
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-800/50">
-            {/* Action Buttons for Tab and Available Orders */}
-            {(!order.driverId && (order.status === "disetujui" || order.status === "pembayaran berhasil" || order.status === "approve sewa")) ? (
-              <div className="flex flex-col sm:flex-row gap-4 w-full">
-                <button
-                  onClick={() => handleAcceptOrder(order.id)}
-                  className="w-full bg-brand-600 hover:bg-brand-500 text-white py-3.5 rounded-xl font-bold transition-all shadow-brand-sm flex items-center justify-center gap-2"
-                >
-                  <Car size={18} /> Terima Order
-                </button>
-              </div>
-            ) : order.driverId && order.driverId !== user?.uid ? (
-              <span className="w-full py-3 px-4 bg-gray-800/30 text-gray-500 rounded-xl text-xs font-bold border border-gray-800 flex items-center justify-center gap-2 uppercase tracking-widest">
-                <AlertCircle className="h-4 w-4" /> Telah diambil driver lain
-              </span>
-            ) : order.status === "selesai" ? (
-              <span className="w-full py-3 px-4 bg-green-500/5 text-green-400 rounded-xl text-sm font-black border border-green-500/20 flex items-center justify-center gap-2">
-                <CheckCircle className="h-4 w-4" /> ORDER COMPLETED
-              </span>
-            ) : null}
-          </div>
-        )}
-      </div>
-    );
+  const tabCounts = {
+    available: availableOrders.length,
+    active: activeOrders.length,
+    history: orderHistory.length,
+    all: allOrders.length,
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-12 text-slate-800">
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 pb-space-xl text-c57-on-surface">
       {/* Background decoration */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
-        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-red-100 mix-blend-multiply filter blur-[100px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-slate-200 mix-blend-multiply filter blur-[120px]"></div>
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-40" aria-hidden="true">
+        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-c57-error-container mix-blend-multiply filter blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-c57-surface-container-high mix-blend-multiply filter blur-[120px]" />
       </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 py-6 md:py-10 lg:py-12">
-        <div className="mb-8 md:mb-10 animate-fadeInUp">
-          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
-             <ClipboardList size={14} />
-             <span>Order Management</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight mb-3">Manajemen Order</h1>
-          <p className="text-slate-500 text-lg">Kelola tugas aktif dan pantau riwayat perjalanan Anda.</p>
-        </div>
+      <div className="relative z-10 max-w-5xl mx-auto px-gutter-mobile sm:px-gutter py-space-lg">
+        <PageHeader
+          eyebrow={
+            <>
+              <Icon name="assignment" size="sm" />
+              <span>Order Management</span>
+            </>
+          }
+          title="Manajemen Order"
+          subtitle="Kelola tugas aktif dan pantau riwayat perjalanan Anda."
+          className="mb-space-xl animate-fadeInUp"
+        />
 
-        {/* Tabs */}
-        <div className="mb-8 md:mb-12 bg-white p-2 rounded-[2rem] border border-slate-100 animate-fadeInUp shadow-xl shadow-slate-200/50 overflow-x-auto" style={{ animationDelay: "0.1s" }}>
-          <nav className="flex space-x-2">
-            {[
-              { id: "available", label: "Order Baru", count: availableOrders.length, icon: <Car size={16} /> },
-              { id: "active", label: "Tugas Aktif", count: activeOrders.length, icon: <Clock size={16} /> },
-              { id: "history", label: "Riwayat", count: orderHistory.length, icon: <CheckCircle size={16} /> },
-              { id: "all", label: "Semua", count: allOrders.length, icon: <Search size={16} /> }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-3 py-4 px-6 md:px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "bg-[#810100] text-white shadow-lg shadow-red-900/20 active:scale-95"
-                    : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-                <span className={`ml-1 px-2.5 py-0.5 rounded-full text-[9px] ${activeTab === tab.id ? 'bg-white/20' : 'bg-slate-100 text-slate-500'}`}>
-                   {tab.count}
-                </span>
-              </button>
-            ))}
-          </nav>
-        </div>
+        <nav
+          className="mb-space-xl rounded-c57-lg border border-c57-surface-variant bg-c57-surface-container-lowest p-space-sm shadow-c57-card overflow-x-auto animate-fadeInUp"
+          style={{ animationDelay: "0.1s" }}
+          aria-label="Filter order"
+        >
+          <ul className="flex gap-space-sm min-w-max">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
 
-        {/* Available Orders */}
-        {/* Available Orders */}
-        {activeTab === "available" && (
-          <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-            <div className="flex items-center gap-3 mb-8">
-               <div className="w-1.5 h-6 bg-[#810100] rounded-full"></div>
-               <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest">Order Baru Tersedia</h2>
+              return (
+                <li key={tab.id}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    aria-current={isActive ? "page" : undefined}
+                    className={[
+                      "flex items-center gap-space-sm py-3 px-space-lg rounded-c57-md",
+                      "font-label-sm uppercase tracking-widest transition-all whitespace-nowrap",
+                      isActive
+                        ? "bg-c57-primary-container text-c57-on-primary shadow-c57-card"
+                        : "text-c57-on-surface-variant hover:text-c57-on-surface hover:bg-c57-surface-container",
+                    ].join(" ")}
+                  >
+                    <Icon name={tab.icon} size="sm" />
+                    {tab.label}
+                    <span
+                      className={[
+                        "ml-1 px-space-sm py-0.5 rounded-full font-label-sm tabular-nums",
+                        isActive ? "bg-white/20" : "bg-c57-surface-container text-c57-on-surface-variant",
+                      ].join(" ")}
+                    >
+                      {tabCounts[tab.id]}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        <section className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+          <SectionHeading title={SECTION_TITLES[activeTab]} className="mb-space-lg" />
+
+          {tabOrders.length === 0 ? (
+            <EmptyState {...EMPTY_COPY[activeTab]} />
+          ) : (
+            <div className="space-y-gutter">
+              {tabOrders.map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  isActive={activeTab === "active"}
+                  client={clientFor(order)}
+                  address={addressFor(order)}
+                  currentUserId={user?.uid}
+                  proofFile={paymentProof[order.id]}
+                  proofOpen={Boolean(showPaymentSection[order.id])}
+                  onToggleProof={() => togglePaymentSection(order.id)}
+                  onPickProof={pickProof}
+                  onUploadProof={() => handlePaymentProofUpload(order.id, order)}
+                  onAccept={handleAcceptOrder}
+                  onAdvance={updateOrderStatus}
+                />
+              ))}
             </div>
-            {availableOrders.length === 0 ? (
-              <div className="bg-white rounded-[2rem] p-16 text-center border border-slate-100 shadow-sm shadow-slate-200/50">
-                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100">
-                  <Car className="h-10 w-10 text-slate-300" />
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One order, its summary tiles, and whichever action set its tab implies.
+ *
+ * Module scope on purpose: declaring this inside the page component made it a
+ * new component type per render, remounting the file input and dropping the
+ * selected file on every snapshot.
+ */
+function OrderCard({
+  order,
+  isActive,
+  client,
+  address,
+  currentUserId,
+  proofFile,
+  proofOpen,
+  onToggleProof,
+  onPickProof,
+  onUploadProof,
+  onAccept,
+  onAdvance,
+}) {
+  // Transfer Bank and E-Wallet are settled by the payment gateway, so the
+  // driver never uploads proof for them.
+  const isDigitalPayment =
+    order.paymentMethod === "Transfer Bank" || order.paymentMethod === "E-Wallet";
+  const awaitingPayment = order.status === "menunggu pembayaran";
+  const isDelivery = order.lokasiPenyerahan === "Rumah" || order.lokasiPenyerahan === "Titik Temu";
+  const paymentDone = PAYMENT_DONE.includes(order.status);
+  const claimable =
+    !order.driverId && ["disetujui", "pembayaran berhasil", "approve sewa"].includes(order.status);
+
+  const shortDate = (value) =>
+    value ? new Date(value).toLocaleDateString("id-ID", { day: "numeric", month: "short" }) : "N/A";
+
+  return (
+    <Card className="p-space-lg md:p-space-xl animate-fadeInUp">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-space-md mb-space-lg">
+        <div className="flex items-center gap-space-lg min-w-0">
+          <span className="w-16 h-16 rounded-c57-lg bg-c57-primary-container text-c57-on-primary flex items-center justify-center shrink-0">
+            <Icon name="directions_car" size="3xl" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="font-headline-sm text-headline-sm text-c57-on-surface">
+              {order.namaMobil}
+            </h3>
+            <p className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant mt-1 truncate">
+              {order.email}
+            </p>
+            {order.paymentMethod && (
+              <Pill variant="neutral" icon="credit_card" className="mt-space-sm">
+                {order.paymentMethod}
+              </Pill>
+            )}
+          </div>
+        </div>
+        <Pill
+          variant={STATUS_VARIANTS[order.status] || "outline"}
+          size="md"
+          className="shrink-0"
+        >
+          {order.status === "selesai" ? "Order Selesai" : STATUS_TEXT[order.status] || order.status}
+        </Pill>
+      </div>
+
+      {/* Summary tiles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter pt-space-lg mb-space-lg border-t border-c57-surface-variant">
+        <SummaryTile
+          icon="calendar_month"
+          label="Rent Period"
+          value={
+            <>
+              {shortDate(order.tanggalMulai)} - {shortDate(order.tanggalSelesai)}
+            </>
+          }
+        />
+        <SummaryTile
+          icon="phone"
+          label="Client Contact"
+          value={client?.nomorTelepon || order.noTelepon || "N/A"}
+          className="lg:max-w-[180px]"
+        />
+        <SummaryTile icon="place" label="Location" value={order.lokasiPenyerahan || "N/A"} title={address}>
+          <span className="text-body-sm text-c57-outline line-clamp-1 mt-0.5 block uppercase tracking-wide">
+            {address}
+          </span>
+        </SummaryTile>
+        <SummaryTile
+          icon="payments"
+          label="Total Amount"
+          value={`Rp ${order.perkiraanHarga?.toLocaleString("id-ID")}`}
+          tone="positive"
+        />
+      </div>
+
+      {order.catatan && (
+        <div className="mb-space-lg p-space-lg bg-c57-surface-container rounded-c57-lg border border-c57-outline-variant">
+          <p className="text-body-sm text-c57-on-surface-variant leading-relaxed font-medium">
+            <span className="text-c57-primary font-semibold not-italic mr-2 uppercase tracking-widest font-label-sm">
+              Catatan:
+            </span>{" "}
+            {order.catatan}
+          </p>
+        </div>
+      )}
+
+      {/* Cash: driver uploads physical proof of payment */}
+      {order.paymentMethod === "Cash" && awaitingPayment && (
+        <Card variant="inset" className="p-space-lg mb-space-lg">
+          <div className="flex flex-wrap justify-between items-center gap-space-md">
+            <div className="flex items-center gap-space-md">
+              <span className="w-9 h-9 rounded-c57-md bg-c57-tertiary-container text-c57-on-tertiary-container flex items-center justify-center">
+                <Icon name="warning" size="md" />
+              </span>
+              <h4 className="font-label-md uppercase tracking-wider text-c57-on-tertiary-container">
+                Verifikasi Pembayaran Cash
+              </h4>
+            </div>
+            <Button type="button" variant="secondary" size="sm" onClick={onToggleProof}>
+              {proofOpen ? "Tutup" : "Klik Verifikasi"}
+            </Button>
+          </div>
+
+          {proofOpen && (
+            <div className="space-y-space-md pt-space-md mt-space-md border-t border-c57-surface-variant animate-fadeInUp">
+              <div>
+                <p className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant mb-space-sm">
+                  Upload Bukti Fisik
+                </p>
+                <div className="relative h-14 bg-c57-surface-container-lowest border border-c57-outline-variant rounded-c57-md flex items-center px-space-lg hover:border-c57-primary transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    aria-label="Upload bukti pembayaran"
+                    onChange={(e) => onPickProof(order.id, e.target.files[0])}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <Icon name="upload_file" size="md" className="text-c57-outline mr-space-md" />
+                  <span className="text-body-sm text-c57-on-surface-variant truncate">
+                    {proofFile?.name || "Pilih foto bukti pembayaran..."}
+                  </span>
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">Belum Ada Order Baru</h3>
-                <p className="text-slate-500 max-w-xs mx-auto">Saat ini tidak ada order yang menunggu untuk diambil oleh driver.</p>
               </div>
-            ) : (
-              availableOrders.map((order) => (
-                <OrderCard key={order.id} order={order} isActive={false} />
-              ))
-            )}
-          </div>
-        )}
-
-        {/* All Orders */}
-        {/* All Orders */}
-        {activeTab === "all" && (
-          <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-            <div className="flex items-center gap-3 mb-6 md:mb-8">
-               <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
-               <h2 className="text-2xl font-black text-white tracking-tight uppercase tracking-widest">Semua Order</h2>
+              <Button
+                type="button"
+                onClick={onUploadProof}
+                disabled={!proofFile}
+                className="w-full"
+                icon="check_circle"
+              >
+                Konfirmasi Sekarang
+              </Button>
             </div>
-            {allOrders.length === 0 ? (
-              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-16 text-center border border-gray-800">
-                <Car className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400">Belum ada data order sama sekali.</p>
-              </div>
-            ) : (
-              allOrders.map((order) => (
-                <OrderCard key={order.id} order={order} isActive={false} />
-              ))
-            )}
-          </div>
-        )}
+          )}
+        </Card>
+      )}
 
-        {/* Active Orders */}
-        {activeTab === "active" && (
-          <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-            <div className="flex items-center gap-3 mb-6 md:mb-8">
-               <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
-               <h2 className="text-2xl font-black text-white tracking-tight uppercase tracking-widest">Tugas Aktif</h2>
+      {/* Digital: gateway handles it, no upload */}
+      {isDigitalPayment && awaitingPayment && (
+        <Card variant="inset" className="p-space-lg mb-space-lg">
+          <div className="flex items-center gap-space-lg">
+            <span className="w-10 h-10 rounded-c57-md bg-c57-surface-container text-c57-primary flex items-center justify-center shrink-0">
+              <Icon name="credit_card" size="xl" />
+            </span>
+            <div>
+              <h4 className="font-label-md uppercase tracking-wider text-c57-on-surface">
+                Pembayaran Digital
+              </h4>
+              <p className="text-body-sm text-c57-on-surface-variant mt-1">
+                Verifikasi otomatis {order.paymentMethod} oleh sistem pusat.
+              </p>
             </div>
-            {activeOrders.length === 0 ? (
-              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-16 text-center border border-gray-800">
-                <Clock className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 font-medium">Tidak ada tugas aktif yang sedang Anda kerjakan.</p>
-              </div>
-            ) : (
-              activeOrders.map((order) => (
-                <OrderCard key={order.id} order={order} isActive={true} />
-              ))
-            )}
           </div>
-        )}
+        </Card>
+      )}
 
-        {/* Order History */}
-        {activeTab === "history" && (
-          <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-            <div className="flex items-center gap-3 mb-6 md:mb-8">
-               <div className="w-1.5 h-6 bg-brand-500 rounded-full"></div>
-               <h2 className="text-2xl font-black text-white tracking-tight uppercase tracking-widest">Riwayat Perjalanan</h2>
-            </div>
-            {orderHistory.length === 0 ? (
-              <div className="glass-card bg-gray-900/40 rounded-2xl md:rounded-3xl p-16 text-center border border-gray-800">
-                <CheckCircle className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400">Anda belum memiliki riwayat order yang selesai.</p>
-              </div>
-            ) : (
-              orderHistory.map((order) => (
-                <OrderCard key={order.id} order={order} isActive={false} />
-              ))
-            )}
-          </div>
-        )}
+      {isActive ? (
+        <ActiveActions
+          order={order}
+          isDelivery={isDelivery}
+          paymentDone={paymentDone}
+          onAdvance={onAdvance}
+          client={client}
+        />
+      ) : (
+        <InactiveActions
+          order={order}
+          claimable={claimable}
+          currentUserId={currentUserId}
+          onAccept={onAccept}
+        />
+      )}
+
+    </Card>
+  );
+}
+
+/**
+ * The two-step in-progress flow: verify the vehicle, then run the trip and
+ * verify payment. Only rendered for delivery jobs — Kantor and Titik Temu
+ * pickups have no vehicle-checkout step.
+ */
+const ActiveActions = ({ order, isDelivery, paymentDone, onAdvance, client }) => {
+  if (!isDelivery) return null;
+
+  return (
+    <div className="flex flex-col gap-space-md pt-space-lg border-t border-c57-surface-variant">
+      <StepCard
+        step={1}
+        done={Boolean(order.vehicleVerificationBefore)}
+        title="Verifikasi Mobil"
+      >
+        <Button
+          as="a"
+          href={`/vehicle-verification?orderId=${order.id}`}
+          variant={order.vehicleVerificationBefore ? "secondary" : "primary"}
+          size="sm"
+          icon="photo_camera"
+          className="w-full"
+        >
+          {order.vehicleVerificationBefore ? "Update Verifikasi" : "Mulai Verifikasi Mobil"}
+        </Button>
+      </StepCard>
+
+      <StepCard step={2} done={paymentDone} title="Verifikasi Pembayaran">
+        <div className="flex flex-col sm:flex-row gap-space-sm">
+          {order.status === "disetujui" && (
+            <Button
+              type="button"
+              onClick={() => onAdvance(order.id, "dalam perjalanan")}
+              size="sm"
+              icon="directions_car"
+              className="flex-1"
+            >
+              Mulai Jalan
+            </Button>
+          )}
+          {order.status === "dalam perjalanan" && (
+            <Button
+              type="button"
+              variant="success"
+              onClick={() => onAdvance(order.id, "menunggu pembayaran")}
+              size="sm"
+              icon="check_circle"
+              className="flex-1"
+            >
+              Selesai Jalan
+            </Button>
+          )}
+          <Button
+            as="a"
+            href={`/payment-verification?orderId=${order.id}`}
+            variant={paymentDone ? "secondary" : "primary"}
+            size="sm"
+            icon="credit_card"
+            className="flex-1"
+          >
+            Verifikasi Bayar
+          </Button>
+        </div>
+      </StepCard>
+
+      {order.status === "menunggu pembayaran" && order.paymentMethod !== "Cash" && (
+        <Button
+          type="button"
+          variant="success"
+          onClick={() => onAdvance(order.id, "selesai")}
+          className="w-full"
+          icon="done_all"
+        >
+          Konfirmasi Pembayaran Selesai (Digital)
+        </Button>
+      )}
+
+      {order.status === "selesai" && (
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => InvoiceGenerator.generateFullInvoice(order, client)}
+          icon="description"
+          className="w-full"
+        >
+          Cetak Invoice Penuh
+        </Button>
+      )}
+
+      {order.status === "pembayaran berhasil" && (
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => InvoiceGenerator.generateDriverInvoice(order, client)}
+          icon="description"
+          className="w-full"
+        >
+          Cetak Invoice DP
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/** Claim / already-taken / completed banner for the non-active tabs. */
+function InactiveActions({ order, claimable, currentUserId, onAccept }) {
+  const takenByOther = order.driverId && order.driverId !== currentUserId;
+
+  return (
+    <div className="pt-space-lg border-t border-c57-surface-variant">
+      {claimable ? (
+        <Button
+          type="button"
+          onClick={() => onAccept(order.id)}
+          className="w-full"
+          icon="directions_car"
+        >
+          Terima Order
+        </Button>
+      ) : takenByOther ? (
+        <Pill variant="outline" icon="warning" size="md" className="w-full justify-center">
+          Telah diambil driver lain
+        </Pill>
+      ) : order.status === "selesai" ? (
+        <Pill variant="available" icon="check_circle" size="md" className="w-full justify-center">
+          Order Completed
+        </Pill>
+      ) : null}
+    </div>
+  );
+}
+
+/** Numbered checklist step that fills in once its condition is met. */
+function StepCard({ step, done, title, children }) {
+  return (
+    <div
+      className={[
+        "p-space-lg rounded-c57-lg border",
+        done
+          ? "bg-c57-available-bg border-c57-available-text/20"
+          : "bg-c57-surface-container border-c57-surface-variant",
+      ].join(" ")}
+    >
+      <div className="flex justify-between items-center mb-space-md">
+        <div className="flex items-center gap-space-sm">
+          <span
+            className={[
+              "w-8 h-8 rounded-full flex items-center justify-center text-body-sm font-semibold",
+              done
+                ? "bg-c57-available-text text-c57-on-primary"
+                : "bg-c57-primary-container text-c57-on-primary",
+            ].join(" ")}
+            aria-hidden="true"
+          >
+            {step}
+          </span>
+          <h4
+            className={[
+              "font-label-md uppercase tracking-wider",
+              done ? "text-c57-available-text" : "text-c57-on-surface",
+            ].join(" ")}
+          >
+            {title}
+          </h4>
+        </div>
+        {done && <Icon name="check_circle" size="sm" className="text-c57-available-text" filled />}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** Icon + uppercase caption + value, the four-up summary row. */
+function SummaryTile({ icon, label, value, title, tone = "default", className = "" }) {
+  return (
+    <div className={`flex items-start gap-space-md ${className}`}>
+      <span
+        className={[
+          "p-space-sm rounded-c57-md border shrink-0",
+          tone === "positive"
+            ? "bg-c57-available-bg text-c57-available-text border-c57-available-text/20"
+            : "bg-c57-surface-container text-c57-on-surface-variant border-c57-surface-variant",
+        ].join(" ")}
+      >
+        <Icon name={icon} size="md" />
+      </span>
+      <div className="min-w-0">
+        <p className="font-label-sm uppercase tracking-widest text-c57-outline mb-1">{label}</p>
+        <p
+          className={[
+            "text-body-sm font-semibold truncate",
+            tone === "positive" ? "text-c57-available-text" : "text-c57-on-surface",
+          ].join(" ")}
+          title={title}
+        >
+          {value}
+        </p>
       </div>
     </div>
   );

@@ -3,8 +3,27 @@ import { auth, db } from "../services/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import { UserPlus, Mail, Phone, MapPin, Calendar, ShieldCheck, Lock, ArrowLeft } from "lucide-react";
 import { useToast } from "../components/Toast";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import Field from "../components/ui/Field";
+import Icon from "../components/ui/Icon";
+import Input from "../components/ui/Input";
+import PageHeader from "../components/ui/PageHeader";
+import Textarea from "../components/ui/Textarea";
+
+/**
+ * Driver onboarding form.
+ *
+ * The auth and Firestore contract is unchanged: one
+ * `createUserWithEmailAndPassword`, one `setDoc` onto `users/{uid}` with the
+ * same pre-verified driver document, the same toast pair, and the same 2s
+ * redirect to `/admin-driver-profiles`.
+ *
+ * The form is now `Field` + `Input` rather than placeholder-as-label. Every
+ * control previously carried its only name in a `placeholder`, which means
+ * screen readers announced an empty edit and the label vanished on focus.
+ */
 
 export default function AdminAddDriver() {
   const [formData, setFormData] = useState({
@@ -30,7 +49,7 @@ export default function AdminAddDriver() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      toast.error("Gagal", "Konfirmasi password tidak sesuai");
+      toast.error("Konfirmasi password tidak sesuai", "Gagal");
       return;
     }
     setLoading(true);
@@ -59,155 +78,235 @@ export default function AdminAddDriver() {
         updatedAt: new Date()
       });
 
-      toast.success("Berhasil", "Mitra pengemudi telah terdaftar.");
+      toast.success("Mitra pengemudi telah terdaftar.", "Berhasil");
       setTimeout(() => navigate("/admin-driver-profiles"), 2000);
     } catch (err) {
       console.error(err);
-      toast.error("Gagal", err.message);
+      toast.error(err.message, "Gagal");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800">
-      <div className="max-w-4xl mx-auto px-6">
-        
-        {/* Header with Back Button */}
-        <div className="mb-10">
-          <button 
-            onClick={() => navigate("/admin-driver-management")}
-            className="flex items-center gap-2 text-slate-400 hover:text-[#810100] font-bold text-[10px] uppercase tracking-widest mb-4 transition-colors"
-          >
-            <ArrowLeft size={14} /> Kembali ke Menu
-          </button>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Tambah Driver Baru</h1>
-          <p className="text-slate-500 mt-1">Daftarkan mitra pengemudi baru ke dalam ekosistem Cakra Lima Tujuh.</p>
-        </div>
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 pb-space-xl">
+      <div className="max-w-4xl mx-auto px-gutter-mobile sm:px-gutter">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          icon="arrow_back"
+          onClick={() => navigate("/admin-driver-management")}
+          className="mb-space-lg"
+        >
+          Kembali ke Menu
+        </Button>
 
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-fadeInUp">
-          <div className="px-10 py-8 bg-slate-50 border-b border-slate-100 flex items-center gap-6">
-             <div className="w-14 h-14 bg-red-50 text-[#810100] rounded-2xl flex items-center justify-center shadow-inner">
-                <UserPlus size={28} />
-             </div>
-             <div>
-                <h2 className="text-xl font-black text-slate-900 tracking-tight">Formulir Pendaftaran</h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lengkapi metadata operasional pengemudi</p>
-             </div>
+        <PageHeader
+          eyebrow="Driver Operations"
+          title="Tambah Driver Baru"
+          subtitle="Daftarkan mitra pengemudi baru ke dalam ekosistem Cakra Lima Tujuh."
+        />
+
+        <Card className="mt-space-xl overflow-hidden">
+          <div className="flex items-center gap-space-md border-b border-c57-surface-variant bg-c57-surface-container px-6 py-space-lg sm:px-space-xl sm:py-space-xl">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-c57-md bg-c57-primary-container text-c57-on-primary">
+              <Icon name="person_add" size="3xl" />
+            </span>
+            <div className="min-w-0">
+              <p className="font-label-sm uppercase tracking-[0.28em] text-c57-primary">
+                Formulir Pendaftaran
+              </p>
+              <h2 className="font-headline-sm text-headline-sm text-c57-on-surface mt-1">
+                Metadata Operasional Pengemudi
+              </h2>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-10 space-y-10">
-            {/* Sec 1 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-               <div className="space-y-4">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Profil Fundamental</label>
-                  <div className="space-y-4">
-                     <div className="relative group">
-                        <input
-                          type="text" name="name" value={formData.name} onChange={handleInputChange} required
-                          placeholder="Nama Lengkap Sesuai KTP"
-                          className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl px-4 py-3.5 focus:border-[#810100] outline-none transition-all placeholder:text-slate-300"
-                        />
-                     </div>
-                     <div className="relative group">
-                        <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200 group-focus-within:text-[#810100] transition-colors" size={18} />
-                        <input
-                          type="email" name="email" value={formData.email} onChange={handleInputChange} required
-                          placeholder="Email Address"
-                          className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl px-4 py-3.5 focus:border-[#810100] outline-none transition-all placeholder:text-slate-300"
-                        />
-                     </div>
-                     <div className="relative group">
-                        <Phone className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200 group-focus-within:text-[#810100] transition-colors" size={18} />
-                        <input
-                          type="tel" name="phone" value={formData.phone} onChange={handleInputChange} required
-                          placeholder="No. WhatsApp / HP"
-                          className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl px-4 py-3.5 focus:border-[#810100] outline-none transition-all placeholder:text-slate-300"
-                        />
-                     </div>
-                  </div>
-               </div>
+          <form onSubmit={handleSubmit} className="space-y-space-xl p-6 sm:p-space-xl">
+            <div className="grid grid-cols-1 gap-space-xl md:grid-cols-2">
+              <section>
+                <FormSection step="01" title="Profil Fundamental" />
+                <div className="mt-space-lg space-y-space-lg">
+                  <Field label="Nama Lengkap" required hint="Sesuai KTP.">
+                    {(p) => (
+                      <Input
+                        {...p}
+                        type="text"
+                        name="name"
+                        icon="person"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        placeholder="Nama Lengkap Sesuai KTP"
+                        required
+                      />
+                    )}
+                  </Field>
 
-               <div className="space-y-4">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Legalitas & Biometrik</label>
-                  <div className="space-y-4">
-                     <div className="relative group">
-                        <ShieldCheck className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200 group-focus-within:text-[#810100] transition-colors" size={18} />
-                        <input
-                          type="text" name="simNumber" value={formData.simNumber} onChange={handleInputChange} required
-                          placeholder="Nomor Seri SIM"
-                          className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl px-4 py-3.5 focus:border-[#810100] outline-none transition-all placeholder:text-slate-300"
-                        />
-                     </div>
-                     <div className="relative group">
-                        <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200 group-focus-within:text-[#810100] transition-colors" size={18} />
-                        <input
-                          type="date" name="birthDate" value={formData.birthDate} onChange={handleInputChange} required
-                          className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl px-4 py-3.5 focus:border-[#810100] outline-none transition-all"
-                        />
-                     </div>
-                     <div className="relative group">
-                        <MapPin className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200 group-focus-within:text-[#810100] transition-colors" size={18} />
-                        <input
-                          type="text" name="address" value={formData.address} onChange={handleInputChange} required
-                          placeholder="Domisili Lengkap"
-                          className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl px-4 py-3.5 focus:border-[#810100] outline-none transition-all placeholder:text-slate-300"
-                        />
-                     </div>
-                  </div>
-               </div>
+                  <Field label="Alamat Email" required>
+                    {(p) => (
+                      <Input
+                        {...p}
+                        type="email"
+                        name="email"
+                        icon="mail"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="nama@email.com"
+                        required
+                      />
+                    )}
+                  </Field>
+
+                  <Field label="No. WhatsApp / HP" required>
+                    {(p) => (
+                      <Input
+                        {...p}
+                        type="tel"
+                        name="phone"
+                        icon="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        placeholder="+62 812-3456-7890"
+                        required
+                      />
+                    )}
+                  </Field>
+                </div>
+              </section>
+
+              <section>
+                <FormSection step="02" title="Legalitas & Biometrik" />
+                <div className="mt-space-lg space-y-space-lg">
+                  <Field label="Nomor Seri SIM" required>
+                    {(p) => (
+                      <Input
+                        {...p}
+                        type="text"
+                        name="simNumber"
+                        icon="badge"
+                        value={formData.simNumber}
+                        onChange={handleInputChange}
+                        placeholder="Nomor Seri SIM"
+                        required
+                      />
+                    )}
+                  </Field>
+
+                  <Field label="Tanggal Lahir" required>
+                    {(p) => (
+                      <Input
+                        {...p}
+                        type="date"
+                        name="birthDate"
+                        icon="calendar_month"
+                        value={formData.birthDate}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    )}
+                  </Field>
+
+                  <Field label="Domisili Lengkap" required>
+                    {(p) => (
+                      <Input
+                        {...p}
+                        type="text"
+                        name="address"
+                        icon="location_on"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        placeholder="Domisili Lengkap"
+                        required
+                      />
+                    )}
+                  </Field>
+                </div>
+              </section>
             </div>
 
-            {/* Sec 2 */}
-            <div className="space-y-4 pt-4 border-t border-slate-50">
-               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Kredensial Login</label>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="relative group">
-                    <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200 group-focus-within:text-[#810100] transition-colors" size={18} />
-                    <input
-                      type="password" name="password" value={formData.password} onChange={handleInputChange} required
+            <section className="border-t border-c57-surface-variant pt-space-xl">
+              <FormSection step="03" title="Kredensial Login" />
+              <div className="mt-space-lg grid grid-cols-1 gap-space-lg md:grid-cols-2">
+                <Field label="Password Baru" required>
+                  {(p) => (
+                    <Input
+                      {...p}
+                      type="password"
+                      name="password"
+                      icon="lock"
+                      value={formData.password}
+                      onChange={handleInputChange}
                       placeholder="Password Baru"
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl px-4 py-3.5 focus:border-[#810100] outline-none transition-all placeholder:text-slate-300"
+                      required
                     />
-                  </div>
-                  <div className="relative group">
-                    <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200 group-focus-within:text-[#810100] transition-colors" size={18} />
-                    <input
-                      type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} required
-                      placeholder="Konfirmasi Password"
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl px-4 py-3.5 focus:border-[#810100] outline-none transition-all placeholder:text-slate-300"
-                    />
-                  </div>
-               </div>
-            </div>
-
-            {/* Sec 3 */}
-            <div className="space-y-4 pt-4">
-               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 block">Catatan Internal (Opsional)</label>
-               <textarea 
-                  name="notes" value={formData.notes} onChange={handleInputChange} rows={3}
-                  placeholder="Informasi tambahan seperti pengalaman, area tugas, atau referensi..."
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-2xl px-6 py-4 focus:border-[#810100] outline-none transition-all placeholder:text-slate-300 resize-none"
-               />
-            </div>
-
-            <div className="pt-10 flex justify-end">
-               <button 
-                  type="submit" disabled={loading}
-                  className="bg-[#810100] hover:bg-[#630000] disabled:opacity-50 text-white px-12 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-red-900/10 active:scale-95 flex items-center gap-3"
-               >
-                  {loading ? (
-                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <UserPlus size={18} />
                   )}
-                  {loading ? "Mendaftarkan..." : "Daftarkan Driver"}
-               </button>
+                </Field>
+
+                <Field label="Konfirmasi Password" required>
+                  {(p) => (
+                    <Input
+                      {...p}
+                      type="password"
+                      name="confirmPassword"
+                      icon="lock"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      placeholder="Konfirmasi Password"
+                      required
+                    />
+                  )}
+                </Field>
+              </div>
+            </section>
+
+            <section>
+              <FormSection step="04" title="Catatan Internal" hint="Opsional." />
+              <div className="mt-space-lg">
+                <Textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleInputChange}
+                  rows={3}
+                  placeholder="Informasi tambahan seperti pengalaman, area tugas, atau referensi..."
+                />
+              </div>
+            </section>
+
+            <div className="flex justify-end border-t border-c57-surface-variant pt-space-xl">
+              <Button
+                type="submit"
+                size="lg"
+                loading={loading}
+                icon={loading ? undefined : "person_add"}
+                iconPosition="right"
+              >
+                {loading ? "Mendaftarkan..." : "Daftarkan Driver"}
+              </Button>
             </div>
           </form>
-        </div>
-
+        </Card>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Numbered group heading inside the form. An `h3` rather than `SectionHeading`'s
+ * `h2`, because the card already owns the `h2` for this form.
+ */
+function FormSection({ step, title, hint }) {
+  return (
+    <div className="flex items-baseline gap-space-sm">
+      <span className="font-label-sm uppercase tracking-[0.28em] text-c57-outline">
+        {step}
+      </span>
+      <h3 className="font-headline-sm text-headline-sm text-c57-on-surface">{title}</h3>
+      {hint && (
+        <span className="font-label-sm uppercase tracking-widest text-c57-outline">
+          {hint}
+        </span>
+      )}
     </div>
   );
 }

@@ -29,10 +29,16 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "npm run tokens:rgb:check && node scripts/check-tokens.js && react-scripts start",
+    "build": "npm run tokens:rgb:check && node scripts/check-tokens.js && react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint:tokens": "node scripts/check-tokens.js",
+    "lint:tokens:report": "node scripts/check-tokens.js --no-baseline",
+    "lint:tokens:write": "node scripts/check-tokens.js --write",
+    "tokens:rgb": "python3 scripts/build-color-rgb-vars.py",
+    "tokens:rgb:check": "python3 scripts/build-color-rgb-vars.py --check",
+    "icons:build": "python3 scripts/build-icon-subset.py"
   },
   "eslintConfig": {
     "extends": [

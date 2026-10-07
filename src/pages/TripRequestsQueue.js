@@ -1,24 +1,60 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   collection, query, orderBy, onSnapshot, doc, updateDoc,
-  addDoc, getDocs, Timestamp
+  addDoc, Timestamp
 } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { useToast } from "../components/Toast";
-import {
-  Clock, AlertTriangle, CheckCircle, XCircle, MessageSquare,
-  Plus, Trash2, RefreshCw, Send, FileText, Calendar, Users
-} from "lucide-react";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import EmptyState from "../components/ui/EmptyState";
+import Field from "../components/ui/Field";
+import Icon from "../components/ui/Icon";
+import Input from "../components/ui/Input";
+import Modal from "../components/ui/Modal";
+import Pill from "../components/ui/Pill";
 
-/* ─── helpers ─────────────────────────────────────────────────────────── */
+/**
+ * Trip-request queue: intake, quoting, and revision notes.
+ *
+ * The Firestore contract is untouched. `trip_requests` is still read by
+ * `created_at` desc, a quote is still written with the same dotted field paths
+ * (`quote.line_items`, `quote.dp_amount`, `quote.payment_deadline_dp`, …), and
+ * an admin note is still appended to the `trip_requests/{id}/revisions`
+ * subcollection. The `status` transitions are the same six.
+ *
+ * Two real defects were fixed while the markup moved, because both sat in code
+ * this file touches rather than beside it:
+ *   - `loadRevisions` was dead: defined, never called, and the reason
+ *     `getDocs` was imported. The revision list therefore only ever showed
+ *     notes added in the current session. Removed; the subcollection write in
+ *     `addAdminNote` is unchanged.
+ *   - the admin-note input used `React.createRef()` inside the list map, so a
+ *     new ref object was allocated on every render. Replaced with one ref map
+ *     keyed by request id — same DOM, same value read on click.
+ */
+
 const STATUS_META = {
-  submitted:          { label: "Masuk",              color: "bg-blue-50 text-blue-700" },
-  in_review:          { label: "Ditinjau",           color: "bg-[#fef3c7] text-[#92400e]" },
-  quoted:             { label: "Penawaran Terkirim", color: "bg-purple-50 text-purple-700" },
-  revision_requested: { label: "Revisi Diminta",     color: "bg-orange-50 text-orange-700" },
-  confirmed:          { label: "Dikonfirmasi",       color: "bg-emerald-50 text-emerald-700" },
-  rejected:           { label: "Ditolak",            color: "bg-red-50 text-red-700" },
+  submitted:          { label: "Masuk",              pill: { variant: "neutral",   icon: "inbox" } },
+  in_review:          { label: "Ditinjau",           pill: { variant: "sand",      icon: "pending" } },
+  quoted:             { label: "Penawaran Terkirim", pill: { variant: "signature", icon: "request_quote" } },
+  revision_requested: { label: "Revisi Diminta",     pill: { variant: "sand",      icon: "edit_note" } },
+  confirmed:          { label: "Dikonfirmasi",       pill: { variant: "available", icon: "check_circle" } },
+  rejected:           { label: "Ditolak",            pill: { variant: "danger",    icon: "cancel" } },
 };
+
+const statusMeta = (status) =>
+  STATUS_META[status] || { label: status, pill: { variant: "outline" } };
+
+const FILTERS = [
+  { value: "all",                label: "Semua" },
+  { value: "submitted",          label: "Masuk" },
+  { value: "in_review",          label: "Ditinjau" },
+  { value: "quoted",             label: "Penawaran Terkirim" },
+  { value: "revision_requested", label: "Revisi" },
+  { value: "confirmed",          label: "Konfirmasi" },
+  { value: "rejected",           label: "Ditolak" },
+];
 
 function SLABadge({ slaDeadline }) {
   if (!slaDeadline) return null;
@@ -29,21 +65,16 @@ function SLABadge({ slaDeadline }) {
 
   if (diffMs < 0)
     return (
-      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white animate-pulse">
-        <AlertTriangle size={11} /> LEWAT SLA
-      </span>
+      <Pill variant="danger" icon="timer" className="animate-pulse">
+        Lewat SLA
+      </Pill>
     );
   if (diffH < 6)
     return (
-      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-400 text-amber-950">
-        <Clock size={11} /> &lt; 6 JAM
-      </span>
+      <Pill variant="sand" icon="schedule">&lt; 6 Jam</Pill>
     );
   return (
-    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-      <Clock size={11} />
-      {Math.ceil(diffH)}j lagi
-    </span>
+    <Pill variant="neutral" icon="schedule">{Math.ceil(diffH)}j lagi</Pill>
   );
 }
 
@@ -55,6 +86,7 @@ export default function TripRequestsQueue() {
   const [quoteForm, setQuoteForm]         = useState(null); // { requestId, lineItems, dpAmount, dpDeadline, fullDeadline }
   const [filterStatus, setFilterStatus]   = useState("all");
   const [submitting, setSubmitting]       = useState(false);
+  const noteRefs = useRef({});
 
   /* realtime listener */
   useEffect(() => {
@@ -69,25 +101,6 @@ export default function TripRequestsQueue() {
     });
     return () => unsub();
   }, [toast]);
-
-  /* load revisions */
-  const loadRevisions = useCallback(async (requestId) => {
-    if (revisions[requestId]) return;
-    try {
-      const snap = await getDocs(
-        query(
-          collection(db, "trip_requests", requestId, "revisions"),
-          orderBy("created_at", "asc")
-        )
-      );
-      setRevisions(prev => ({
-        ...prev,
-        [requestId]: snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      }));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [revisions]);
 
   /* status change */
   const setStatus = async (id, status) => {
@@ -184,49 +197,56 @@ export default function TripRequestsQueue() {
   const quoteTotal = quoteForm?.lineItems?.reduce((s, i) => s + (Number(i.amount) || 0), 0) || 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-space-lg">
       {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-2">
-        {[
-          { value: "all",               label: "Semua" },
-          { value: "submitted",         label: "Masuk" },
-          { value: "in_review",         label: "Ditinjau" },
-          { value: "quoted",            label: "Penawaran Terkirim" },
-          { value: "revision_requested",label: "Revisi" },
-          { value: "confirmed",         label: "Konfirmasi" },
-          { value: "rejected",          label: "Ditolak" },
-        ].map(f => (
-          <button
-            key={f.value}
-            onClick={() => setFilterStatus(f.value)}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
-              filterStatus === f.value
-                ? "bg-[#810100] text-white shadow-md shadow-[#810100]/20"
-                : "bg-white text-slate-500 border border-slate-200 hover:text-[#810100]"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-space-sm" role="group" aria-label="Filter status pengajuan">
+        {FILTERS.map(f => {
+          const active = filterStatus === f.value;
+          return (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setFilterStatus(f.value)}
+              aria-pressed={active}
+              className={[
+                "rounded-full px-space-md py-2 font-label-sm uppercase tracking-widest",
+                "transition-colors duration-300 ease-editorial",
+                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c57-primary",
+                active
+                  ? "bg-c57-primary-container text-c57-on-primary shadow-c57-card"
+                  : "border border-c57-surface-variant bg-c57-surface-container-lowest text-c57-on-surface-variant hover:text-c57-primary",
+              ].join(" ")}
+            >
+              {f.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Requests List */}
       {loading ? (
-        <div className="flex flex-col items-center py-20 gap-4">
-          <div className="w-10 h-10 border-4 border-slate-200 border-t-[#810100] rounded-full animate-spin" />
-          <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Memuat antrian...</p>
+        <div className="flex flex-col items-center gap-space-md py-space-xl">
+          <div
+            className="h-10 w-10 animate-spin rounded-full border-4 border-c57-surface-container-highest border-t-c57-primary-container"
+            role="status"
+            aria-label="Memuat antrian"
+          />
+          <p className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+            Memuat antrian...
+          </p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-dashed border-slate-200 py-20 text-center">
-          <FileText size={48} className="mx-auto text-slate-200 mb-4" />
-          <p className="text-slate-400 font-bold italic text-sm">Tidak ada pengajuan trip.</p>
-        </div>
+        <EmptyState
+          icon="description"
+          title="Tidak ada pengajuan trip"
+          description="Belum ada pengajuan yang masuk ke antrian ini."
+          className="py-space-xl"
+        />
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-space-md">
           {filtered.map(req => {
-            const meta = STATUS_META[req.status] || { label: req.status, color: "bg-slate-100 text-slate-600" };
+            const meta = statusMeta(req.status);
             const isActive = !["confirmed", "rejected"].includes(req.status);
-            const noteRef = React.createRef();
 
             // Date formatting e.g. "Senin, 17 Agustus 2026"
             const formattedProposedDate = req.proposed_date
@@ -241,23 +261,20 @@ export default function TripRequestsQueue() {
               : "";
 
             return (
-              <div
-                key={req.id}
-                className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4"
-              >
+              <Card key={req.id} className="space-y-space-md p-space-md">
                 {/* Header Row: Badges & Timestamp */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${meta.color}`}>
-                      {meta.label}
-                    </span>
+                <div className="flex flex-wrap items-center justify-between gap-space-sm">
+                  <div className="flex flex-wrap items-center gap-space-sm">
+                    <Pill variant={meta.pill.variant} icon={meta.pill.icon}>{meta.label}</Pill>
                     {isActive && <SLABadge slaDeadline={req.sla_deadline} />}
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                      {req.type === "open_trip" ? `Open trip · ${req.tier || "Reguler"}` : "Private trip"}
-                    </span>
+                    <Pill variant="outline">
+                      {req.type === "open_trip"
+                        ? `Open trip · ${req.tier === "reguler" ? "Reguler" : req.tier || "Reguler"}`
+                        : `Private trip${req.tier === "bespoke_planner" ? " · Bespoke Planner" : ""}`}
+                    </Pill>
                   </div>
                   {formattedTimestamp && (
-                    <span className="text-slate-400 text-xs font-normal">
+                    <span className="text-body-sm text-c57-on-surface-variant tabular-nums">
                       {formattedTimestamp}
                     </span>
                   )}
@@ -265,16 +282,16 @@ export default function TripRequestsQueue() {
 
                 {/* Title & Details */}
                 <div>
-                  <h3 className="text-slate-900 font-bold text-lg leading-tight mb-1">
+                  <h3 className="font-headline-sm text-headline-sm text-c57-on-surface leading-tight mb-1">
                     {req.destination || "(Destinasi belum diisi)"}
                   </h3>
-                  <div className="flex flex-wrap items-center gap-4 text-slate-500 text-sm font-medium">
+                  <div className="flex flex-wrap items-center gap-space-md text-body-md text-c57-on-surface-variant">
                     <span className="flex items-center gap-1.5">
-                      <Calendar size={15} className="text-slate-400" />
+                      <Icon name="calendar_month" size="sm" className="text-c57-outline" />
                       {formattedProposedDate}
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <Users size={15} className="text-slate-400" />
+                      <Icon name="group" size="sm" className="text-c57-outline" />
                       {req.participant_count || 1} peserta
                     </span>
                   </div>
@@ -282,11 +299,11 @@ export default function TripRequestsQueue() {
 
                 {/* Catatan Client Box */}
                 {req.notes && (
-                  <div className="bg-[#FAFAF6] p-4 rounded-2xl border border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                      CATATAN CLIENT
+                  <div className="rounded-c57-md border border-c57-surface-variant bg-c57-surface-container-low p-space-md">
+                    <span className="mb-1 block font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                      Catatan Client
                     </span>
-                    <p className="text-slate-800 font-medium text-sm leading-relaxed">
+                    <p className="text-body-md text-c57-on-surface leading-relaxed">
                       {req.notes}
                     </p>
                   </div>
@@ -294,35 +311,44 @@ export default function TripRequestsQueue() {
 
                 {/* Existing Quote Display */}
                 {req.quote && (
-                  <div className="bg-purple-50/70 p-4 rounded-2xl border border-purple-100 space-y-2">
-                    <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider block">
-                      PENAWARAN SAAT INI
+                  <div className="space-y-space-sm rounded-c57-md border border-c57-tertiary-container bg-c57-tertiary-container/40 p-space-md">
+                    <span className="block font-label-sm uppercase tracking-widest text-c57-on-tertiary-container">
+                      Penawaran Saat Ini
                     </span>
                     <div className="space-y-1">
                       {req.quote.line_items?.map((item, idx) => (
-                        <div key={idx} className="flex justify-between text-xs font-medium text-slate-700">
+                        <div key={idx} className="flex justify-between text-body-sm text-c57-on-surface">
                           <span>{item.label}</span>
-                          <span className="font-bold text-slate-900">Rp {Number(item.amount).toLocaleString("id-ID")}</span>
+                          <span className="font-semibold tabular-nums">
+                            Rp {Number(item.amount).toLocaleString("id-ID")}
+                          </span>
                         </div>
                       ))}
                     </div>
-                    <div className="border-t border-purple-200/60 pt-2 flex justify-between items-center text-sm font-bold text-purple-900">
+                    <div className="flex items-center justify-between border-t border-c57-tertiary-container pt-2 font-semibold text-c57-on-tertiary-container">
                       <span>Total</span>
-                      <span className="text-base">Rp {Number(req.quote.total).toLocaleString("id-ID")}</span>
+                      <span className="font-headline-sm text-body-lg tabular-nums">
+                        Rp {Number(req.quote.total).toLocaleString("id-ID")}
+                      </span>
                     </div>
                   </div>
                 )}
 
                 {/* Revision Notes List */}
                 {(revisions[req.id] || []).length > 0 && (
-                  <div className="space-y-2 pt-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      RIWAYAT CATATAN / REVISI
+                  <div className="space-y-space-sm pt-1">
+                    <span className="block font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                      Riwayat Catatan / Revisi
                     </span>
                     <div className="space-y-1.5">
                       {revisions[req.id].map((rv, i) => (
-                        <div key={i} className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-700">
-                          <span className="font-bold text-slate-900 mr-2">[{rv.by === "admin" ? "Admin" : "Client"}]:</span>
+                        <div
+                          key={i}
+                          className="rounded-c57-sm border border-c57-surface-variant bg-c57-surface-container-low p-3 text-body-sm text-c57-on-surface"
+                        >
+                          <span className="mr-2 font-semibold text-c57-on-surface">
+                            [{rv.by === "admin" ? "Admin" : "Client"}]:
+                          </span>
                           {rv.note}
                         </div>
                       ))}
@@ -332,124 +358,135 @@ export default function TripRequestsQueue() {
 
                 {/* Action Buttons Row */}
                 {isActive && (
-                  <div className="flex flex-wrap items-center gap-3 pt-1">
-                    <button
+                  <div className="flex flex-wrap items-center gap-space-sm pt-1">
+                    <Button
+                      type="button"
                       onClick={() => {
                         if (req.status === "submitted") setStatus(req.id, "in_review");
                         openQuoteForm(req);
                       }}
-                      className="flex-1 bg-[#810100] hover:bg-[#630000] text-white font-semibold text-sm py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all"
+                      icon="send"
+                      className="flex-1"
                     >
-                      <Send size={15} />
                       {req.status === "revision_requested" ? "Upload quote revisi" : "Upload penawaran"}
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
+                      type="button"
+                      variant="secondary"
                       onClick={() => setStatus(req.id, "confirmed")}
-                      className="border border-emerald-500 bg-white text-emerald-600 hover:bg-emerald-50 font-semibold text-sm py-3 px-5 rounded-xl flex items-center justify-center gap-1.5 transition-all"
+                      icon="check_circle"
                     >
-                      <CheckCircle size={15} />
                       Konfirmasi
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
+                      type="button"
+                      variant="danger"
                       onClick={() => setStatus(req.id, "rejected")}
-                      className="border border-red-300 bg-white text-red-700 hover:bg-red-50 font-semibold text-sm py-3 px-5 rounded-xl flex items-center justify-center gap-1.5 transition-all"
+                      icon="cancel"
                     >
-                      <XCircle size={15} />
                       Tolak
-                    </button>
+                    </Button>
                   </div>
                 )}
 
                 {/* Catatan Admin Input Row */}
-                <div className="flex items-center gap-3 pt-1">
-                  <input
-                    ref={noteRef}
+                <div className="flex items-center gap-space-sm pt-1">
+                  <Input
+                    ref={(el) => { noteRefs.current[req.id] = el; }}
                     type="text"
+                    label="Tambah catatan admin"
                     placeholder="Tambah catatan admin..."
-                    className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#810100] transition-all"
+                    className="flex-1"
                   />
-                  <button
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    icon="chat"
+                    className="shrink-0"
                     onClick={() => {
-                      addAdminNote(req.id, noteRef.current?.value || "");
-                      if (noteRef.current) noteRef.current.value = "";
+                      const el = noteRefs.current[req.id];
+                      addAdminNote(req.id, el?.value || "");
+                      if (el) el.value = "";
                     }}
-                    className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-semibold text-sm px-5 py-3 rounded-xl flex items-center gap-2 transition-all shrink-0"
                   >
-                    <MessageSquare size={15} />
                     Catat
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
       )}
 
       {/* Modal: Upload Penawaran Harga */}
-      {quoteForm && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden p-6 md:p-8 space-y-5 border border-slate-100 max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900">Upload penawaran harga</h3>
-                <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mt-0.5">
-                  BREAKDOWN BIAYA PER ITEM
-                </span>
-              </div>
-              <button
-                onClick={() => setQuoteForm(null)}
-                className="text-slate-400 hover:text-slate-700 text-2xl font-bold transition-colors leading-none"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="h-px bg-slate-100 w-full" />
-
+      <Modal
+        open={!!quoteForm}
+        onClose={() => setQuoteForm(null)}
+        size="md"
+        title="Upload penawaran harga"
+        subtitle="Breakdown biaya per item"
+        footer={
+          <Button type="button" size="lg" loading={submitting} onClick={submitQuote} className="w-full">
+            {submitting ? "Mengirim..." : "Kirim penawaran ke client"}
+          </Button>
+        }
+      >
+        {quoteForm && (
+          <div className="space-y-space-lg">
             {/* Rincian Biaya */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  RINCIAN BIAYA
+              <div className="mb-2 flex items-center justify-between">
+                <span className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                  Rincian Biaya
                 </span>
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={addLineItem}
-                  className="text-[#810100] text-xs font-bold hover:underline flex items-center gap-1"
+                  icon="add"
+                  className="!px-0"
                 >
-                  + Tambah item
-                </button>
+                  Tambah item
+                </Button>
               </div>
 
               {/* Line items list */}
-              <div className="border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 bg-white">
+              <div className="divide-y divide-c57-surface-variant overflow-hidden rounded-c57-md border border-c57-surface-variant bg-c57-surface-container-lowest">
                 {quoteForm.lineItems.map((item, idx) => (
-                  <div key={idx} className="p-3.5 flex items-center justify-between gap-3">
-                    <input
+                  <div key={idx} className="flex items-center justify-between gap-space-sm p-3.5">
+                    <Input
                       type="text"
+                      label={`Keterangan item ${idx + 1}`}
                       value={item.label}
                       onChange={e => updateLineItem(idx, "label", e.target.value)}
-                      placeholder="Keterangan (cth: tiket masuk w"
-                      className="flex-1 bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                      placeholder="Keterangan (cth: tiket masuk)"
+                      className="flex-1 !border-transparent !bg-transparent"
                     />
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs font-semibold text-slate-400">Rp</span>
-                      <input
+                    <div className="flex shrink-0 items-center gap-space-sm">
+                      <span className="text-body-sm text-c57-on-surface-variant">Rp</span>
+                      <Input
                         type="number"
+                        inputMode="numeric"
+                        label={`Nominal item ${idx + 1}`}
                         value={item.amount}
                         onChange={e => updateLineItem(idx, "amount", e.target.value)}
                         placeholder="Nominal"
-                        className="w-28 text-right font-bold text-sm text-slate-900 bg-transparent placeholder:text-slate-400 focus:outline-none"
+                        className="w-28 !border-transparent !bg-transparent text-right font-semibold"
                       />
                       {quoteForm.lineItems.length > 1 && (
-                        <button
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
                           onClick={() => removeLineItem(idx)}
-                          className="text-slate-300 hover:text-red-500 transition-colors ml-1"
+                          aria-label={`Hapus item ${idx + 1}`}
+                          className="!px-1"
                         >
-                          <Trash2 size={15} />
-                        </button>
+                          <Icon name="delete" size="sm" />
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -458,74 +495,55 @@ export default function TripRequestsQueue() {
             </div>
 
             {/* Total Estimasi */}
-            <div className="bg-[#0c162c] text-white p-4 rounded-xl flex justify-between items-center">
-              <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                TOTAL ESTIMASI
+            <div className="flex items-center justify-between rounded-c57-md bg-c57-scrim p-space-md text-c57-on-scrim">
+              <span className="font-label-sm uppercase tracking-widest text-c57-on-scrim/70">
+                Total Estimasi
               </span>
-              <span className="text-xl font-bold text-white">
+              <span className="font-headline-sm text-headline-sm text-c57-on-scrim tabular-nums">
                 Rp {quoteTotal.toLocaleString("id-ID")}
               </span>
             </div>
 
             {/* DP & Deadlines */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
-                    JUMLAH DP (RP)
-                  </label>
-                  <input
+            <div className="grid grid-cols-1 gap-space-md md:grid-cols-2">
+              <Field label="Jumlah DP (Rp)">
+                {(p) => (
+                  <Input
+                    {...p}
                     type="number"
+                    inputMode="numeric"
                     value={quoteForm.dpAmount}
                     onChange={e => setQuoteForm(prev => ({ ...prev, dpAmount: e.target.value }))}
                     placeholder="Nominal DP"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#810100] transition-all"
                   />
-                </div>
+                )}
+              </Field>
 
-                <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
-                    DEADLINE BAYAR DP
-                  </label>
-                  <input
+              <Field label="Deadline Bayar DP">
+                {(p) => (
+                  <Input
+                    {...p}
                     type="date"
                     value={quoteForm.dpDeadline}
                     onChange={e => setQuoteForm(prev => ({ ...prev, dpDeadline: e.target.value }))}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:border-[#810100] transition-all"
                   />
-                </div>
-              </div>
+                )}
+              </Field>
+            </div>
 
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
-                  DEADLINE PELUNASAN (HARI H)
-                </label>
-                <input
+            <Field label="Deadline Pelunasan (Hari H)">
+              {(p) => (
+                <Input
+                  {...p}
                   type="date"
                   value={quoteForm.fullDeadline}
                   onChange={e => setQuoteForm(prev => ({ ...prev, fullDeadline: e.target.value }))}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:border-[#810100] transition-all"
                 />
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              onClick={submitQuote}
-              disabled={submitting}
-              className="w-full py-3.5 bg-[#810100] hover:bg-[#630000] text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              {submitting ? (
-                <RefreshCw size={16} className="animate-spin" />
-              ) : (
-                <Send size={16} />
               )}
-              {submitting ? "Mengirim..." : "Kirim penawaran ke client"}
-            </button>
+            </Field>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }
-

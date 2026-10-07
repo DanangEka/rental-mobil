@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import Icon from "./ui/Icon";
 
 /**
  * UnitCalendarPicker Component
  * Renders a calendar where dates booked in `bookings` are disabled.
  * Allows picking start and end dates.
- * 
+ *
  * Props:
  *  - bookings: Array<{ start: Date, end: Date }>
  *  - startDate: string (YYYY-MM-DD)
@@ -106,12 +106,12 @@ export default function UnitCalendarPicker({ bookings = [], startDate, endDate, 
   const endStr = endDate ? endDate.split("T")[0] : "";
 
   return (
-    <div className={`select-none ${compact ? "bg-slate-50/50 border border-slate-100 rounded-2xl p-3" : "bg-slate-50 border border-slate-200 rounded-3xl p-5"}`}>
+    <div className={`select-none ${compact ? "bg-c57-surface-container-low rounded-c57-lg" : "bg-c57-surface-container-low rounded-c57-lg p-5 border border-c57-outline-variant"}`}>
       {/* Month Header */}
       <div className={`flex items-center justify-between px-1 ${compact ? "mb-2" : "mb-4"}`}>
         <div className="flex items-center gap-2">
-          <CalendarIcon size={compact ? 14 : 16} className="text-[#810100]" />
-          <span className={`font-black text-slate-900 tracking-tight ${compact ? "text-xs" : "text-sm"}`}>
+          <Icon name="calendar_month" size="sm" className="text-c57-primary" />
+          <span className={`font-label-md font-bold text-c57-on-surface tracking-tight ${compact ? "text-label-sm" : "text-label-md"}`}>
             {monthNames[month]} {year}
           </span>
         </div>
@@ -119,16 +119,18 @@ export default function UnitCalendarPicker({ bookings = [], startDate, endDate, 
           <button
             type="button"
             onClick={prevMonth}
-            className="p-1 rounded-lg hover:bg-slate-200 text-slate-600 transition-colors"
+            className="p-1 rounded-c57-sm hover:bg-c57-surface-container-highest text-c57-on-surface-variant transition-colors"
+            aria-label="Bulan sebelumnya"
           >
-            <ChevronLeft size={compact ? 14 : 16} />
+            <Icon name="chevron_left" size="sm" />
           </button>
           <button
             type="button"
             onClick={nextMonth}
-            className="p-1 rounded-lg hover:bg-slate-200 text-slate-600 transition-colors"
+            className="p-1 rounded-c57-sm hover:bg-c57-surface-container-highest text-c57-on-surface-variant transition-colors"
+            aria-label="Bulan berikutnya"
           >
-            <ChevronRight size={compact ? 14 : 16} />
+            <Icon name="chevron_right" size="sm" />
           </button>
         </div>
       </div>
@@ -138,7 +140,7 @@ export default function UnitCalendarPicker({ bookings = [], startDate, endDate, 
         {(compact ? ["S", "S", "R", "K", "J", "S", "M"] : ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]).map((day, idx) => (
           <span
             key={idx}
-            className={`font-bold uppercase tracking-wider ${compact ? "text-[9px] text-slate-400" : "text-[10px] text-slate-400"}`}
+            className={`font-label-sm text-label-sm font-bold uppercase tracking-wider text-c57-on-surface-variant`}
           >
             {day}
           </span>
@@ -168,14 +170,14 @@ export default function UnitCalendarPicker({ bookings = [], startDate, endDate, 
             thisDateStr > startStr &&
             thisDateStr < endStr;
 
-          let cellClass = "bg-white text-slate-700 hover:bg-red-50 hover:text-[#810100]";
+          let cellClass = "bg-c57-surface-container-lowest text-c57-on-surface hover:bg-c57-primary-container/30 hover:text-c57-primary";
 
           if (past || booked) {
-            cellClass = "bg-slate-100/60 text-slate-300 cursor-not-allowed line-through opacity-50";
+            cellClass = "bg-c57-surface-container text-c57-on-surface-variant/40 cursor-not-allowed line-through opacity-60";
           } else if (isStart || isEnd) {
-            cellClass = "bg-[#810100] text-white font-black shadow-md shadow-red-900/30 scale-105 z-10 rounded-xl";
+            cellClass = "bg-c57-primary text-c57-on-primary font-bold shadow-c57-card scale-105 z-10 rounded-c57-md";
           } else if (inRange) {
-            cellClass = "bg-red-100 text-[#810100] font-bold rounded-lg";
+            cellClass = "bg-c57-primary/15 text-c57-primary font-bold rounded-c57-sm";
           }
 
           return (
@@ -185,7 +187,7 @@ export default function UnitCalendarPicker({ bookings = [], startDate, endDate, 
               disabled={past || booked}
               onClick={() => handleDateClick(dayNum)}
               title={booked ? "Sudah Terbooked" : past ? "Lewat" : `${dayNum} ${monthNames[month]}`}
-              className={`${compact ? "h-7 text-[11px] rounded-lg" : "h-9 text-xs rounded-xl"} flex flex-col items-center justify-center font-bold transition-all relative ${cellClass}`}
+              className={`${compact ? "h-7 text-label-sm" : "h-9 text-label-sm"} flex flex-col items-center justify-center font-bold transition-all relative ${cellClass}`}
             >
               <span>{dayNum}</span>
             </button>
@@ -194,18 +196,18 @@ export default function UnitCalendarPicker({ bookings = [], startDate, endDate, 
       </div>
 
       {!compact && (
-        <div className="mt-4 pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between text-[10px] text-slate-500 font-bold gap-2">
+        <div className="mt-4 pt-3 border-t border-c57-outline-variant flex flex-wrap items-center justify-between text-label-sm text-c57-on-surface-variant font-bold gap-2">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#810100]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-c57-primary" />
               <span>Dipilih</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-300 line-through" />
+              <span className="w-2.5 h-2.5 rounded-full bg-c57-surface-container-highest line-through" />
               <span>Terbooked</span>
             </div>
           </div>
-          <span className="text-[#810100]">
+          <span className="text-c57-primary">
             {!startStr ? "Klik tanggal mulai" : !endStr ? "Klik tanggal selesai" : `${startStr} s/d ${endStr}`}
           </span>
         </div>

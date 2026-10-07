@@ -1,6 +1,36 @@
-import { useState, useEffect, useCallback, createContext, useContext, useRef } from "react";
+import { useState, useEffect, useCallback, createContext, useContext, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { CheckCircle, XCircle, AlertTriangle, Info, X } from "lucide-react";
+import Icon from "./ui/Icon";
+
+/**
+ * Toast surface.
+ *
+ * The colours are the one place the whole status ramp has to sit on a dark
+ * ground: the card is `c57-scrim` (#151515), so the light members of each
+ * family carry the signal — `error-container` (#FFDAD6) for error,
+ * `on-tertiary-container` (#D2B58C) for warning, `available-bg` (#EDF4EE) for
+ * success. The deep members (`error` #BA1A1A, `tertiary` #433011,
+ * `available-text` #235C2B) are all too dark to read against #151515 and are
+ * deliberately not used here.
+ *
+ * The signature is `toast[type](message, title)` — body first, label second.
+ * It reads backwards from most toast APIs and has bitten callers before (see
+ * AdminAddDriver), so it is called out rather than left to be rediscovered.
+ *
+ * `toast` is memoised. It used to be a fresh object literal on every render of
+ * the provider, and the provider re-renders on every add/remove, so any
+ * consumer with `toast` in a dependency array tore down and rebuilt its
+ * Firestore subscriptions each time a notification fired. `addToast` is
+ * already stable, so memoising on it alone makes the whole surface stable for
+ * the provider's lifetime.
+ */
+
+const VARIANTS = {
+  success: { icon: "check_circle", tone: "text-c57-available-bg", bar: "bg-c57-available-bg" },
+  error:   { icon: "cancel",       tone: "text-c57-error-container", bar: "bg-c57-error-container" },
+  warning: { icon: "warning",      tone: "text-c57-on-tertiary-container", bar: "bg-c57-on-tertiary-container" },
+  info:    { icon: "info",         tone: "text-c57-on-scrim", bar: "bg-c57-accent-line" },
+};
 
 /* ─── Individual Toast ─── */
 function ToastItem({ id, type, title, message, onRemove }) {
@@ -17,62 +47,48 @@ function ToastItem({ id, type, title, message, onRemove }) {
     return () => clearTimeout(timer);
   }, [handleRemove]);
 
-  const config = {
-    success: {
-      icon: <CheckCircle size={20} />,
-      bar: "bg-green-400",
-      border: "border-green-500",
-      iconColor: "text-green-400",
-      bg: "bg-gray-900",
-    },
-    error: {
-      icon: <XCircle size={20} />,
-      bar: "bg-red-500",
-      border: "border-red-500",
-      iconColor: "text-red-400",
-      bg: "bg-gray-900",
-    },
-    warning: {
-      icon: <AlertTriangle size={20} />,
-      bar: "bg-yellow-400",
-      border: "border-yellow-500",
-      iconColor: "text-yellow-400",
-      bg: "bg-gray-900",
-    },
-    info: {
-      icon: <Info size={20} />,
-      bar: "bg-blue-400",
-      border: "border-blue-500",
-      iconColor: "text-blue-400",
-      bg: "bg-gray-900",
-    },
-  };
-
-  const c = config[type] || config.info;
+  const v = VARIANTS[type] || VARIANTS.info;
+  // Errors interrupt; everything else waits its turn in the queue.
+  const isUrgent = type === "error";
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl border ${c.border} ${c.bg} shadow-2xl text-white
-        transition-all duration-300 ${removing ? "opacity-0 translate-x-10 scale-95" : "opacity-100 animate-popIn"}`}
+      role={isUrgent ? "alert" : "status"}
+      className={[
+        "relative overflow-hidden rounded-c57-lg border",
+        "bg-c57-scrim border-white/10",
+        "shadow-c57-overlay",
+        "transition-all duration-300 ease-editorial",
+        removing ? "opacity-0 translate-x-10 scale-95" : "opacity-100 animate-popIn",
+      ].join(" ")}
     >
-      <div className="flex items-start gap-3 p-4 pr-10">
-        <span className={`mt-0.5 flex-shrink-0 ${c.iconColor}`}>{c.icon}</span>
+      <div className="flex items-start gap-space-sm p-space-md pr-space-xl">
+        <span className={`mt-0.5 shrink-0 ${v.tone}`}>
+          <Icon name={v.icon} size="xl" />
+        </span>
         <div className="flex-1 min-w-0">
-          {title && <p className="text-sm font-semibold text-white mb-0.5">{title}</p>}
-          <p className="text-sm text-gray-300 leading-snug">{message}</p>
+          {title && (
+            <p className="font-label-md uppercase tracking-wider text-c57-on-scrim mb-1">
+              {title}
+            </p>
+          )}
+          <p className="text-body-sm text-c57-on-scrim/70 leading-snug">{message}</p>
         </div>
       </div>
 
-      {/* Close button */}
       <button
+        type="button"
         onClick={handleRemove}
-        className="absolute top-3 right-3 text-gray-400 hover:text-white transition-colors"
+        aria-label="Dismiss notification"
+        className="absolute top-3 right-3 p-1 rounded-full text-c57-on-scrim/60 hover:text-c57-on-scrim transition-colors"
       >
-        <X size={16} />
+        <Icon name="close" size="sm" />
       </button>
 
-      {/* Progress bar */}
-      <div className={`h-0.5 ${c.bar} absolute bottom-0 left-0 animate-progressBar`} />
+      <div
+        className={`h-0.5 ${v.bar} absolute bottom-0 left-0 animate-progressBar`}
+        aria-hidden="true"
+      />
     </div>
   );
 }
@@ -92,18 +108,22 @@ export function ToastProvider({ children }) {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  const toast = {
-    success: (message, title) => addToast("success", message, title),
-    error:   (message, title) => addToast("error",   message, title),
-    warning: (message, title) => addToast("warning", message, title),
-    info:    (message, title) => addToast("info",    message, title),
-  };
+  // Stable for the provider's lifetime — see the note at the top of the file.
+  const toast = useMemo(
+    () => ({
+      success: (message, title) => addToast("success", message, title),
+      error:   (message, title) => addToast("error",   message, title),
+      warning: (message, title) => addToast("warning", message, title),
+      info:    (message, title) => addToast("info",    message, title),
+    }),
+    [addToast]
+  );
 
   return (
     <ToastContext.Provider value={toast}>
       {children}
       {createPortal(
-        <div id="toast-container">
+        <div id="toast-container" aria-live="polite" aria-atomic="false">
           {toasts.map(t => (
             <ToastItem key={t.id} {...t} onRemove={removeToast} />
           ))}
@@ -119,5 +139,3 @@ export function useToast() {
   if (!ctx) throw new Error("useToast must be used inside <ToastProvider>");
   return ctx;
 }
-
-export default ToastItem;

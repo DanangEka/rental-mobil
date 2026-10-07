@@ -1,12 +1,74 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, Timestamp } from "firebase/firestore";
 import { db } from "../services/firebase";
-import { Plus, Trash2, Users, MapPin, Calendar, Car, InboxIcon, LayoutGrid } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useCalendarSync } from "../services/calendarSync";
+import CalendarSyncBanner, { CalendarSyncBadge } from "../components/CalendarSync";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import EmptyState from "../components/ui/EmptyState";
+import Field from "../components/ui/Field";
+import Icon from "../components/ui/Icon";
+import Input from "../components/ui/Input";
+import Modal from "../components/ui/Modal";
+import PageHeader from "../components/ui/PageHeader";
+import Pill from "../components/ui/Pill";
+import Select from "../components/ui/Select";
+import Table, { TableRow, TableCell } from "../components/ui/Table";
 import TripRequestsQueue from "./TripRequestsQueue";
+
+/**
+ * Open-trip operations: the published schedule catalogue on one tab, and the
+ * private/open-trip request queue on the other.
+ *
+ * Every Firestore write and read is byte-for-byte the same as before —
+ * `open_trips` add/delete, the `pemesanan` query filtered by both `tipe ==
+ * "opentrip"` and `openTripId == trip.id`, and the `verifyPayment` patch to
+ * `pemesanan/{orderId}`. The capacity heuristic (Hiace = 14 seats, everything
+ * else = 6) is likewise unchanged, because `kapasitasMaks` is what existing
+ * documents are compared against.
+ *
+ * What did change is the dialog layer. Both modals were hand-rolled inside a
+ * single shared overlay: neither closed on ESC, neither locked body scroll,
+ * and because the overlay was a sibling rather than a portal, the create form
+ * sat above the sticky admin nav. They are now two `Modal` instances.
+ */
+
+const TABS = [
+  { id: "catalog", label: "Katalog Open Trip", icon: "grid_view" },
+  { id: "requests", label: "Private Trip & Open Trip Submitted", icon: "inbox" },
+];
+
+const FLEET = ["Innova Reborn", "Hiace Premio"];
+
+const EMPTY_FORM = {
+  judul: "",
+  mobilUtama: "Innova Reborn",
+  destinasi: "",
+  tanggalBerangkat: "",
+  waktuKumpul: "",
+  titikKumpul: "",
+  hargaPerPax: ""
+};
+
+const TRIP_STATUS = {
+  Tersedia: { variant: "available", icon: "check_circle" },
+};
+
+const tripStatusPill = (status) =>
+  TRIP_STATUS[status] || { variant: "danger", icon: "cancel" };
+
+const MANIFEST_COLUMNS = [
+  { key: "pax", header: "Penumpang" },
+  { key: "seat", header: "Kursi" },
+  { key: "payment", header: "Pembayaran" },
+  { key: "action", header: "Aksi" },
+];
 
 export default function AdminOpenTrip() {
   const toast = useToast();
+  const { status: syncStatus, getSyncState } = useCalendarSync();
+  const calConnected = syncStatus === "connected";
   const [activeTab, setActiveTab] = useState("catalog"); // "catalog" | "requests"
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,16 +76,8 @@ export default function AdminOpenTrip() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [passengers, setPassengers] = useState([]);
-  
-  const [formData, setFormData] = useState({
-    judul: "",
-    mobilUtama: "Innova Reborn",
-    destinasi: "",
-    tanggalBerangkat: "",
-    waktuKumpul: "",
-    titikKumpul: "",
-    hargaPerPax: ""
-  });
+
+  const [formData, setFormData] = useState({ ...EMPTY_FORM });
 
   const getCapacity = (mobil) => {
     if (mobil.includes("Hiace")) return 14;
@@ -112,37 +166,46 @@ export default function AdminOpenTrip() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800">
-      <div className="max-w-7xl mx-auto px-6">
-        
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
-            <Users size={14} />
-            <span>Paket Wisata &amp; Perjalanan</span>
-          </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Manajemen Open Trip</h1>
-          <p className="text-slate-500 mt-1">Kelola katalog open trip dan antrian pengajuan private/open trip dari client.</p>
-        </div>
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 pb-space-xl">
+      <div className="max-w-7xl mx-auto px-gutter-mobile sm:px-gutter">
+        <PageHeader
+          eyebrow="Paket Wisata & Perjalanan"
+          title="Manajemen Open Trip"
+          subtitle="Kelola katalog open trip dan antrian pengajuan private/open trip dari client."
+        />
+
+        {/* ── Google Calendar connection ── */}
+        <CalendarSyncBanner />
 
         {/* Tab navigation */}
-        <div className="flex gap-2 mb-8 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-sm w-fit">
-          {[
-            { id: "catalog",  label: "Katalog Open Trip",                icon: <LayoutGrid size={14} /> },
-            { id: "requests", label: "Private Trip & Open Trip Submitted", icon: <InboxIcon size={14} /> },
-          ].map(t => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${
-                activeTab === t.id
-                  ? "bg-[#810100] text-white shadow-md shadow-[#810100]/20"
-                  : "text-slate-500 hover:text-[#810100]"
-              }`}
-            >
-              {t.icon} {t.label}
-            </button>
-          ))}
+        <div
+          className="mt-space-lg flex w-fit gap-1.5 rounded-full border border-c57-surface-variant bg-c57-surface-container-lowest p-1.5 shadow-c57-card"
+          role="tablist"
+          aria-label="Tampilan Open Trip"
+        >
+          {TABS.map((t) => {
+            const active = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setActiveTab(t.id)}
+                className={[
+                  "flex items-center gap-1.5 rounded-full px-space-md py-2.5",
+                  "font-label-sm uppercase tracking-widest transition-colors duration-300 ease-editorial",
+                  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c57-primary",
+                  active
+                    ? "bg-c57-primary-container text-c57-on-primary shadow-c57-card"
+                    : "text-c57-on-surface-variant hover:text-c57-primary",
+                ].join(" ")}
+              >
+                <Icon name={t.icon} size="sm" />
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* ── Tab: Trip Requests Queue ── */}
@@ -150,242 +213,292 @@ export default function AdminOpenTrip() {
 
         {/* ── Tab: Catalog ── */}
         {activeTab === "catalog" && (<>
-        <div className="mb-8 flex justify-end">
-          <button
+        <div className="mt-space-lg flex justify-end">
+          <Button
+            type="button"
+            size="lg"
+            icon="add"
             onClick={() => {
-              setFormData({ judul: "", mobilUtama: "Innova Reborn", destinasi: "", tanggalBerangkat: "", waktuKumpul: "", titikKumpul: "", hargaPerPax: "" });
+              setFormData({ ...EMPTY_FORM });
               setShowModal(true);
             }}
-            className="group bg-[#810100] hover:bg-[#630000] text-white px-8 py-4 rounded-2xl font-bold flex items-center shadow-lg shadow-red-900/10 transition-all active:scale-95"
           >
-            <Plus size={20} className="mr-2 group-hover:rotate-90 transition-transform" /> 
             Pasang Jadwal Baru
-          </button>
+          </Button>
         </div>
 
         {/* Trips Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="mt-space-lg grid grid-cols-1 gap-gutter md:grid-cols-2 lg:grid-cols-3">
           {loading ? (
-            <div className="col-span-full py-20 text-center flex flex-col items-center">
-               <div className="w-10 h-10 border-4 border-slate-200 border-t-[#810100] rounded-full animate-spin mb-4"></div>
-               <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Sinkronisasi Jadwal...</p>
+            <div className="col-span-full flex flex-col items-center py-space-xl">
+              <div
+                className="mb-space-md h-10 w-10 animate-spin rounded-full border-4 border-c57-surface-container-highest border-t-c57-primary-container"
+                role="status"
+                aria-label="Sinkronisasi jadwal"
+              />
+              <p className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                Sinkronisasi Jadwal...
+              </p>
             </div>
           ) : trips.length === 0 ? (
-            <div className="col-span-full bg-white rounded-3xl border border-dashed border-slate-200 py-24 text-center">
-              <MapPin size={48} className="mx-auto text-slate-200 mb-4" />
-              <p className="text-slate-400 font-bold italic text-sm">Belum ada rute Open Trip yang aktif.</p>
-            </div>
+            <EmptyState
+              icon="location_on"
+              title="Belum ada rute aktif"
+              description="Belum ada rute Open Trip yang aktif. Pasang jadwal baru untuk memulai."
+              className="col-span-full py-space-xl"
+            />
           ) : (
-            trips.map(trip => (
-              <div key={trip.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition-all group flex flex-col overflow-hidden">
-                <div className="p-8">
-                  <div className="flex justify-between items-start mb-6">
-                    <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
-                      trip.status === "Tersedia" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : 
-                      "bg-red-50 text-[#810100] border-red-100"
-                    }`}>
-                      {trip.status}
-                    </span>
-                    <button onClick={() => handleDelete(trip.id)} className="text-slate-200 hover:text-red-500 transition-colors">
-                      <Trash2 size={18} />
-                    </button>
+            trips.map(trip => {
+              const pill = tripStatusPill(trip.status);
+              const full = trip.kuotaTerisi >= trip.kapasitasMaks;
+              return (
+                <Card key={trip.id} className="group flex flex-col overflow-hidden transition-shadow duration-300 ease-editorial hover:shadow-c57-card-hover">
+                  <div className="p-space-lg">
+                    <div className="mb-space-lg flex items-start justify-between gap-space-md">
+                      <div className="flex flex-wrap items-center gap-space-sm">
+                        <Pill variant={pill.variant} icon={pill.icon}>{trip.status}</Pill>
+                        {calConnected && (
+                          <CalendarSyncBadge
+                            state={getSyncState("open_trips", trip)}
+                            compact
+                          />
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(trip.id)}
+                        aria-label={`Hapus trip ${trip.judul}`}
+                        className="!px-2"
+                      >
+                        <Icon name="delete" size="sm" />
+                      </Button>
+                    </div>
+
+                    <h3 className="font-headline-sm text-headline-sm text-c57-on-surface mb-1 transition-colors duration-300 group-hover:text-c57-primary">
+                      {trip.judul}
+                    </h3>
+                    <p className="mb-space-lg flex items-baseline gap-1 font-headline-sm text-headline-sm text-c57-primary tabular-nums">
+                      Rp {trip.hargaPerPax?.toLocaleString()}
+                      <span className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                        / Seat
+                      </span>
+                    </p>
+
+                    <dl className="mb-space-lg space-y-space-md">
+                      <div className="flex items-center gap-space-sm text-body-md text-c57-on-surface-variant">
+                        <Icon name="location_on" size="sm" className="shrink-0 text-c57-outline" />
+                        <dd className="truncate">{trip.destinasi}</dd>
+                      </div>
+                      <div className="flex items-center gap-space-sm text-body-md text-c57-on-surface-variant">
+                        <Icon name="calendar_month" size="sm" className="shrink-0 text-c57-outline" />
+                        <dd>
+                          {new Date(trip.tanggalBerangkat).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}
+                        </dd>
+                      </div>
+                      <div className="flex items-center gap-space-sm text-body-md text-c57-on-surface-variant">
+                        <Icon name="directions_car" size="sm" className="shrink-0 text-c57-outline" />
+                        <dd>{trip.mobilUtama}</dd>
+                      </div>
+                    </dl>
+
+                    <div className="rounded-c57-md border border-c57-surface-variant bg-c57-surface-container-low p-space-md">
+                      <div className="mb-3 flex justify-between font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                        <span>Occupancy</span>
+                        <span className="tabular-nums">{trip.kuotaTerisi} / {trip.kapasitasMaks}</span>
+                      </div>
+                      {/* The bar alone would carry "full" by colour; the ratio is
+                          exposed to assistive tech and the text above repeats it. */}
+                      <div
+                        className="h-2 w-full overflow-hidden rounded-full bg-c57-surface-container-highest"
+                        role="progressbar"
+                        aria-valuenow={trip.kuotaTerisi}
+                        aria-valuemin={0}
+                        aria-valuemax={trip.kapasitasMaks}
+                        aria-label={`Kursi terisi: ${trip.kuotaTerisi} dari ${trip.kapasitasMaks}`}
+                      >
+                        <div
+                          className={`h-full transition-all duration-1000 ${
+                            full ? "bg-c57-error" : "bg-c57-primary-container"
+                          }`}
+                          style={{ width: `${(trip.kuotaTerisi / trip.kapasitasMaks) * 100}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <h3 className="text-xl font-black text-slate-900 mb-1 group-hover:text-[#810100] transition-colors">{trip.judul}</h3>
-                  <p className="text-xl font-black text-[#810100] tracking-tighter mb-6">
-                    Rp {trip.hargaPerPax?.toLocaleString()} 
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">/ Seat</span>
-                  </p>
-
-                  <div className="space-y-4 mb-8">
-                    <div className="flex items-center gap-3 text-xs font-bold text-slate-500">
-                      <MapPin size={14} className="text-slate-300" />
-                      <span className="truncate">{trip.destinasi}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs font-bold text-slate-500">
-                      <Calendar size={14} className="text-slate-300" />
-                      <span>{new Date(trip.tanggalBerangkat).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs font-bold text-slate-500">
-                      <Car size={14} className="text-slate-300" />
-                      <span>{trip.mobilUtama}</span>
-                    </div>
+                  <div className="mt-auto p-space-sm bg-c57-surface-container-low">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="lg"
+                      onClick={() => openDetail(trip)}
+                      icon="group"
+                      className="w-full"
+                    >
+                      Kelola Penumpang
+                    </Button>
                   </div>
-
-                  <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
-                    <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-                      <span>Occupancy</span>
-                      <span>{trip.kuotaTerisi} / {trip.kapasitasMaks}</span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full transition-all duration-1000 ${trip.kuotaTerisi >= trip.kapasitasMaks ? 'bg-red-600' : 'bg-[#810100]'}`} 
-                        style={{ width: `${(trip.kuotaTerisi / trip.kapasitasMaks) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-auto p-2 bg-slate-50">
-                  <button 
-                    onClick={() => openDetail(trip)}
-                    className="w-full py-4 text-slate-900 font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white rounded-2xl transition-all"
-                  >
-                    <Users size={16} /> Kelola Penumpang
-                  </button>
-                </div>
-              </div>
-            ))
+                </Card>
+              );
+            })
           )}
         </div>
         </>)}
-
       </div>
 
-      {/* Modal Container */}
-      {(showModal || showDetailModal) && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-          
-          {/* Create Trip Form */}
-          {showModal && (
-            <div className="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-scaleUp">
-              <div className="px-10 py-8 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="text-2xl font-black text-slate-900">Pasang Jadwal Trip</h3>
-                <button onClick={() => setShowModal(false)} className="text-slate-300 hover:text-[#810100] text-3xl font-black">×</button>
-              </div>
-              
-              <div className="p-10 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Judul / Headline Trip</label>
-                    <input
-                      type="text" value={formData.judul} onChange={(e) => setFormData({...formData, judul: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold focus:border-[#810100] outline-none"
-                      placeholder="Contoh: Explore Bromo Midnight"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Armada Utama</label>
-                    <select
-                      value={formData.mobilUtama} onChange={(e) => setFormData({...formData, mobilUtama: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-[#810100] focus:border-[#810100] outline-none"
-                    >
-                      <option value="Innova Reborn">Innova Reborn</option>
-                      <option value="Hiace Premio">Hiace Premio</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Rute Destinasi</label>
-                    <input
-                      type="text" value={formData.destinasi} onChange={(e) => setFormData({...formData, destinasi: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold focus:border-[#810100] outline-none"
-                      placeholder="Surabaya - Bromo - Malang"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Tanggal & Waktu</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="date" value={formData.tanggalBerangkat} onChange={(e) => setFormData({...formData, tanggalBerangkat: e.target.value})}
-                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-xs font-semibold focus:border-[#810100] outline-none"
-                      />
-                      <input
-                        type="time" value={formData.waktuKumpul} onChange={(e) => setFormData({...formData, waktuKumpul: e.target.value})}
-                        className="w-24 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-xs font-semibold focus:border-[#810100] outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Harga Pax (Rp)</label>
-                    <input
-                      type="number" value={formData.hargaPerPax} onChange={(e) => setFormData({...formData, hargaPerPax: e.target.value})}
-                      className="w-full bg-red-50/50 border border-red-100 rounded-xl px-4 py-3.5 text-sm font-black text-[#810100] focus:border-[#810100] outline-none"
-                      placeholder="Nominal per kursi"
-                    />
-                  </div>
-                </div>
+      {/* Create Trip Form */}
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title="Pasang Jadwal Trip"
+        footer={
+          <Button type="button" size="lg" onClick={handleCreate} className="w-full">
+            Publish Jadwal Open Trip
+          </Button>
+        }
+      >
+        <div className="grid grid-cols-1 gap-space-lg md:grid-cols-2">
+          <Field label="Judul / Headline Trip" className="md:col-span-2">
+            {(p) => (
+              <Input
+                {...p}
+                type="text"
+                value={formData.judul}
+                onChange={(e) => setFormData({...formData, judul: e.target.value})}
+                placeholder="Contoh: Explore Bromo Midnight"
+              />
+            )}
+          </Field>
 
-                <button
-                  onClick={handleCreate}
-                  className="w-full py-4 mt-6 bg-[#810100] hover:bg-[#630000] text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-red-900/10 active:scale-[0.98]"
-                >
-                  Publish Jadwal Open Trip
-                </button>
-              </div>
+          <Field label="Armada Utama">
+            {(p) => (
+              <Select
+                {...p}
+                value={formData.mobilUtama}
+                onChange={(e) => setFormData({...formData, mobilUtama: e.target.value})}
+              >
+                {FLEET.map((mobil) => (
+                  <option key={mobil} value={mobil}>{mobil}</option>
+                ))}
+              </Select>
+            )}
+          </Field>
+
+          <Field label="Rute Destinasi">
+            {(p) => (
+              <Input
+                {...p}
+                type="text"
+                icon="location_on"
+                value={formData.destinasi}
+                onChange={(e) => setFormData({...formData, destinasi: e.target.value})}
+                placeholder="Surabaya - Bromo - Malang"
+              />
+            )}
+          </Field>
+
+          <Field label="Tanggal & Waktu">
+            <div className="flex gap-space-sm">
+              <Input
+                type="date"
+                value={formData.tanggalBerangkat}
+                onChange={(e) => setFormData({...formData, tanggalBerangkat: e.target.value})}
+                aria-label="Tanggal berangkat"
+              />
+              <Input
+                type="time"
+                value={formData.waktuKumpul}
+                onChange={(e) => setFormData({...formData, waktuKumpul: e.target.value})}
+                aria-label="Waktu kumpul"
+                className="w-28 shrink-0"
+              />
             </div>
-          )}
+          </Field>
 
-          {/* Manifest Table */}
-          {showDetailModal && selectedTrip && (
-            <div className="bg-white rounded-[2.5rem] w-full max-w-5xl shadow-2xl overflow-hidden animate-scaleUp max-h-[85vh] flex flex-col">
-              <div className="px-10 py-8 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                <div>
-                   <h3 className="text-2xl font-black text-slate-900">Passenger Manifest</h3>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Rute: {selectedTrip.destinasi} | {selectedTrip.tanggalBerangkat}</p>
-                </div>
-                <button onClick={() => setShowDetailModal(false)} className="text-slate-300 hover:text-[#810100] text-3xl font-black">×</button>
-              </div>
-
-              <div className="p-10 overflow-y-auto">
-                {passengers.length === 0 ? (
-                  <div className="text-center py-16 text-slate-300">
-                    <Users size={60} className="mx-auto mb-4 opacity-10" />
-                    <p className="text-sm font-bold uppercase tracking-widest">Belum Ada Reservasi</p>
-                  </div>
-                ) : (
-                  <div className="rounded-3xl border border-slate-100 overflow-hidden bg-white">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="bg-slate-50 text-[10px] uppercase font-black text-slate-400 tracking-widest">
-                          <th className="px-8 py-5">Penumpang</th>
-                          <th className="px-8 py-5 text-center">Kursi</th>
-                          <th className="px-8 py-5 text-right">Pembayaran</th>
-                          <th className="px-8 py-5 text-right">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {passengers.map((pax) => (
-                          <tr key={pax.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-8 py-6">
-                              <p className="font-black text-slate-900 text-sm whitespace-nowrap">{pax.namaClient || pax.namaPemesan}</p>
-                              <p className="text-[10px] font-bold text-slate-400 truncate max-w-[200px]">{pax.email}</p>
-                            </td>
-                            <td className="px-8 py-6 text-center">
-                              <span className="bg-slate-900 text-white px-4 py-1 rounded-full text-[10px] font-black">
-                                {pax.jumlahKursi} Seats
-                              </span>
-                            </td>
-                            <td className="px-8 py-6 text-right">
-                              <div className="flex flex-col items-end">
-                                 <span className="text-sm font-black text-[#810100]">Rp {pax.perkiraanHarga?.toLocaleString()}</span>
-                                 <span className={`text-[8px] font-black px-2 py-0.5 rounded mt-1 ${pax.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                    {pax.paymentStatus === 'paid' ? 'SETTLED' : 'PENDING'}
-                                 </span>
-                              </div>
-                            </td>
-                            <td className="px-8 py-6 text-right">
-                              {pax.paymentStatus !== 'paid' && (
-                                <button
-                                  onClick={() => verifyPayment(pax.id)}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm"
-                                >
-                                  Konfirmasi
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
+          <Field label="Harga Pax (Rp)">
+            {(p) => (
+              <Input
+                {...p}
+                type="number"
+                inputMode="numeric"
+                value={formData.hargaPerPax}
+                onChange={(e) => setFormData({...formData, hargaPerPax: e.target.value})}
+                placeholder="Nominal per kursi"
+              />
+            )}
+          </Field>
         </div>
-      )}
+      </Modal>
 
+      {/* Manifest Table */}
+      <Modal
+        open={showDetailModal && !!selectedTrip}
+        onClose={() => setShowDetailModal(false)}
+        size="full"
+        title="Passenger Manifest"
+        subtitle={
+          selectedTrip
+            ? `Rute: ${selectedTrip.destinasi} | ${selectedTrip.tanggalBerangkat}`
+            : undefined
+        }
+      >
+        {passengers.length === 0 ? (
+          <EmptyState
+            icon="group"
+            title="Belum Ada Reservasi"
+            description="Tidak ada penumpang yang mem-booking rute ini."
+            className="border-0 bg-transparent"
+          />
+        ) : (
+          <Table columns={MANIFEST_COLUMNS}>
+            {passengers.map((pax) => {
+              const paid = pax.paymentStatus === "paid";
+              return (
+                <TableRow key={pax.id}>
+                  <TableCell>
+                    <p className="whitespace-nowrap font-headline-sm text-body-md text-c57-on-surface">
+                      {pax.namaClient || pax.namaPemesan}
+                    </p>
+                    <p className="max-w-[200px] truncate text-body-sm text-c57-on-surface-variant">
+                      {pax.email}
+                    </p>
+                  </TableCell>
+
+                  <TableCell className="text-center">
+                    <Pill variant="neutral">{pax.jumlahKursi} Seats</Pill>
+                  </TableCell>
+
+                  <TableCell className="text-right">
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="font-headline-sm text-body-md text-c57-primary tabular-nums">
+                        Rp {pax.perkiraanHarga?.toLocaleString()}
+                      </span>
+                      <Pill variant={paid ? "available" : "sand"}>
+                        {paid ? "Settled" : "Pending"}
+                      </Pill>
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="text-right">
+                    {!paid && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => verifyPayment(pax.id)}
+                      >
+                        Konfirmasi
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </Table>
+        )}
+      </Modal>
     </div>
   );
 }

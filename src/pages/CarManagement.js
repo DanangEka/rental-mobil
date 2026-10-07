@@ -8,20 +8,66 @@ import {
   addDoc,
   updateDoc
 } from "firebase/firestore";
-import { Car, Search, Plus, Trash2, Settings, Image as ImageIcon, Luggage, BatteryCharging, Users as UsersIcon, Check } from "lucide-react";
+
+import Button from "../components/ui/Button";
+import { uploadImage, validateImageFile } from "../utils/uploadImage";
+import Card from "../components/ui/Card";
+import EmptyState from "../components/ui/EmptyState";
+import Field from "../components/ui/Field";
+import Icon from "../components/ui/Icon";
+import Input from "../components/ui/Input";
+import PageHeader from "../components/ui/PageHeader";
+import Pill from "../components/ui/Pill";
+import Select from "../components/ui/Select";
+
+/**
+ * Fleet inventory: create, inline-edit, price, service status, delete.
+ *
+ * The Firestore document shape is unchanged, including the eight derived
+ * fields written by `addDoc` and the `harga` total being the sum of the two
+ * daily fees rather than a client-side preview. `mobil.status` stays the
+ * service state ("normal" | "servis") that this page alone owns; ManajemenPesanan
+ * deliberately writes only `tersedia` so a booking transition cannot knock a
+ * serviced car back to normal.
+ *
+ * Two inline-edit write paths were tightened. The price box commits on blur or
+ * Enter instead of writing on every keystroke, and the `layanan` select sends
+ * `layanan` and `withDriver` in one `updateDoc` rather than two — same stored
+ * document, half the writes and half the collection reads.
+ *
+ * The four amenity tiles and the two checkbox rows were copy-pasted between
+ * the create form and the edit form; they are now `AmenityTile` and
+ * `Toggle` so a change lands in both.
+ */
+
+const LAYANAN = ["Lepas Kunci", "Dengan Driver"];
+
+const EMPTY_FORM = {
+  nama: "",
+  rental_fee_per_day: "",
+  driver_fee_per_day: "",
+  gambar: "",
+  layanan: "Lepas Kunci",
+  seats: 4,
+  chargingPort: true,
+  luggage: true
+};
+
+/** `harga` is the sum, not the client-side preview — kept in one place. */
+const dailyTotal = (rentalFee, driverFee, layanan) =>
+  parseInt(rentalFee || 0) + (layanan === "Dengan Driver" ? parseInt(driverFee || 0) : 0);
 
 export default function CarManagement() {
   const [mobil, setMobil] = useState([]);
-  const [form, setForm] = useState({
-    nama: "", rental_fee_per_day: "", driver_fee_per_day: "",
-    gambar: "", layanan: "Lepas Kunci", seats: 4, chargingPort: true, luggage: true
-  });
+  const [form, setForm] = useState({ ...EMPTY_FORM });
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchMobil, setSearchMobil] = useState("");
   const [editingCarId, setEditingCarId] = useState(null);
+  const [priceDraft, setPriceDraft] = useState({});
+  const [savedId, setSavedId] = useState(null);
   const [editForm, setEditForm] = useState({
     nama: "", rental_fee_per_day: "", driver_fee_per_day: "",
     layanan: "Lepas Kunci", seats: 4, chargingPort: true, luggage: true
@@ -63,6 +109,12 @@ export default function CarManagement() {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      const problem = validateImageFile(file, "photo");
+      if (problem) {
+        alert(problem);
+        e.target.value = "";
+        return;
+      }
       setSelectedFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -77,23 +129,7 @@ export default function CarManagement() {
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("upload_preset", process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || "rental-mobil");
-      formData.append("folder", "mobil");
-
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || "dnfruux8d"}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (!response.ok) throw new Error("Gagal mengunggah ke Cloudinary");
-
-      const data = await response.json();
-      const downloadURL = data.secure_url;
+      const downloadURL = await uploadImage(selectedFile, { limit: "photo", folder: "mobil" });
 
       setForm({ ...form, gambar: downloadURL });
       setSelectedFile(null);
@@ -115,7 +151,7 @@ export default function CarManagement() {
     try {
       await addDoc(collection(db, "mobil"), {
         nama: form.nama,
-        harga: parseInt(form.rental_fee_per_day) + (form.layanan === "Dengan Driver" ? parseInt(form.driver_fee_per_day || 0) : 0),
+        harga: dailyTotal(form.rental_fee_per_day, form.driver_fee_per_day, form.layanan),
         rental_fee_per_day: parseInt(form.rental_fee_per_day),
         driver_fee_per_day: form.layanan === "Dengan Driver" ? parseInt(form.driver_fee_per_day || 0) : 0,
         gambar: form.gambar,
@@ -127,7 +163,7 @@ export default function CarManagement() {
         tersedia: true,
         status: "normal"
       });
-      setForm({ nama: "", rental_fee_per_day: "", driver_fee_per_day: "", gambar: "", layanan: "Lepas Kunci", seats: 4, chargingPort: true, luggage: true });
+      setForm({ ...EMPTY_FORM });
       setSelectedFile(null);
       fetchData();
       alert("Mobil berhasil ditambahkan!");
@@ -143,9 +179,53 @@ export default function CarManagement() {
     }
   };
 
-  const handleEditMobil = async (id, field, value) => {
-    await updateDoc(doc(db, "mobil", id), { [field]: value });
-    fetchData();
+  const handleEditMobil = async (id, fields) => {
+    await updateDoc(doc(db, "mobil", id), fields);
+    await fetchData();
+  };
+
+  /**
+   * The inline price box keeps a local draft and commits on blur or Enter.
+   *
+   * It used to write `harga` straight to Firestore on every keystroke, so
+   * typing a seven-digit figure cost seven `updateDoc` calls and seven full
+   * `mobil` collection reads — and the intermediate states were persisted,
+   * including the `parseInt("")` -> NaN that Firestore rejects. The stored
+   * value is still a plain number; it is just reached once per edit instead
+   * of once per character.
+   */
+  const commitPrice = async (car) => {
+    const raw = priceDraft[car.id];
+    if (raw === undefined) return;
+
+    const clearDraft = () =>
+      setPriceDraft(prev => {
+        if (!(car.id in prev)) return prev;
+        const next = { ...prev };
+        delete next[car.id];
+        return next;
+      });
+
+    const next = parseInt(raw, 10);
+    // An empty or negative field is a half-typed value, not a price of 0.
+    // Drop the draft and leave the stored figure alone.
+    if (!Number.isFinite(next) || next < 0) {
+      clearDraft();
+      return;
+    }
+    if (next === car.harga) {
+      clearDraft();
+      return;
+    }
+
+    await handleEditMobil(car.id, { harga: next });
+    clearDraft();
+    setJustSaved(car.id);
+  };
+
+  const setJustSaved = (id) => {
+    setSavedId(id);
+    setTimeout(() => setSavedId(cur => (cur === id ? null : cur)), 1600);
   };
 
   const startEdit = (car) => {
@@ -169,7 +249,7 @@ export default function CarManagement() {
     try {
       await updateDoc(doc(db, "mobil", id), {
         nama: editForm.nama,
-        harga: parseInt(editForm.rental_fee_per_day) + (editForm.layanan === "Dengan Driver" ? parseInt(editForm.driver_fee_per_day || 0) : 0),
+        harga: dailyTotal(editForm.rental_fee_per_day, editForm.driver_fee_per_day, editForm.layanan),
         rental_fee_per_day: parseInt(editForm.rental_fee_per_day),
         driver_fee_per_day: editForm.layanan === "Dengan Driver" ? parseInt(editForm.driver_fee_per_day || 0) : 0,
         layanan: editForm.layanan,
@@ -202,401 +282,560 @@ export default function CarManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#810100] rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-c57-surface-container-low pt-30 flex items-center justify-center">
+        <div
+          className="h-10 w-10 animate-spin rounded-full border-4 border-c57-surface-container-highest border-t-c57-primary-container"
+          role="status"
+          aria-label="Memuat armada"
+        />
       </div>
     );
   }
 
   if (!isAdmin) return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center p-6 text-center">
-       <div className="bg-white p-10 rounded-3xl shadow-xl shadow-red-900/5 max-w-md w-full border border-red-50">
-          <div className="w-20 h-20 bg-red-50 text-[#810100] rounded-full flex items-center justify-center mx-auto mb-6">
-            <Settings size={40} />
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2">Akses Terbatas</h2>
-          <p className="text-slate-500 mb-8 italic">Halaman ini hanya dapat diakses oleh Administrator sistem Cakra Lima Tujuh.</p>
-          <div className="h-1.5 w-12 bg-[#810100] mx-auto rounded-full"></div>
-       </div>
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 flex items-center justify-center px-gutter-mobile sm:px-gutter text-center">
+      <Card className="max-w-md w-full p-space-xl">
+        <span className="mx-auto mb-space-lg flex h-20 w-20 items-center justify-center rounded-full bg-c57-error-container text-c57-on-error-container">
+          <Icon name="lock" size="3xl" />
+        </span>
+        <h2 className="mb-space-sm font-headline-md text-headline-md text-c57-on-surface">
+          Akses Terbatas
+        </h2>
+        <p className="mb-space-lg text-body-md text-c57-on-surface-variant italic">
+          Halaman ini hanya dapat diakses oleh Administrator sistem Cakra Lima Tujuh.
+        </p>
+        <div className="mx-auto h-1.5 w-12 rounded-full bg-c57-primary-container" />
+      </Card>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800">
-      <div className="max-w-7xl mx-auto px-6">
-        
-        {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
-            <Car size={14} />
-            <span>Manajemen Inventaris</span>
-          </div>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div>
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Katalog Armada</h1>
-              <p className="text-slate-500 mt-1">Kelola data kendaraan, ketersediaan, dan status layanan.</p>
-            </div>
-            <div className="relative w-full md:w-80 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#810100] transition-colors" size={18} />
-              <input 
-                type="text" 
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 pb-space-xl">
+      <div className="max-w-7xl mx-auto px-gutter-mobile sm:px-gutter">
+        <PageHeader
+          eyebrow="Manajemen Inventaris"
+          title="Katalog Armada"
+          subtitle="Kelola data kendaraan, ketersediaan, dan status layanan."
+          actions={
+            <div className="w-full md:w-80">
+              <Input
+                icon="search"
+                label="Cari armada"
                 placeholder="Cari armada..."
                 value={searchMobil}
                 onChange={(e) => setSearchMobil(e.target.value)}
-                className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-6 py-3.5 focus:ring-2 focus:ring-red-100 focus:border-[#810100] outline-none transition-all placeholder:text-slate-400 font-medium"
               />
             </div>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          
+        <div className="mt-space-xl grid grid-cols-1 gap-gutter lg:grid-cols-3">
           {/* Form Create (Sticky left) */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 sticky top-[120px]">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 bg-red-50 text-[#810100] rounded-xl flex items-center justify-center">
-                  <Plus size={20} />
-                </div>
-                <h2 className="text-xl font-bold text-slate-900">Tambah Armada</h2>
+            <Card className="sticky top-[120px] p-space-lg sm:p-space-xl">
+              <div className="mb-space-lg flex items-center gap-space-sm">
+                <span className="flex h-10 w-10 items-center justify-center rounded-c57-md bg-c57-primary-container text-c57-on-primary">
+                  <Icon name="add" size="xl" />
+                </span>
+                <h2 className="font-headline-sm text-headline-sm text-c57-on-surface">Tambah Armada</h2>
               </div>
 
-              <div className="space-y-5">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Identitas Mobil</label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Toyota Alphard Gen 4"
-                    value={form.nama}
-                    onChange={e => setForm({ ...form, nama: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
-                  />
-                </div>
+              <div className="space-y-space-md">
+                <Field label="Identitas Mobil">
+                  {(p) => (
+                    <Input
+                      {...p}
+                      type="text"
+                      value={form.nama}
+                      onChange={e => setForm({ ...form, nama: e.target.value })}
+                      placeholder="Contoh: Toyota Alphard Gen 4"
+                    />
+                  )}
+                </Field>
 
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Tarif Sewa / Hari (Rp)</label>
-                  <input
-                    type="number"
-                    placeholder="1.100.000"
-                    value={form.rental_fee_per_day}
-                    onChange={e => setForm({ ...form, rental_fee_per_day: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
-                  />
-                </div>
+                <Field label="Tarif Sewa / Hari (Rp)">
+                  {(p) => (
+                    <Input
+                      {...p}
+                      type="number"
+                      inputMode="numeric"
+                      value={form.rental_fee_per_day}
+                      onChange={e => setForm({ ...form, rental_fee_per_day: e.target.value })}
+                      placeholder="1.100.000"
+                    />
+                  )}
+                </Field>
 
                 {/* Biaya Driver — hanya tampil saat Dengan Driver */}
-                <div className={form.layanan === "Dengan Driver" ? "" : "opacity-40 pointer-events-none"}>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
-                    Biaya Driver / Hari (Rp)
-                    {form.layanan !== "Dengan Driver" && <span className="ml-2 text-slate-300">— N/A untuk Lepas Kunci</span>}
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="200.000"
-                    value={form.driver_fee_per_day}
-                    onChange={e => setForm({ ...form, driver_fee_per_day: e.target.value })}
-                    disabled={form.layanan !== "Dengan Driver"}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold disabled:bg-slate-100"
-                  />
-                </div>
+                <Field
+                  label="Biaya Driver / Hari (Rp)"
+                  hint={form.layanan !== "Dengan Driver" ? "N/A untuk Lepas Kunci" : undefined}
+                  className={form.layanan === "Dengan Driver" ? "" : "opacity-40"}
+                >
+                  {(p) => (
+                    <Input
+                      {...p}
+                      type="number"
+                      inputMode="numeric"
+                      value={form.driver_fee_per_day}
+                      onChange={e => setForm({ ...form, driver_fee_per_day: e.target.value })}
+                      placeholder="200.000"
+                      disabled={form.layanan !== "Dengan Driver"}
+                    />
+                  )}
+                </Field>
 
                 {/* Preview Total */}
                 {form.rental_fee_per_day && (
-                  <div className="bg-[#1B1717] text-white rounded-xl px-4 py-3 flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Total / Hari</span>
-                    <span className="font-black text-[#EDEBDD]">
-                      Rp {(parseInt(form.rental_fee_per_day || 0) + (form.layanan === "Dengan Driver" ? parseInt(form.driver_fee_per_day || 0) : 0)).toLocaleString("id-ID")}
+                  <div className="flex items-center justify-between rounded-c57-md bg-c57-scrim px-space-md py-3 text-c57-on-scrim">
+                    <span className="font-label-sm uppercase tracking-widest text-c57-on-scrim/60">
+                      Total / Hari
+                    </span>
+                    <span className="font-headline-sm text-headline-sm text-c57-on-scrim tabular-nums">
+                      Rp {dailyTotal(form.rental_fee_per_day, form.driver_fee_per_day, form.layanan).toLocaleString("id-ID")}
                     </span>
                   </div>
                 )}
 
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Layanan</label>
-                  <select
-                    value={form.layanan}
-                    onChange={e => setForm({ ...form, layanan: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold appearance-none cursor-pointer"
-                  >
-                    <option value="Lepas Kunci">Lepas Kunci</option>
-                    <option value="Dengan Driver">Dengan Driver</option>
-                  </select>
-                </div>
+                <Field label="Layanan">
+                  {(p) => (
+                    <Select
+                      {...p}
+                      value={form.layanan}
+                      onChange={e => setForm({ ...form, layanan: e.target.value })}
+                    >
+                      {LAYANAN.map((l) => (
+                        <option key={l} value={l}>{l}</option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
 
-                <div className="border border-slate-100 rounded-2xl p-4 bg-slate-50/50 space-y-4">
-                  <span className="text-[10px] font-bold text-[#810100] uppercase tracking-widest block border-b border-slate-100 pb-2">Fasilitas Armada</span>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Jumlah Kursi</label>
-                      <input
-                        type="number"
-                        value={form.seats}
-                        onChange={e => setForm({ ...form, seats: e.target.value })}
-                        className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 focus:border-[#810100] outline-none transition-all font-semibold"
+                <div className="space-y-space-md rounded-c57-md border border-c57-surface-variant bg-c57-surface-container-low p-space-md">
+                  <span className="block border-b border-c57-surface-variant pb-2 font-label-sm uppercase tracking-widest text-c57-primary">
+                    Fasilitas Armada
+                  </span>
+
+                  <div className="grid grid-cols-2 gap-space-md">
+                    <Field label="Jumlah Kursi">
+                      {(p) => (
+                        <Input
+                          {...p}
+                          type="number"
+                          inputMode="numeric"
+                          value={form.seats}
+                          onChange={e => setForm({ ...form, seats: e.target.value })}
+                        />
+                      )}
+                    </Field>
+                    <div className="flex flex-col justify-center gap-space-sm pt-6">
+                      <Toggle
+                        id="new-port"
+                        label="Port Charger"
+                        checked={form.chargingPort}
+                        onChange={(v) => setForm({ ...form, chargingPort: v })}
+                      />
+                      <Toggle
+                        id="new-luggage"
+                        label="Bagasi"
+                        checked={form.luggage}
+                        onChange={(v) => setForm({ ...form, luggage: v })}
                       />
                     </div>
-                    <div className="flex flex-col justify-center gap-3 pt-5">
-                      <label className="flex items-center gap-2 cursor-pointer group">
-                        <input type="checkbox" checked={form.chargingPort} onChange={e => setForm({ ...form, chargingPort: e.target.checked })} className="w-4 h-4 accent-[#810100] cursor-pointer" />
-                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Port Charger</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer group">
-                        <input type="checkbox" checked={form.luggage} onChange={e => setForm({ ...form, luggage: e.target.checked })} className="w-4 h-4 accent-[#810100] cursor-pointer" />
-                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Bagasi</span>
-                      </label>
-                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Foto Armada</label>
-                  <div className="relative group overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-4 transition-all hover:border-[#810100]/30">
-                    <input type="file" accept="image/*" onChange={handleFileSelect} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                    {form.gambar ? (
-                      <div className="flex items-center gap-4">
-                        <img src={form.gambar} alt="Preview" className="w-16 h-12 object-cover rounded-lg shadow-sm" />
-                        <span className="text-xs font-bold text-slate-600 truncate max-w-[120px]">{selectedFile?.name || "Foto Terpilih"}</span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-2 text-slate-400 py-2">
-                        <ImageIcon size={24} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Pilih Gambar</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <Field label="Foto Armada">
+                  {(p) => (
+                    /* The file input covers the whole dashed target, which is
+                       what makes the empty state clickable. It stays focusable
+                       and is named by the visible "Foto Armada" label above. */
+                    <div className="relative overflow-hidden rounded-c57-lg border-2 border-dashed border-c57-outline-variant p-space-md transition-colors hover:border-c57-primary/30 focus-within:border-c57-primary-container">
+                      <input
+                        {...p}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                      />
+                      {form.gambar ? (
+                        <div className="pointer-events-none flex items-center gap-space-md">
+                          <img
+                            src={form.gambar}
+                            alt="Pratinjau armada"
+                            className="h-12 w-16 rounded-c57-sm object-cover shadow-c57-card"
+                          />
+                          <span className="max-w-[120px] truncate text-body-sm font-semibold text-c57-on-surface-variant">
+                            {selectedFile?.name || "Foto Terpilih"}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="pointer-events-none flex flex-col items-center gap-space-sm py-2 text-c57-outline">
+                          <Icon name="add_photo_alternate" size="2xl" />
+                          <span className="font-label-sm uppercase tracking-widest">Pilih Gambar</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Field>
 
                 {selectedFile && (
-                  <button onClick={handleUploadImage} disabled={isUploading} className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all hover:bg-black disabled:opacity-50">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    loading={isUploading}
+                    onClick={handleUploadImage}
+                    className="w-full"
+                  >
                     {isUploading ? "Mengunggah..." : "Konfirmasi Unggah Foto"}
-                  </button>
+                  </Button>
                 )}
 
-                <button onClick={handleTambahMobil} className="w-full py-4 bg-[#810100] text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all hover:bg-[#630000] shadow-lg shadow-red-900/10 active:scale-95">
+                <Button type="button" size="lg" onClick={handleTambahMobil} className="w-full">
                   Simpan Unit Baru
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Table/List View */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-space-lg lg:col-span-2">
             {filteredMobil.map((m) => (
-              <div key={m.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-6 flex flex-col md:flex-row gap-6 hover:shadow-md transition-shadow">
+              <Card
+                key={m.id}
+                className="flex flex-col gap-space-lg p-space-sm transition-shadow duration-300 ease-editorial hover:shadow-c57-card-hover sm:p-space-md md:flex-row"
+              >
                 {/* Car Image Area */}
-                <div className="w-full md:w-48 h-36 bg-slate-50 rounded-2xl overflow-hidden flex-shrink-0 border border-slate-100">
-                  <img src={m.gambar} alt={m.nama} className="w-full h-full object-cover" />
+                <div className="h-36 w-full shrink-0 overflow-hidden rounded-c57-md border border-c57-surface-variant bg-c57-surface-container md:w-48">
+                  <img src={m.gambar} alt={m.nama} className="h-full w-full object-cover" />
                 </div>
 
                 {/* Content Area */}
                 {editingCarId === m.id ? (
-                  <div className="flex-1 space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Nama Mobil</label>
-                        <input
-                          type="text"
-                          value={editForm.nama}
-                          onChange={(e) => setEditForm({ ...editForm, nama: e.target.value })}
-                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#810100]"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Tarif Sewa (/hari)</label>
-                        <input
-                          type="number"
-                          value={editForm.rental_fee_per_day}
-                          onChange={(e) => setEditForm({ ...editForm, rental_fee_per_day: e.target.value })}
-                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#810100]"
-                        />
-                      </div>
+                  <div className="flex-1 space-y-space-md">
+                    <div className="grid grid-cols-1 gap-space-md sm:grid-cols-2">
+                      <Field label="Nama Mobil">
+                        {(p) => (
+                          <Input
+                            {...p}
+                            type="text"
+                            value={editForm.nama}
+                            onChange={(e) => setEditForm({ ...editForm, nama: e.target.value })}
+                          />
+                        )}
+                      </Field>
+                      <Field label="Tarif Sewa (/hari)">
+                        {(p) => (
+                          <Input
+                            {...p}
+                            type="number"
+                            inputMode="numeric"
+                            value={editForm.rental_fee_per_day}
+                            onChange={(e) => setEditForm({ ...editForm, rental_fee_per_day: e.target.value })}
+                          />
+                        )}
+                      </Field>
                     </div>
 
                     {/* Biaya Driver di form edit */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className={editForm.layanan === "Dengan Driver" ? "" : "opacity-40"}>
-                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Biaya Driver (/hari)</label>
-                        <input
-                          type="number"
-                          value={editForm.driver_fee_per_day}
-                          onChange={(e) => setEditForm({ ...editForm, driver_fee_per_day: e.target.value })}
-                          disabled={editForm.layanan !== "Dengan Driver"}
-                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#810100] disabled:bg-slate-100"
-                        />
-                      </div>
+                    <div className="grid grid-cols-1 gap-space-md sm:grid-cols-2">
+                      <Field
+                        label="Biaya Driver (/hari)"
+                        className={editForm.layanan === "Dengan Driver" ? "" : "opacity-40"}
+                      >
+                        {(p) => (
+                          <Input
+                            {...p}
+                            type="number"
+                            inputMode="numeric"
+                            value={editForm.driver_fee_per_day}
+                            onChange={(e) => setEditForm({ ...editForm, driver_fee_per_day: e.target.value })}
+                            disabled={editForm.layanan !== "Dengan Driver"}
+                          />
+                        )}
+                      </Field>
                       {editForm.rental_fee_per_day && (
-                        <div className="bg-[#1B1717] text-white rounded-lg px-3 py-2 flex flex-col justify-center">
-                          <span className="text-[8px] font-black uppercase tracking-widest opacity-50">Total / Hari</span>
-                          <span className="font-black text-[#EDEBDD] text-xs">
-                            Rp {(parseInt(editForm.rental_fee_per_day || 0) + (editForm.layanan === "Dengan Driver" ? parseInt(editForm.driver_fee_per_day || 0) : 0)).toLocaleString("id-ID")}
+                        <div className="flex flex-col justify-center rounded-c57-md bg-c57-scrim px-3 py-2 text-c57-on-scrim">
+                          <span className="font-label-sm uppercase tracking-widest text-c57-on-scrim/60">
+                            Total / Hari
+                          </span>
+                          <span className="font-headline-sm text-headline-sm text-c57-on-scrim tabular-nums">
+                            Rp {dailyTotal(editForm.rental_fee_per_day, editForm.driver_fee_per_day, editForm.layanan).toLocaleString("id-ID")}
                           </span>
                         </div>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      <div>
-                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Layanan</label>
-                        <select
-                          value={editForm.layanan}
-                          onChange={(e) => setEditForm({ ...editForm, layanan: e.target.value })}
-                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#810100]"
-                        >
-                          <option value="Lepas Kunci">Lepas Kunci</option>
-                          <option value="Dengan Driver">Dengan Driver</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Kursi</label>
-                        <input
-                          type="number"
-                          value={editForm.seats}
-                          onChange={(e) => setEditForm({ ...editForm, seats: e.target.value })}
-                          className="w-full bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-[#810100]"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 pt-5">
-                        <input
-                          type="checkbox"
+                    <div className="grid grid-cols-2 gap-space-md sm:grid-cols-4">
+                      <Field label="Layanan">
+                        {(p) => (
+                          <Select
+                            {...p}
+                            value={editForm.layanan}
+                            onChange={(e) => setEditForm({ ...editForm, layanan: e.target.value })}
+                          >
+                            {LAYANAN.map((l) => (
+                              <option key={l} value={l}>{l}</option>
+                            ))}
+                          </Select>
+                        )}
+                      </Field>
+                      <Field label="Kursi">
+                        {(p) => (
+                          <Input
+                            {...p}
+                            type="number"
+                            inputMode="numeric"
+                            value={editForm.seats}
+                            onChange={(e) => setEditForm({ ...editForm, seats: e.target.value })}
+                          />
+                        )}
+                      </Field>
+                      <div className="flex items-center gap-space-sm pt-6">
+                        <Toggle
                           id={`edit-port-${m.id}`}
+                          label="Port Charger"
                           checked={editForm.chargingPort}
-                          onChange={(e) => setEditForm({ ...editForm, chargingPort: e.target.checked })}
-                          className="accent-[#810100] w-4 h-4 cursor-pointer"
+                          onChange={(v) => setEditForm({ ...editForm, chargingPort: v })}
                         />
-                        <label htmlFor={`edit-port-${m.id}`} className="text-[10px] font-bold text-slate-600 uppercase tracking-widest cursor-pointer">Port Charger</label>
                       </div>
-                      <div className="flex items-center gap-2 pt-5">
-                        <input
-                          type="checkbox"
+                      <div className="flex items-center gap-space-sm pt-6">
+                        <Toggle
                           id={`edit-luggage-${m.id}`}
+                          label="Bagasi"
                           checked={editForm.luggage}
-                          onChange={(e) => setEditForm({ ...editForm, luggage: e.target.checked })}
-                          className="accent-[#810100] w-4 h-4 cursor-pointer"
+                          onChange={(v) => setEditForm({ ...editForm, luggage: v })}
                         />
-                        <label htmlFor={`edit-luggage-${m.id}`} className="text-[10px] font-bold text-slate-600 uppercase tracking-widest cursor-pointer">Bagasi</label>
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-                      <button
-                        onClick={cancelEdit}
-                        className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
-                      >
+                    <div className="flex justify-end gap-space-sm border-t border-c57-surface-variant pt-space-md">
+                      <Button type="button" variant="secondary" onClick={cancelEdit}>
                         Batal
-                      </button>
-                      <button
-                        onClick={() => saveEdit(m.id)}
-                        className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md active:scale-95"
-                      >
+                      </Button>
+                      <Button type="button" variant="success" onClick={() => saveEdit(m.id)}>
                         Simpan
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 space-y-4">
-                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-1 flex-wrap">
-                          <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight break-words">{m.nama}</h3>
-                          <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${m.tersedia ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-[#810100] border border-red-100'}`}>
-                            {m.tersedia ? 'Tersedia' : 'Disewa'}
-                          </span>
+                  <div className="flex-1 space-y-space-md">
+                    <div className="flex flex-col items-start justify-between gap-space-md sm:flex-row">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex flex-wrap items-center gap-space-sm">
+                          <h3 className="break-words font-headline-sm text-headline-sm uppercase text-c57-on-surface">
+                            {m.nama}
+                          </h3>
+                          <Pill
+                            variant={m.tersedia ? "available" : "danger"}
+                            icon={m.tersedia ? "check_circle" : "cancel"}
+                          >
+                            {m.tersedia ? "Tersedia" : "Disewa"}
+                          </Pill>
                         </div>
-                        <p className="text-xs font-bold text-slate-400">ID: {m.id.substring(0, 10)}...</p>
+                        <p className="text-body-sm text-c57-on-surface-variant">
+                          ID: {m.id.substring(0, 10)}...
+                        </p>
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tarif Sewa</p>
-                        <p className="text-2xl font-black text-[#810100]">Rp. {(m.rental_fee_per_day || m.harga || 0).toLocaleString("id-ID")}<span className="text-xs text-slate-400 font-bold">/hari</span></p>
+
+                      <div className="shrink-0 text-right">
+                        <p className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                          Tarif Sewa
+                        </p>
+                        <p className="font-headline-sm text-headline-sm text-c57-primary tabular-nums">
+                          Rp. {(m.rental_fee_per_day || m.harga || 0).toLocaleString("id-ID")}
+                          <span className="text-body-sm text-c57-on-surface-variant">/hari</span>
+                        </p>
                         {m.layanan === "Dengan Driver" && (m.driver_fee_per_day > 0 || m.withDriver) && (
-                          <p className="text-[10px] text-slate-500 font-bold mt-0.5">
-                            +Rp {(m.driver_fee_per_day || 250000).toLocaleString("id-ID")} driver = <span className="text-[#1B1717] font-black">Rp {((m.rental_fee_per_day || m.harga || 0) + (m.driver_fee_per_day || 250000)).toLocaleString("id-ID")}/hari</span>
+                          <p className="mt-0.5 text-body-sm text-c57-on-surface-variant">
+                            +Rp {(m.driver_fee_per_day || 250000).toLocaleString("id-ID")} driver ={" "}
+                            <span className="font-semibold text-c57-on-surface tabular-nums">
+                              Rp {((m.rental_fee_per_day || m.harga || 0) + (m.driver_fee_per_day || 250000)).toLocaleString("id-ID")}/hari
+                            </span>
                           </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
-                        <UsersIcon size={14} className="text-slate-400" />
-                        <span className="text-[10px] font-bold text-slate-600">{m.seats || 4} Seat</span>
-                      </div>
-                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
-                        <BatteryCharging size={14} className={` ${m.chargingPort !== false ? 'text-emerald-500' : 'text-slate-300'}`} />
-                        <span className="text-[10px] font-bold text-slate-600">Port</span>
-                      </div>
-                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
-                        <Luggage size={14} className={` ${m.luggage !== false ? 'text-amber-500' : 'text-slate-300'}`} />
-                        <span className="text-[10px] font-bold text-slate-600">Bagasi</span>
-                      </div>
-                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1">
-                        <Settings size={14} className="text-slate-400" />
-                        <span className="text-[10px] font-bold text-[#810100] uppercase italic">{m.status}</span>
-                      </div>
+                    <div className="grid grid-cols-2 gap-space-md pt-2 sm:grid-cols-4">
+                      <AmenityTile icon="group" label={`${m.seats || 4} Seat`} />
+                      <AmenityTile
+                        icon="electric_car"
+                        label="Port"
+                        active={m.chargingPort !== false}
+                        activeTone="available"
+                      />
+                      <AmenityTile
+                        icon="luggage"
+                        label="Bagasi"
+                        active={m.luggage !== false}
+                        activeTone="tertiary"
+                      />
+                      <AmenityTile icon="settings" label={m.status} emphasis />
                     </div>
 
-                    <div className="pt-4 border-t border-slate-100 flex flex-wrap gap-4 items-center justify-between">
-                      <div className="flex gap-2">
-                        <select
-                          value={m.layanan || "Lepas Kunci"}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            handleEditMobil(m.id, "layanan", val);
-                            handleEditMobil(m.id, "withDriver", val === "Dengan Driver");
-                          }}
-                          className="bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg outline-none focus:border-[#810100] cursor-pointer"
-                        >
-                          <option value="Lepas Kunci">Lepas Kunci</option>
-                          <option value="Dengan Driver">Dengan Driver</option>
-                        </select>
-                        <div className="flex items-center gap-2">
-                          <input 
-                            type="number"
-                            value={m.harga}
-                            onChange={(e) => handleEditMobil(m.id, "harga", parseInt(e.target.value))}
-                            className="w-24 bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg outline-none focus:border-[#810100]"
-                          />
-                          <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg" title="Auto-saved">
-                            <Check size={14} />
-                          </div>
+                    <div className="flex flex-wrap items-center justify-between gap-space-md border-t border-c57-surface-variant pt-space-md">
+                      <div className="flex items-center gap-space-sm">
+                        <div className="w-40">
+                          <Select
+                            label={`Layanan ${m.nama}`}
+                            value={m.layanan || "Lepas Kunci"}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              handleEditMobil(m.id, {
+                                layanan: val,
+                                withDriver: val === "Dengan Driver",
+                              });
+                            }}
+                          >
+                            {LAYANAN.map((l) => (
+                              <option key={l} value={l}>{l}</option>
+                            ))}
+                          </Select>
                         </div>
+
+                        <div className="w-32">
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            label={`Harga harian ${m.nama}`}
+                            value={
+                              priceDraft[m.id] !== undefined
+                                ? priceDraft[m.id]
+                                : m.harga ?? ""
+                            }
+                            onChange={(e) =>
+                              setPriceDraft(prev => ({ ...prev, [m.id]: e.target.value }))
+                            }
+                            onBlur={() => commitPrice(m)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                commitPrice(m);
+                              }
+                            }}
+                          />
+                        </div>
+
+                        {priceDraft[m.id] !== undefined ? (
+                          <span
+                            className="rounded-c57-sm p-1.5 text-c57-outline"
+                            title="Belum disimpan — klik-away atau tekan Enter"
+                          >
+                            <Icon name="edit" size="sm" />
+                          </span>
+                        ) : (
+                          <span
+                            className={[
+                              "rounded-c57-sm p-1.5",
+                              savedId === m.id
+                                ? "bg-c57-available-bg text-c57-available-text"
+                                : "text-c57-outline",
+                            ].join(" ")}
+                            title={savedId === m.id ? "Tersimpan" : "Otomatis tersimpan"}
+                          >
+                            <Icon name="check" size="sm" />
+                          </span>
+                        )}
                       </div>
-                      
-                      <div className="flex gap-3">
-                        <button
+
+                      <div className="flex items-center gap-space-sm">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
                           onClick={() => startEdit(m)}
-                          className="p-2.5 bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-white rounded-xl transition-all"
-                          title="Edit Unit"
+                          aria-label={`Edit unit ${m.nama}`}
                         >
-                          <Settings size={16} />
-                        </button>
-                        <button
+                          <Icon name="edit" size="sm" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={m.status === "servis" ? "success" : "secondary"}
+                          size="sm"
                           onClick={() => toggleServis(m.id, m.status)}
-                          className={`px-6 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all ${m.status === "servis" ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-amber-700'}`}
                         >
-                          {m.status === "servis" ? "KEMBALI NORMAL" : "SET SERVIS"}
-                        </button>
-                        <button
+                          {m.status === "servis" ? "Kembali Normal" : "Set Servis"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
                           onClick={() => handleHapusMobil(m.id)}
-                          className="p-2.5 bg-red-50 text-[#810100] hover:bg-[#810100] hover:text-white rounded-xl transition-all"
+                          aria-label={`Hapus armada ${m.nama}`}
                         >
-                          <Trash2 size={16} />
-                        </button>
+                          <Icon name="delete" size="sm" />
+                        </Button>
                       </div>
                     </div>
                   </div>
                 )}
-              </div>
+              </Card>
             ))}
 
             {filteredMobil.length === 0 && (
-              <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200">
-                <p className="text-slate-400 font-bold italic">Tidak ada armada ditemukan.</p>
-              </div>
+              <EmptyState
+                icon="directions_car"
+                title="Armada Kosong"
+                description="Tidak ada armada ditemukan."
+                className="py-space-xl"
+              />
             )}
           </div>
-
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * One amenity readout. `activeTone` picks the token pair rather than a raw
+ * colour, so the on/off state is legible even where the label alone ("Port")
+ * does not say which way round it is.
+ */
+function AmenityTile({ icon, label, active, activeTone, emphasis = false }) {
+  const tone = active
+    ? activeTone === "available"
+      ? "text-c57-available-text"
+      : "text-c57-tertiary"
+    : "text-c57-outline";
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-1 rounded-c57-md border border-c57-surface-variant bg-c57-surface-container-low p-3">
+      <Icon
+        name={icon}
+        size="sm"
+        className={emphasis ? "text-c57-on-surface-variant" : tone}
+      />
+      <span
+        className={[
+          "text-center font-label-sm uppercase tracking-widest",
+          emphasis ? "text-c57-primary italic" : "text-c57-on-surface-variant",
+        ].join(" ")}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/** Labelled checkbox. The native control is kept; only the accent is tokenised. */
+function Toggle({ id, label, checked, onChange }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <input
+        type="checkbox"
+        id={id}
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 shrink-0 cursor-pointer accent-c57-primary-container"
+      />
+      <label
+        htmlFor={id}
+        className="cursor-pointer font-label-sm uppercase tracking-widest text-c57-on-surface-variant"
+      >
+        {label}
+      </label>
     </div>
   );
 }

@@ -1,9 +1,68 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
-import { Camera, FileText, AlertCircle, CheckCircle, X } from "lucide-react";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  doc,
+  updateDoc,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { useToast } from "../components/Toast";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import EmptyState from "../components/ui/EmptyState";
+import Field from "../components/ui/Field";
+import Icon from "../components/ui/Icon";
+import PageHeader from "../components/ui/PageHeader";
+import Pill from "../components/ui/Pill";
+import Textarea from "../components/ui/Textarea";
+
+/**
+ * Driver vehicle condition check: photographs the car before handover and
+ * after return, attached to the driver's in-progress orders.
+ *
+ * The `vehicleVerification` / `vehicleVerificationAfter` flags on the order
+ * document and the `vehicleVerifications` record are the contract with
+ * DriverOrders, which reads the former to decide whether step 1 of the active
+ * checklist is done. Both are written exactly as before.
+ *
+ * Corrections from the markup pass:
+ *
+ *  - Both `alert()` calls became toasts.
+ *
+ *  - The order list was a `<div onClick>`; the page's primary control was
+ *    unreachable by keyboard. It is a real `<button>` with `aria-pressed`.
+ *
+ *  - The listener had no error callback. This query is a three-clause
+ *    `where + where + orderBy`, so it needs a composite index, and if that
+ *    index is absent Firestore rejects the query — previously that failure was
+ *    swallowed and the page just sat on a permanent "Tidak ada order aktif",
+ *    indistinguishable from genuinely having no work. It now surfaces.
+ */
+
+const STATUS_VARIANTS = {
+  disetujui: "neutral",
+  "dalam perjalanan": "sand",
+  "menunggu pembayaran": "sand",
+};
+
+const STATUS_TEXT = {
+  disetujui: "Disetujui",
+  "dalam perjalanan": "Dalam Perjalanan",
+  "menunggu pembayaran": "Menunggu Pembayaran",
+};
+
+const TYPES = [
+  { id: "before", label: "Sebelum Sewa" },
+  { id: "after", label: "Sesudah Sewa" },
+];
 
 export default function VehicleVerification() {
+  const toast = useToast();
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -31,16 +90,28 @@ export default function VehicleVerification() {
       orderBy("tanggal", "desc")
     );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const ordersData = [];
-      querySnapshot.forEach((doc) => {
-        ordersData.push({ id: doc.id, ...doc.data() });
-      });
-      setOrders(ordersData);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const ordersData = [];
+        querySnapshot.forEach((doc) => {
+          ordersData.push({ id: doc.id, ...doc.data() });
+        });
+        setOrders(ordersData);
+      },
+      (error) => {
+        // Almost always a missing composite index for driverId + status + tanggal.
+        console.error("Error with vehicle verification query:", error);
+        setOrders([]);
+        toast.error(
+          "Daftar order gagal dimuat. Kemungkinan index Firestore belum dibuat.",
+          "Gagal"
+        );
+      }
+    );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, toast]);
 
   const handlePhotoUpload = (event) => {
     const files = Array.from(event.target.files);
@@ -53,7 +124,7 @@ export default function VehicleVerification() {
 
   const submitVerification = async () => {
     if (!selectedOrder || photos.length === 0) {
-      alert("Mohon pilih order dan upload foto terlebih dahulu");
+      toast.error("Mohon pilih order dan upload foto terlebih dahulu", "Gagal");
       return;
     }
 
@@ -64,6 +135,11 @@ export default function VehicleVerification() {
         orderId: selectedOrder.id,
         driverId: user.uid,
         type: verificationType,
+        // Denormalised from the order so the admin audit list can label a row
+        // without a `pemesanan` read per report. `AdminVehicleVerifications`
+        // falls back to that join for rows written before this existed.
+        namaMobil: selectedOrder.namaMobil,
+        clientEmail: selectedOrder.email,
         notes: notes,
         photos: photos.map(photo => ({
           name: photo.name,
@@ -87,159 +163,174 @@ export default function VehicleVerification() {
       setPhotos([]);
       setVerificationType("before");
 
-      alert("Verifikasi berhasil disimpan!");
+      toast.success("Verifikasi berhasil disimpan!", "Berhasil");
     } catch (error) {
       console.error("Error submitting verification:", error);
-      alert("Terjadi kesalahan saat menyimpan verifikasi");
+      toast.error("Terjadi kesalahan saat menyimpan verifikasi", "Gagal");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "disetujui":
-        return "bg-blue-100 text-blue-800";
-      case "dalam perjalanan":
-        return "bg-yellow-100 text-yellow-800";
-      case "menunggu pembayaran":
-        return "bg-orange-100 text-orange-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case "disetujui":
-        return "Disetujui";
-      case "dalam perjalanan":
-        return "Dalam Perjalanan";
-      case "menunggu pembayaran":
-        return "Menunggu Pembayaran";
-      default:
-        return status;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-12 text-slate-800">
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 pb-space-xl text-c57-on-surface">
       {/* Background decoration */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
-        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-red-100 mix-blend-multiply filter blur-[100px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-slate-200 mix-blend-multiply filter blur-[120px]"></div>
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-40" aria-hidden="true">
+        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-c57-error-container mix-blend-multiply filter blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-c57-surface-container-high mix-blend-multiply filter blur-[120px]" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-6 md:py-10 lg:py-12">
-        <div className="mb-8 md:mb-10 animate-fadeInUp">
-          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
-             <Camera size={14} />
-             <span>Fleet Standard Quality Control</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight mb-3">Verifikasi Mobil</h1>
-          <p className="text-slate-500 text-lg">Dokumentasi keadaan mobil untuk standar kualitas layanan.</p>
-        </div>
+      <div className="relative z-10 max-w-7xl mx-auto px-gutter-mobile sm:px-gutter py-space-lg">
+        <PageHeader
+          eyebrow={
+            <>
+              <Icon name="photo_camera" size="sm" />
+              <span>Fleet Standard Quality Control</span>
+            </>
+          }
+          title="Verifikasi Mobil"
+          subtitle="Dokumentasi keadaan mobil untuk standar kualitas layanan."
+          className="mb-space-xl animate-fadeInUp"
+        />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter items-start">
           {/* Order List */}
-          <div className="lg:col-span-1 space-y-4 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-1.5 h-6 bg-[#810100] rounded-full"></div>
-              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Order Aktif</h2>
+          <div className="lg:col-span-1 space-y-gutter animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
+            <div className="flex items-center gap-space-md">
+              <span className="w-1.5 h-6 bg-c57-primary-container rounded-full" aria-hidden="true" />
+              <h2 className="font-label-sm uppercase tracking-[0.2em] text-c57-outline">
+                Order Aktif
+              </h2>
             </div>
-            
+
             {orders.length === 0 ? (
-              <div className="bg-white rounded-[2rem] p-10 text-center border border-slate-100 shadow-sm shadow-slate-200/50">
-                <AlertCircle className="h-10 w-10 text-slate-200 mx-auto mb-4" />
-                <p className="text-slate-500 font-black text-[10px] uppercase tracking-widest">Tidak ada order aktif</p>
-              </div>
+              <EmptyState icon="warning" title="Tidak ada order aktif" />
             ) : (
-              orders.map((order) => (
-                <div
-                  key={order.id}
-                  onClick={() => setSelectedOrder(order)}
-                  className={`p-6 rounded-[2rem] cursor-pointer transition-all duration-300 border ${
-                    selectedOrder?.id === order.id
-                      ? "bg-[#810100] border-[#810100] shadow-xl shadow-red-900/20 -translate-y-1"
-                      : "bg-white border-slate-100 shadow-sm shadow-slate-200/50 hover:border-[#810100]/20"
-                  }`}
-                >
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <h3 className={`font-black tracking-tight text-base truncate mb-0.5 ${selectedOrder?.id === order.id ? 'text-white' : 'text-slate-900'}`}>{order.namaMobil}</h3>
-                      <p className={`text-[10px] font-black uppercase tracking-widest truncate mb-4 ${selectedOrder?.id === order.id ? 'text-red-100' : 'text-slate-400'}`}>{order.email}</p>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-colors ${selectedOrder?.id === order.id ? (order.vehicleVerificationBefore ? 'bg-white/20 border-white/20 text-white' : 'bg-black/10 border-black/5 text-red-200') : (order.vehicleVerificationBefore ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-400')}`}>
-                          {order.vehicleVerificationBefore ? 'Sebelum ✓' : 'Sebelum'}
-                        </span>
-                        <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-colors ${selectedOrder?.id === order.id ? (order.vehicleVerificationAfter ? 'bg-white/20 border-white/20 text-white' : 'bg-black/10 border-black/5 text-red-200') : (order.vehicleVerificationAfter ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-400')}`}>
-                          {order.vehicleVerificationAfter ? 'Sesudah ✓' : 'Sesudah'}
-                        </span>
+              orders.map((order) => {
+                const isSelected = selectedOrder?.id === order.id;
+
+                return (
+                  <button
+                    key={order.id}
+                    type="button"
+                    onClick={() => setSelectedOrder(order)}
+                    aria-pressed={isSelected}
+                    className={[
+                      "w-full text-left p-space-lg rounded-c57-lg transition-all duration-300 border",
+                      isSelected
+                        ? "bg-c57-primary-container border-c57-primary-container text-c57-on-primary shadow-c57-card-hover"
+                        : "bg-c57-surface-container-lowest border-c57-surface-variant shadow-c57-card hover:border-c57-primary",
+                    ].join(" ")}
+                  >
+                    <div className="flex justify-between items-start gap-space-md">
+                      <div className="min-w-0 flex-1">
+                        <h3 className={[
+                          "font-headline-sm text-headline-sm truncate mb-1",
+                          isSelected ? "text-c57-on-primary" : "text-c57-on-surface",
+                        ].join(" ")}>
+                          {order.namaMobil}
+                        </h3>
+                        <p className={[
+                          "font-label-sm uppercase tracking-widest truncate mb-space-md",
+                          isSelected ? "text-c57-primary-container" : "text-c57-outline",
+                        ].join(" ")}>
+                          {order.email}
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-space-sm">
+                          <CheckPill
+                            done={order.vehicleVerificationBefore}
+                            label="Sebelum"
+                            selected={isSelected}
+                          />
+                          <CheckPill
+                            done={order.vehicleVerificationAfter}
+                            label="Sesudah"
+                            selected={isSelected}
+                          />
+                        </div>
                       </div>
+
+                      <Pill
+                        variant={isSelected ? "onScrim" : STATUS_VARIANTS[order.status] || "outline"}
+                        size="sm"
+                        className="shrink-0"
+                      >
+                        {STATUS_TEXT[order.status] || order.status}
+                      </Pill>
                     </div>
-                    <span className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full border shrink-0 ${selectedOrder?.id === order.id ? 'bg-black/10 border-white/10 text-white' : getStatusColor(order.status)}`}>
-                      {getStatusText(order.status)}
-                    </span>
-                  </div>
-                </div>
-              ))
+                  </button>
+                );
+              })
             )}
           </div>
 
           {/* Verification Form */}
           <div className="lg:col-span-2 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
             {selectedOrder ? (
-              <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-2xl shadow-slate-200/50">
-                <div className="px-6 md:px-10 py-5 md:py-8 border-b border-slate-50 bg-slate-50/50">
-                  <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest">
-                    Update Kondisi: <span className="text-[#810100]">{selectedOrder.namaMobil}</span>
+              <Card className="overflow-hidden">
+                <div className="px-space-lg md:px-space-xl py-space-md md:py-space-lg border-b border-c57-surface-variant bg-c57-surface-container">
+                  <h2 className="font-headline-sm text-headline-sm text-c57-on-surface uppercase tracking-widest">
+                    Update Kondisi:{" "}
+                    <span className="text-c57-primary">{selectedOrder.namaMobil}</span>
                   </h2>
                 </div>
 
-                <div className="p-4 sm:p-6 md:p-8">
+                <div className="p-space-md sm:p-space-lg md:p-space-xl">
                   {/* Verification Type Toggle */}
-                  <div className="mb-10">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 block mb-4">Jenis Verifikasi</label>
-                    <div className="flex p-2 bg-slate-50 rounded-2xl border border-slate-100 w-fit">
-                      <button
-                        onClick={() => setVerificationType("before")}
-                        className={`px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
-                          verificationType === "before"
-                            ? "bg-[#810100] text-white shadow-lg shadow-red-900/20 active:scale-95"
-                            : "text-slate-400 hover:text-slate-900 hover:bg-white"
-                        }`}
-                      >
-                        Sebelum Sewa
-                      </button>
-                      <button
-                        onClick={() => setVerificationType("after")}
-                        className={`px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
-                          verificationType === "after"
-                            ? "bg-[#810100] text-white shadow-lg shadow-red-900/20 active:scale-95"
-                            : "text-slate-400 hover:text-slate-900 hover:bg-white"
-                        }`}
-                      >
-                        Sesudah Sewa
-                      </button>
+                  <div className="mb-space-xl">
+                    <p className="font-label-sm uppercase tracking-[0.2em] text-c57-on-surface-variant mb-space-md">
+                      Jenis Verifikasi
+                    </p>
+                    <div
+                      className="flex p-space-sm bg-c57-surface-container rounded-c57-md border border-c57-surface-variant w-fit"
+                      role="radiogroup"
+                      aria-label="Jenis Verifikasi"
+                    >
+                      {TYPES.map((type) => {
+                        const isActive = verificationType === type.id;
+
+                        return (
+                          <button
+                            key={type.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={isActive}
+                            onClick={() => setVerificationType(type.id)}
+                            className={[
+                              "px-space-lg py-3 rounded-c57-sm font-label-sm uppercase tracking-widest transition-all",
+                              isActive
+                                ? "bg-c57-primary-container text-c57-on-primary shadow-c57-card"
+                                : "text-c57-on-surface-variant hover:text-c57-on-surface",
+                            ].join(" ")}
+                          >
+                            {type.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  <div className="space-y-8">
+                  <div className="space-y-space-xl">
                     {/* Notes Field */}
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Catatan Kondisi Mobil</label>
-                      <textarea
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Contoh: Baret halus di bemper depan kanan, BBM 50%, Interior bersih..."
-                        className="w-full bg-slate-50 border border-slate-100 rounded-[2rem] px-8 py-6 text-sm font-bold text-slate-800 focus:border-[#810100] outline-none transition-all placeholder:text-slate-300 min-h-[160px]"
-                      />
-                    </div>
+                    <Field label="Catatan Kondisi Mobil">
+                      {(p) => (
+                        <Textarea
+                          {...p}
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          placeholder="Contoh: Baret halus di bemper depan kanan, BBM 50%, Interior bersih..."
+                          rows={5}
+                        />
+                      )}
+                    </Field>
 
                     {/* Photo Upload */}
-                    <div className="space-y-4">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 block">Dokumentasi Visual (Foto/Video)</label>
-                      
+                    <div>
+                      <p className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant mb-space-md">
+                        Dokumentasi Visual (Foto/Video)
+                      </p>
+
                       <div className="relative group">
                         <input
                           type="file"
@@ -248,80 +339,116 @@ export default function VehicleVerification() {
                           onChange={handlePhotoUpload}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                           id="photo-upload"
+                          aria-label="Upload bukti kondisi fisik mobil"
                         />
-                        <div className="border-2 border-dashed border-slate-200 hover:border-[#810100] rounded-[2.5rem] p-10 text-center bg-slate-50/50 transition-all group-hover:bg-red-50/30">
-                          <Camera className="h-12 w-12 text-slate-200 mx-auto mb-4 transition-colors group-hover:text-[#810100]" />
-                          <div className="bg-[#810100] text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest inline-block mb-3 shadow-lg shadow-red-900/10">Pilih Media</div>
-                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Upload bukti kondisi fisik mobil</p>
+                        <div className="border-2 border-dashed border-c57-outline-variant hover:border-c57-primary rounded-c57-lg p-space-xl text-center bg-c57-surface-container transition-all group-hover:bg-c57-error-container/30">
+                          <Icon
+                            name="photo_camera"
+                            size="3xl"
+                            className="text-c57-outline mx-auto mb-space-md transition-colors group-hover:text-c57-primary"
+                          />
+                          <span className="bg-c57-primary-container text-c57-on-primary px-space-lg py-3 rounded-full font-label-sm uppercase tracking-widest inline-block mb-space-md">
+                            Pilih Media
+                          </span>
+                          <p className="font-label-sm uppercase tracking-widest text-c57-outline">
+                            Upload bukti kondisi fisik mobil
+                          </p>
                         </div>
                       </div>
 
-                      {/* Media Preview Grid */}
                       {photos.length > 0 && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5 pt-6">
+                        <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-gutter pt-space-lg">
                           {photos.map((photo, index) => (
-                            <div key={index} className="relative group animate-fadeInUp" style={{ animationDelay: `${index * 0.05}s` }}>
-                              <div className="bg-slate-50 border border-slate-100 rounded-[1.5rem] p-5 flex flex-col items-center justify-center h-36 overflow-hidden shadow-inner">
-                                <FileText className="h-10 w-10 text-slate-200 mb-3 group-hover:text-[#810100] transition-colors" />
-                                <p className="text-[9px] text-slate-400 font-black uppercase truncate w-full text-center tracking-tighter">
+                            <li
+                              key={index}
+                              className="relative group animate-fadeInUp"
+                              style={{ animationDelay: `${index * 0.05}s` }}
+                            >
+                              <div className="bg-c57-surface-container border border-c57-surface-variant rounded-c57-lg p-space-md flex flex-col items-center justify-center h-36 overflow-hidden">
+                                <Icon
+                                  name="description"
+                                  size="2xl"
+                                  className="text-c57-outline mb-space-md group-hover:text-c57-primary transition-colors"
+                                />
+                                <p className="font-label-sm text-c57-outline uppercase truncate w-full text-center">
                                   {photo.name}
                                 </p>
                               </div>
                               <button
-                                onClick={(e) => { e.stopPropagation(); removePhoto(index); }}
-                                className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-transform hover:scale-110 active:scale-95 z-20"
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removePhoto(index);
+                                }}
+                                aria-label={`Hapus ${photo.name}`}
+                                className="absolute -top-1 -right-1 bg-c57-error text-c57-on-error rounded-full p-space-sm shadow-c57-card transition-transform hover:scale-110 active:scale-95 z-20"
                               >
-                                <X className="h-3 w-3" />
+                                <Icon name="close" size="xs" />
                               </button>
-                            </div>
+                            </li>
                           ))}
-                        </div>
+                        </ul>
                       )}
                     </div>
 
                     {/* Submit Section */}
-                    <div className="pt-10">
-                      <button
+                    <div className="pt-space-md">
+                      <Button
+                        type="button"
                         onClick={submitVerification}
                         disabled={isSubmitting || photos.length === 0}
-                        className="w-full bg-[#810100] hover:bg-slate-900 disabled:bg-slate-100 disabled:text-slate-300 text-white font-black py-6 rounded-[2rem] tracking-widest text-[11px] uppercase transition-all shadow-xl shadow-red-900/10 relative overflow-hidden group active:scale-95"
+                        loading={isSubmitting}
+                        icon="check_circle"
+                        size="lg"
+                        className="w-full"
                       >
-                        <div className="relative z-10 flex items-center justify-center gap-4">
-                          {isSubmitting ? (
-                            <>
-                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white"></div>
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="h-5 w-5" />
-                              Simpan & Perbarui Verifikasi
-                            </>
-                          )}
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-[100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                      </button>
-                      <p className="text-center text-[9px] text-slate-400 font-black uppercase tracking-[0.2em] mt-6">
+                        {isSubmitting ? "Processing..." : "Simpan & Perbarui Verifikasi"}
+                      </Button>
+                      <p className="text-center font-label-sm uppercase tracking-[0.2em] text-c57-outline mt-space-lg">
                         Data akan disimpan ke sistem verifikasi operasional Cakra Lima Tujuh
                       </p>
                     </div>
                   </div>
                 </div>
-              </div>
+              </Card>
             ) : (
-              <div className="bg-white rounded-[2.5rem] p-16 text-center border border-slate-100 flex flex-col items-center justify-center min-h-[500px] shadow-xl shadow-slate-200/50">
-                <div className="h-24 w-24 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-200 mb-8 border border-slate-100">
-                  <Camera className="h-10 w-10" />
-                </div>
-                <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight uppercase tracking-widest">Pilih Tugas Aktif</h3>
-                <p className="text-slate-500 max-w-xs mx-auto text-[13px] font-bold leading-relaxed">
-                  Silakan pilih order dari daftar di panel kiri untuk mulai melakukan verifikasi kondisi kendaraan.
-                </p>
-              </div>
+              <EmptyState
+                icon="photo_camera"
+                title="Pilih Tugas Aktif"
+                description="Silakan pilih order dari daftar di panel kiri untuk mulai melakukan verifikasi kondisi kendaraan."
+                className="min-h-[500px]"
+              />
             )}
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Before/after checkpoint on the order card. Reads `done` for the completed
+ * state and `selected` so the inverted colours still work on the crimson fill.
+ */
+function CheckPill({ done, label, selected }) {
+  const classes = done
+    ? "bg-c57-available-bg text-c57-available-text border-c57-available-text/20"
+    : "bg-c57-surface-container text-c57-outline border-c57-surface-variant";
+
+  return (
+    <span
+      className={[
+        "inline-flex items-center gap-1 px-space-sm py-1 rounded-c57-sm border",
+        "font-label-sm uppercase tracking-widest",
+        selected
+          ? done
+            ? "bg-white/20 border-white/20 text-c57-on-primary"
+            : "bg-black/10 border-c57-on-primary/20 text-c57-primary-container"
+          : classes,
+      ].join(" ")}
+    >
+      {done && <Icon name="check" size="xs" />}
+      {label}
+    </span>
   );
 }

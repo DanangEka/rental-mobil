@@ -12,12 +12,13 @@
     <link rel="preconnect" href="https://apis.google.com" />
     <link rel="preconnect" href="https://api.cloudinary.com" />
 
-    <!-- Google Fonts -->
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
-      fetchpriority="high"
-    />
+    <!-- Google Material Symbols Outlined (Fallback & Ligature support) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <!-- Editorial Crimson fonts — self-hosted under src/assets/fonts/ and
+         fingerprinted by webpack; declared via @font-face in src/index.css.
+         No third-party font CDN. The Inter link that used to live here is
+         gone: Plus Jakarta Sans is now the UI face. -->
 
     <!-- Favicon Icons -->
     <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
@@ -35,42 +36,71 @@
     <meta name="author" content="Cakra Lima Tujuh" />
     <meta
       name="description"
-      content="Cakra Lima Tujuh — layanan Premium Rent, Tour &amp; Travel terpercaya. Sewa mobil harian, open trip wisata, dan airport transfer dengan armada premium dan driver profesional."
+      content="Premium travel agen terpercaya di Surabaya: open trip, private trip, dan airport transfer. Rental mobil Surabaya &amp; Lidah Wetan dengan armada premium."
     />
     <link rel="canonical" href="https://www.cakra57.com/" />
 
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="Cakra Lima Tujuh — Premium Rent, Tour &amp; Travel" />
+    <meta property="og:title" content="Cakra Lima Tujuh — Premium Travel Agen Terpercaya di Surabaya" />
     <meta
       property="og:description"
-      content="Sewa mobil, open trip wisata, dan airport transfer dengan armada premium dan driver profesional. Harga transparan, booking mudah, layanan 24 jam."
+      content="Premium travel agen terpercaya di Surabaya: open trip, private trip, dan airport transfer. Rental mobil Surabaya &amp; Lidah Wetan dengan armada premium."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.cakra57.com/" />
-    <meta property="og:image" content="%PUBLIC_URL%/android-chrome-512x512.png" />
+    <meta property="og:image" content="https://www.cakra57.com/android-chrome-512x512.png" />
     <meta property="og:locale" content="id_ID" />
     <meta property="og:site_name" content="Cakra Lima Tujuh" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Cakra Lima Tujuh — Premium Rent, Tour &amp; Travel" />
-    <meta name="twitter:description" content="Sewa mobil premium, open trip wisata, dan airport transfer. Armada terpilih, driver profesional, harga transparan." />
-    <meta name="twitter:image" content="%PUBLIC_URL%/android-chrome-512x512.png" />
+    <meta name="twitter:title" content="Cakra Lima Tujuh — Premium Travel Agen Terpercaya di Surabaya" />
+    <meta name="twitter:description" content="Premium travel agen terpercaya di Surabaya: open trip, private trip, dan airport transfer. Rental mobil Surabaya & Lidah Wetan dengan armada premium." />
+    <meta name="twitter:image" content="https://www.cakra57.com/android-chrome-512x512.png" />
 
     <!-- Theme color — charcoal -->
     <meta name="theme-color" content="#1C1C1E" />
 
-    <!-- Structured Data: LocalBusiness -->
+    <!-- Structured Data: LocalBusiness (travel agen + rental mobil, lokasi Lidah Wetan) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
+      "@id": "https://www.cakra57.com/#business",
       "name": "Cakra Lima Tujuh",
-      "description": "Layanan Premium Rent, Tour & Travel — sewa mobil, open trip wisata, dan airport transfer.",
+      "alternateName": "Cakra57",
+      "description": "Premium travel agen terpercaya di Surabaya — melayani open trip, private trip, corporate trip, airport transfer, dan rental mobil dengan armada premium.",
       "url": "https://www.cakra57.com",
       "logo": "https://www.cakra57.com/android-chrome-512x512.png",
-      "telephone": "+62-812-3456-7890",
-      "email": "info@cakralimatujuh.com",
+      "image": "https://www.cakra57.com/android-chrome-512x512.png",
+      "telephone": "+62-878-5966-0053",
+      "email": "cakralimatujuh@gmail.com",
+      "priceRange": "$$",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Lembah Harapan Blok AA-57, Lidah Wetan, Lakarsantri",
+        "addressLocality": "Surabaya",
+        "addressRegion": "Jawa Timur",
+        "addressCountry": "ID"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": -7.331,
+        "longitude": 112.611
+      },
+      "areaServed": [
+        { "@type": "City", "name": "Surabaya" },
+        { "@type": "City", "name": "Sidoarjo" },
+        { "@type": "City", "name": "Gresik" },
+        { "@type": "AdministrativeArea", "name": "Jawa Timur" }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "bestRating": "5",
+        "ratingCount": "120"
+      },
+      "keywords": "Rental Mobil Surabaya, Rental Mobil Lidah Wetan, Travel Agen Surabaya, Premium Travel Agen, Travel Agen Terpercaya, agen perjalanan Surabaya, sewa mobil Surabaya",
       "openingHoursSpecification": {
         "@type": "OpeningHoursSpecification",
         "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
@@ -78,12 +108,12 @@
         "closes": "23:59"
       },
       "sameAs": [
-        "https://www.instagram.com/cakralimatujuh"
+        "https://www.instagram.com/cakralimatujuhtrans"
       ]
     }
     </script>
 
-    <title>Cakra Lima Tujuh — Premium Rent, Tour &amp; Travel</title>
+    <title>Cakra Lima Tujuh — Premium Travel Agen Terpercaya di Surabaya</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

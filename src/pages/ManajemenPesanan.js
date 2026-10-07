@@ -10,8 +10,96 @@ import {
   addDoc,
   serverTimestamp
 } from "firebase/firestore";
-import { Search, RefreshCw, Download, Eye, DollarSign, Car, User, MapPin, Calendar, ArrowRight, AlertTriangle, FileText, Calendar as CalendarIcon } from "lucide-react";
-import { initGoogleClient, syncOrderToCalendar } from "../services/googleCalendar";
+import { useCalendarSync } from "../services/calendarSync";
+
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import EmptyState from "../components/ui/EmptyState";
+import Field from "../components/ui/Field";
+import Icon from "../components/ui/Icon";
+import Input from "../components/ui/Input";
+import PageHeader from "../components/ui/PageHeader";
+import Pill from "../components/ui/Pill";
+import Select from "../components/ui/Select";
+
+/**
+ * Booking operations console: approve/reject, chase DP, settle balances,
+ * print invoices, sync to Google Calendar, export to XLSX.
+ *
+ * The write graph here is the most tangled in the app and is preserved
+ * exactly, branch for branch:
+ *   disetujui + Cash    -> disetujui_cash / waiting_dp_input, notify client
+ *   disetujui + non-Cash-> menunggu pembayaran, dpAmount = ceil(50%),
+ *                         release the vehicle, notify client
+ *   ditolak             -> release the vehicle, notify client
+ *   selesai             -> release the vehicle, notify client
+ *   mark as lunas       -> lunas / fully_paid, release, notify
+ *   balance approved    -> lunas / fully_paid, release, notify
+ *   balance rejected    -> balancePaymentRequest.status only
+ *   payment approved    -> status + completed, notify
+ * The `alert()` calls are left alone, as on the other admin pages.
+ */
+
+/**
+ * Claim or release a car by flipping availability only.
+ *
+ * `mobil.status` is the *service* state ("normal" | "servis") and is owned
+ * exclusively by the Set Servis toggle in CarManagement. These booking
+ * transitions used to write `status: "normal"` on release and
+ * `status: "disewa"` on claim, which meant a car an admin had marked
+ * in-service was silently returned to normal the moment a booking was
+ * rejected, completed or settled.
+ *
+ * Availability is the boolean `tersedia`, and the fleet counters on ListMobil
+ * already read it directly (`m.tersedia === true` / `m.tersedia === false`),
+ * so dropping the status write changes nothing they display.
+ */
+const setMobilTersedia = (mobilId, tersedia) =>
+  updateDoc(doc(db, "mobil", mobilId), { tersedia });
+
+const STATUS_FILTERS = [
+  { value: "semua", label: "Semua Status" },
+  { value: "diproses", label: "Masuk (Pending)" },  { value: "disetujui", label: "Disetujui" },
+  { value: "menunggu pembayaran", label: "Menunggu DP" },
+  { value: "pembayaran berhasil", label: "DP Diterima (Disewa)" },
+  { value: "balance_pending", label: "Butuh Pelunasan" },
+  { value: "lunas", label: "Selesai (Lunas)" },
+  { value: "ditolak", label: "Dibatalkan" },
+];
+
+const RENTAL_TYPES = [
+  { value: "semua", label: "Semua Kategori" },
+  { value: "Lepas Kunci", label: "Lepas Kunci" },
+  { value: "Driver", label: "Dengan Driver" },
+];
+
+const SORTS = [
+  { value: "newest", label: "Paling Baru" },
+  { value: "oldest", label: "Paling Lama" },
+  { value: "price-high", label: "Harga Tertinggi" },
+  { value: "price-low", label: "Harga Terendah" },
+];
+
+/**
+ * One place for the order-status chip. The old markup inlined a five-way
+ * emerald/amber/blue/slate/crimson ternary in two spots, which meant a new
+ * status had to be remembered in both.
+ */
+const ORDER_STATUS = {
+  diproses:                  { label: "Diproses",  pill: { variant: "sand",      icon: "pending" } },
+  disetujui:                 { label: "Disetujui", pill: { variant: "available", icon: "check_circle" } },
+  "menunggu pembayaran":     { label: "Menunggu DP", pill: { variant: "signature", icon: "hourglass_top" } },
+  "pembayaran berhasil":     { label: "DP Diterima", pill: { variant: "signature", icon: "check_circle" } },
+  disewa:                    { label: "Disewa",    pill: { variant: "signature", icon: "directions_car" } },
+  "tugas aktif":             { label: "Tugas Aktif", pill: { variant: "signature", icon: "route" } },
+  "menunggu konfirmasi lunas": { label: "Konfirmasi Pelunasan", pill: { variant: "sand", icon: "schedule" } },
+  disetujui_cash:            { label: "Disetujui (Cash)", pill: { variant: "neutral", icon: "payments" } },
+  lunas:                     { label: "Lunas",     pill: { variant: "available", icon: "check_circle" } },
+  ditolak:                   { label: "Dibatalkan", pill: { variant: "outline",   icon: "cancel" } },
+};
+
+const orderStatus = (status) =>
+  ORDER_STATUS[status] || { label: status, pill: { variant: "outline" } };
 
 export default function ManajemenPesanan() {
   const [pemesanan, setPemesanan] = useState([]);
@@ -25,7 +113,7 @@ export default function ManajemenPesanan() {
   const [sortBy, setSortBy] = useState("newest");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [isGapiLoaded, setIsGapiLoaded] = useState(false);
+  const { syncNow } = useCalendarSync();
 
   const fetchUsers = async () => {
     try {
@@ -56,11 +144,6 @@ export default function ManajemenPesanan() {
       setLoading(false);
     };
     checkAdminStatus();
-
-    // Initialize Google API
-    initGoogleClient().then(() => {
-      setIsGapiLoaded(true);
-    }).catch(err => console.error("GAPI failure", err));
   }, []);
 
   useEffect(() => {
@@ -103,7 +186,7 @@ export default function ManajemenPesanan() {
             dpAmount: dpAmount,
             paymentStatus: "pending"
           });
-          await updateDoc(doc(db, "mobil", mobilId), { tersedia: false, status: "disewa" });
+          await setMobilTersedia(mobilId, false);
           await addDoc(collection(db, "notifications"), {
             userId,
             message: `Pemesanan mobil ${pemesananData.namaMobil} telah disetujui. Silakan lakukan pembayaran DP sebesar Rp ${dpAmount.toLocaleString()}.`,
@@ -112,7 +195,7 @@ export default function ManajemenPesanan() {
           });
         }
       } else if (status === "ditolak") {
-        await updateDoc(doc(db, "mobil", mobilId), { tersedia: true, status: "normal" });
+        await setMobilTersedia(mobilId, true);
         await addDoc(collection(db, "notifications"), {
           userId,
           message: `Pemesanan mobil ${pemesananData.namaMobil} telah ditolak.`,
@@ -120,7 +203,7 @@ export default function ManajemenPesanan() {
           timestamp: serverTimestamp()
         });
       } else if (status === "selesai") {
-        await updateDoc(doc(db, "mobil", mobilId), { tersedia: true, status: "normal" });
+        await setMobilTersedia(mobilId, true);
         await addDoc(collection(db, "notifications"), {
           userId,
           message: `Pemesanan mobil ${pemesananData.namaMobil} telah selesai. Terima kasih telah menggunakan layanan kami.`,
@@ -147,7 +230,7 @@ export default function ManajemenPesanan() {
         lunasAt: new Date().toISOString()
       });
 
-      await updateDoc(doc(db, "mobil", mobilId), { tersedia: true, status: "normal" });
+      await setMobilTersedia(mobilId, true);
 
       await addDoc(collection(db, "notifications"), {
         userId,
@@ -177,7 +260,7 @@ export default function ManajemenPesanan() {
           },
           lunasAt: new Date().toISOString()
         });
-        await updateDoc(doc(db, "mobil", order.mobilId), { tersedia: true, status: "normal" });
+        await setMobilTersedia(order.mobilId, true);
         await addDoc(collection(db, "notifications"), {
           userId: order.uid,
           message: `Pelunasan mobil ${order.namaMobil} telah dikonfirmasi.`,
@@ -246,17 +329,20 @@ export default function ManajemenPesanan() {
     }
   };
 
+  /**
+   * Manual push for a single order.
+   *
+   * The auto-sync engine normally owns the calendar; this button is the
+   * escape hatch for "put this one on my calendar now" — it connects on the
+   * spot if the admin has not linked Google yet.
+   */
   const handleSyncToCalendar = async (order) => {
     try {
-      if (!isGapiLoaded) {
-        alert("Google API belum siap. Silakan refresh.");
-        return;
-      }
-      await syncOrderToCalendar(order);
+      await syncNow("pemesanan", order);
       alert("Pesanan berhasil disinkronkan ke Google Calendar.");
     } catch (error) {
       console.error(error);
-      alert("Gagal sinkronisasi. Pastikan Anda sudah login Google.");
+      alert(error?.message || "Gagal sinkronisasi. Pastikan Anda sudah login Google.");
     }
   };
 
@@ -265,7 +351,7 @@ export default function ManajemenPesanan() {
       const XLSX = await import('xlsx');
       const dataToExport = filteredPemesanan.map(p => {
         const user = users.find(u => u.id === p.uid);
-        
+
         // Determine delivery address based on user requirements
         let alamatLengkap = "-";
         if (p.deliveryAddress) {
@@ -295,7 +381,7 @@ export default function ManajemenPesanan() {
       const worksheet = XLSX.utils.json_to_sheet(dataToExport);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Pesanan");
-      
+
       // Generate filename based on filters
       const dateStr = new Date().toISOString().split('T')[0];
       XLSX.writeFile(workbook, `Laporan_Pesanan_${dateStr}.xlsx`);
@@ -317,7 +403,7 @@ export default function ManajemenPesanan() {
         p.namaMobil?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
         p.email?.toLowerCase().includes(searchPemesanan.toLowerCase()) ||
         user?.nama?.toLowerCase().includes(searchPemesanan.toLowerCase());
-      
+
       // Date Range Filter
       let matchesDate = true;
       if (startDate && endDate) {
@@ -347,224 +433,236 @@ export default function ManajemenPesanan() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#810100] rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-c57-surface-container-low pt-30 flex items-center justify-center">
+        <div
+          className="h-10 w-10 animate-spin rounded-full border-4 border-c57-surface-container-highest border-t-c57-primary-container"
+          role="status"
+          aria-label="Memuat pesanan"
+        />
       </div>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-slate-50 pt-[160px] flex items-center justify-center p-6">
-        <div className="bg-white p-10 rounded-3xl shadow-xl max-w-md w-full border border-red-50 text-center">
-          <AlertTriangle className="mx-auto h-16 w-16 text-red-500 mb-6" />
-          <h2 className="text-2xl font-black text-slate-900 mb-2">Akses Ditolak</h2>
-          <p className="text-slate-500 mb-6 italic">Anda tidak memiliki kredensial untuk manajemen keuangan & operasional.</p>
-          <div className="h-1.5 w-12 bg-[#810100] mx-auto rounded-full"></div>
-        </div>
+      <div className="min-h-screen bg-c57-surface-container-low pt-30 flex items-center justify-center px-gutter-mobile sm:px-gutter">
+        <Card className="max-w-md w-full p-space-xl text-center">
+          <span className="mx-auto mb-space-lg flex h-16 w-16 items-center justify-center text-c57-on-error-container">
+            <Icon name="lock" size="3xl" />
+          </span>
+          <h2 className="mb-space-sm font-headline-md text-headline-md text-c57-on-surface">
+            Akses Ditolak
+          </h2>
+          <p className="mb-space-lg text-body-md text-c57-on-surface-variant italic">
+            Anda tidak memiliki kredensial untuk manajemen keuangan &amp; operasional.
+          </p>
+          <div className="mx-auto h-1.5 w-12 rounded-full bg-c57-primary-container" />
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800">
-      <div className="max-w-7xl mx-auto px-6">
-        
-        {/* Header */}
-        <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
-              <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-              <span>Sistem Operasional Armada</span>
-            </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Manajemen Pesanan</h1>
-            <p className="text-slate-500 mt-1">Konfirmasi pembayaran, monitor durasi, dan kelola logistik persewaan.</p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={exportToExcel}
-              className="group flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 px-6 py-3.5 rounded-2xl transition-all font-bold shadow-sm"
-            >
-              <Download size={18} className="transition-transform group-hover:-translate-y-1" />
-              Export Excel
-            </button>
-            <button
-              onClick={handleRefresh}
-              className="group flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-6 py-3.5 rounded-2xl transition-all font-bold shadow-sm"
-            >
-              <RefreshCw size={18} className={`text-[#810100] transition-transform duration-500 ${refreshing ? "rotate-180" : "group-hover:rotate-45"}`} />
-              Refresh Data
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 pb-space-xl">
+      <div className="max-w-7xl mx-auto px-gutter-mobile sm:px-gutter">
+        <PageHeader
+          eyebrow="Sistem Operasional Armada"
+          title="Manajemen Pesanan"
+          subtitle="Konfirmasi pembayaran, monitor durasi, dan kelola logistik persewaan."
+          actions={
+            <>
+              <Button type="button" variant="success" icon="download" onClick={exportToExcel}>
+                Export Excel
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                icon="refresh"
+                onClick={handleRefresh}
+                className={refreshing ? "rotate-180 transition-transform duration-500" : ""}
+              >
+                Refresh Data
+              </Button>
+            </>
+          }
+        />
 
         {/* Dynamic Filters Section */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8 mb-10">
-          <div className="flex flex-col gap-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Status Transaksi</label>
-                <select
+        <Card className="mt-space-xl p-space-md sm:p-space-lg">
+          <div className="grid grid-cols-1 gap-space-lg sm:grid-cols-2 lg:grid-cols-4">
+            <Field label="Status Transaksi">
+              {(p) => (
+                <Select
+                  {...p}
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold appearance-none cursor-pointer"
                 >
-                  <option value="semua">Semua Status</option>
-                  <option value="diproses">Masuk (Pending)</option>
-                  <option value="disetujui">Disetujui</option>
-                  <option value="menunggu pembayaran">Menunggu DP</option>
-                  <option value="pembayaran berhasil">DP Diterima (Disewa)</option>
-                  <option value="balance_pending">Butuh Pelunasan</option>
-                  <option value="lunas">Selesai (Lunas)</option>
-                  <option value="ditolak">Dibatalkan</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Kategori Sewa</label>
-                <select
+                  {STATUS_FILTERS.map((f) => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+
+            <Field label="Kategori Sewa">
+              {(p) => (
+                <Select
+                  {...p}
                   value={filterRentalType}
                   onChange={(e) => setFilterRentalType(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold appearance-none cursor-pointer"
                 >
-                  <option value="semua">Semua Kategori</option>
-                  <option value="Lepas Kunci">Lepas Kunci</option>
-                  <option value="Driver">Dengan Driver</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Rentang Awal</label>
-                <input 
-                  type="date" 
+                  {RENTAL_TYPES.map((f) => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+
+            <Field label="Rentang Awal">
+              {(p) => (
+                <Input
+                  {...p}
+                  type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
                 />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Rentang Akhir</label>
-                <input 
-                  type="date" 
+              )}
+            </Field>
+
+            <Field label="Rentang Akhir">
+              {(p) => (
+                <Input
+                  {...p}
+                  type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold"
                 />
-              </div>
-            </div>
-            
-            <div className="flex flex-col lg:flex-row gap-6 border-t border-slate-100 pt-6">
-              <div className="flex-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Pencarian Cepat</label>
-                <div className="relative group">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#810100] transition-colors" size={18} />
-                  <input 
-                    type="text" 
-                    placeholder="Nama client, mobil, atau email..."
-                    value={searchPemesanan}
-                    onChange={(e) => setSearchPemesanan(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-12 pr-6 py-3 focus:border-[#810100] outline-none transition-all font-semibold placeholder:text-slate-400"
-                  />
-                </div>
-              </div>
-              <div className="lg:w-1/4">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Urutkan</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:border-[#810100] outline-none transition-all font-semibold appearance-none cursor-pointer"
-                >
-                  <option value="newest">Paling Baru</option>
-                  <option value="oldest">Paling Lama</option>
-                  <option value="price-high">Harga Tertinggi</option>
-                  <option value="price-low">Harga Terendah</option>
-                </select>
-              </div>
-            </div>
+              )}
+            </Field>
           </div>
-        </div>
+
+          <div className="mt-space-lg flex flex-col gap-space-lg border-t border-c57-surface-variant pt-space-lg lg:flex-row">
+            <Field label="Pencarian Cepat" className="flex-1">
+              {(p) => (
+                <Input
+                  {...p}
+                  type="text"
+                  icon="search"
+                  value={searchPemesanan}
+                  onChange={(e) => setSearchPemesanan(e.target.value)}
+                  placeholder="Nama client, mobil, atau email..."
+                />
+              )}
+            </Field>
+
+            <Field label="Urutkan" className="lg:w-1/4">
+              {(p) => (
+                <Select {...p} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                  {SORTS.map((f) => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+          </div>
+        </Card>
 
         {/* Orders List */}
-        <div className="space-y-6">
+        <div className="mt-space-lg space-y-space-lg">
           {filteredPemesanan.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-dashed border-slate-200 py-20 text-center">
-              <FileText size={48} className="mx-auto text-slate-200 mb-4" />
-              <p className="text-slate-400 font-bold italic text-sm text-center">Tidak ada transaksi ditemukan pada kriteria ini.</p>
-            </div>
+            <EmptyState
+              icon="description"
+              title="Tidak ada transaksi"
+              description="Tidak ada transaksi ditemukan pada kriteria ini."
+              className="py-space-xl"
+            />
           ) : (
             filteredPemesanan.map((p) => {
               const user = users.find(u => u.id === p.uid);
               const driverUser = users.find(u => u.id === p.driverId);
               const penalty = calculatePenalty(p);
-              
+              const status = orderStatus(p.status);
+
               return (
-                <div key={p.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow group">
-                  <div className="p-6 md:p-8">
-                    
+                <Card key={p.id} interactive className="group overflow-hidden">
+                  <div className="p-space-md sm:p-space-lg">
                     {/* Item Top: Header & Status */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-slate-100">
-                      <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 bg-red-50 text-[#810100] rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-sm">
-                           <Car size={32} />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{p.namaMobil}</h3>
-                            <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                              p.status === 'diproses' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                              p.status === 'lunas' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                              p.status === 'ditolak' ? 'bg-slate-50 text-slate-400 border-slate-200' :
-                              p.status === 'disetujui_cash' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                              'bg-red-50 text-[#810100] border-red-100'
-                            }`}>
-                              {p.status === 'disetujui_cash' ? 'Disetujui (Cash)' : p.status}
-                            </span>
+                    <div className="mb-space-lg flex flex-col justify-between gap-space-md border-b border-c57-surface-variant pb-space-md md:flex-row md:items-center">
+                      <div className="flex items-center gap-space-md">
+                        <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-c57-md bg-c57-primary-container text-c57-on-primary transition-transform duration-500 ease-editorial group-hover:scale-110">
+                          <Icon name="directions_car" size="3xl" />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-space-sm">
+                            <h3 className="font-headline-sm text-headline-sm uppercase text-c57-on-surface">
+                              {p.namaMobil}
+                            </h3>
+                            <Pill variant={status.pill.variant} icon={status.pill.icon}>
+                              {status.label}
+                            </Pill>
                           </div>
-                          <p className="text-sm font-bold text-slate-400 mt-1">Order #{p.id.substring(0, 8).toUpperCase()} • {p.rentalType}</p>
+                          <p className="mt-1 text-body-sm text-c57-on-surface-variant">
+                            Order #{p.id.substring(0, 8).toUpperCase()} &bull; {p.rentalType}
+                          </p>
                         </div>
                       </div>
-                      
+
                       <div className="text-left md:text-right">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dibuat Pada</p>
-                        <p className="text-sm font-black text-slate-900 flex items-center md:justify-end gap-2">
-                           <Calendar size={14} className="text-[#810100]" />
-                           {new Date(p.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
+                        <p className="mb-1 font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                          Dibuat Pada
+                        </p>
+                        <p className="flex items-center gap-1.5 text-body-md text-c57-on-surface md:justify-end">
+                          <Icon name="calendar_month" size="sm" className="text-c57-primary" />
+                          {new Date(p.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
                         </p>
                       </div>
                     </div>
 
                     {/* Item Middle: Data Grid */}
-                    <div className={`grid grid-cols-1 sm:grid-cols-2 ${p.rentalType === "Dengan Driver" ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-8 mb-8`}>
+                    <div
+                      className={[
+                        "mb-space-lg grid grid-cols-1 gap-space-md sm:grid-cols-2",
+                        p.rentalType === "Dengan Driver" ? "lg:grid-cols-5" : "lg:grid-cols-4",
+                      ].join(" ")}
+                    >
                       {/* Client Info */}
-                      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                          <User size={12} /> Data Pelanggan
+                      <div className="rounded-c57-md border border-c57-surface-variant bg-c57-surface-container-low p-space-md">
+                        <p className="mb-3 flex items-center gap-1.5 font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                          <Icon name="person" size="xs" />
+                          Data Pelanggan
                         </p>
-                        <h4 className="text-slate-900 font-black mb-1 truncate">{user?.nama || p.email}</h4>
-                        <p className="text-xs font-bold text-slate-500 mb-1">{user?.nomorTelepon || "No Phone"}</p>
-                        <p className="text-[10px] text-slate-400 truncate">{p.email}</p>
+                        <h4 className="mb-1 truncate font-headline-sm text-body-md text-c57-on-surface">
+                          {user?.nama || p.email}
+                        </h4>
+                        <p className="mb-1 text-body-sm text-c57-on-surface-variant">
+                          {user?.nomorTelepon || "No Phone"}
+                        </p>
+                        <p className="truncate text-body-sm text-c57-on-surface-variant">{p.email}</p>
                       </div>
 
                       {/* Driver Info */}
                       {p.rentalType === "Dengan Driver" && (
-                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex flex-col justify-between">
+                        <div className="flex flex-col justify-between rounded-c57-md border border-c57-surface-variant bg-c57-surface-container-low p-space-md">
                           <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                              <User size={12} className="text-[#810100]" /> Driver Penerima
+                            <p className="mb-3 flex items-center gap-1.5 font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                              <Icon name="person" size="xs" className="text-c57-primary" />
+                              Driver Penerima
                             </p>
                             {p.driverId ? (
                               <>
-                                <h4 className="text-slate-900 font-black mb-1 truncate">
+                                <h4 className="mb-1 truncate font-headline-sm text-body-md text-c57-on-surface">
                                   {driverUser?.displayName || driverUser?.nama || driverUser?.name || 'Driver Aktif'}
                                 </h4>
-                                <p className="text-xs font-bold text-slate-500 mb-1">
+                                <p className="mb-1 text-body-sm text-c57-on-surface-variant">
                                   ID: {p.driverId.substring(0, 12).toUpperCase()}
                                 </p>
                               </>
                             ) : (
-                              <p className="text-xs font-bold text-amber-600 italic">Menunggu Driver</p>
+                              <Pill variant="sand">Menunggu Driver</Pill>
                             )}
                           </div>
                           {p.driverId && (driverUser?.email || p.driverEmail) && (
-                            <p className="text-[10px] text-slate-400 truncate mt-2">
+                            <p className="mt-2 truncate text-body-sm text-c57-on-surface-variant">
                               {driverUser?.email || p.driverEmail}
                             </p>
                           )}
@@ -572,135 +670,235 @@ export default function ManajemenPesanan() {
                       )}
 
                       {/* Duration Info */}
-                      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-center">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Durasi Sewa ({p.durasiHari} Hari)</p>
-                        <div className="flex items-center justify-center gap-3">
-                           <div className="text-center">
-                              <p className="text-[10px] text-slate-400 font-bold mb-0.5">MULAI</p>
-                              <p className="text-sm font-black text-slate-900">{p.tanggalMulai ? new Date(p.tanggalMulai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-'}</p>
-                           </div>
-                           <ArrowRight size={14} className="text-[#810100] mt-4" />
-                           <div className="text-center">
-                              <p className="text-[10px] text-slate-400 font-bold mb-0.5">SELESAI</p>
-                              <p className="text-sm font-black text-slate-900">{p.tanggalSelesai ? new Date(p.tanggalSelesai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-'}</p>
-                           </div>
+                      <div className="rounded-c57-md border border-c57-surface-variant bg-c57-surface-container-low p-space-md text-center">
+                        <p className="mb-3 font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                          Durasi Sewa ({p.durasiHari} Hari)
+                        </p>
+                        <div className="flex items-center justify-center gap-space-sm">
+                          <div className="text-center">
+                            <p className="mb-0.5 font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                              Mulai
+                            </p>
+                            <p className="font-headline-sm text-body-md text-c57-on-surface">
+                              {p.tanggalMulai ? new Date(p.tanggalMulai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-'}
+                            </p>
+                          </div>
+                          <Icon name="arrow_forward" size="sm" className="mt-4 text-c57-primary" />
+                          <div className="text-center">
+                            <p className="mb-0.5 font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                              Selesai
+                            </p>
+                            <p className="font-headline-sm text-body-md text-c57-on-surface">
+                              {p.tanggalSelesai ? new Date(p.tanggalSelesai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-'}
+                            </p>
+                          </div>
                         </div>
                       </div>
 
                       {/* Location Info */}
-                      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                          <MapPin size={12} /> Penyerahan
+                      <div className="rounded-c57-md border border-c57-surface-variant bg-c57-surface-container-low p-space-md">
+                        <p className="mb-3 flex items-center gap-1.5 font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                          <Icon name="location_on" size="xs" />
+                          Penyerahan
                         </p>
-                        <p className="text-sm font-black text-slate-900 mb-1">{p.lokasiPenyerahan || 'Antar ke Alamat'}</p>
+                        <p className="mb-1 font-headline-sm text-body-md text-c57-on-surface">
+                          {p.lokasiPenyerahan || 'Antar ke Alamat'}
+                        </p>
                         {(p.deliveryAddress || p.titikTemuAddress) && (
-                          <p className="text-[10px] font-bold text-slate-400 leading-tight italic line-clamp-2">"{p.deliveryAddress || p.titikTemuAddress}"</p>
+                          <p className="line-clamp-2 text-body-sm text-c57-on-surface-variant italic leading-tight">
+                            &ldquo;{p.deliveryAddress || p.titikTemuAddress}&rdquo;
+                          </p>
                         )}
                       </div>
 
                       {/* Financial Info */}
-                      <div className="bg-red-50 border border-red-100/50 rounded-2xl p-5 text-right flex flex-col justify-center">
-                        <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Estimasi Total</p>
-                        <p className="text-2xl font-black text-[#810100] tracking-tighter">Rp {p.perkiraanHarga?.toLocaleString()}</p>
+                      <div className="flex flex-col justify-center rounded-c57-md border border-c57-primary-container bg-c57-primary-container/10 p-space-md text-right">
+                        <p className="mb-1 font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                          Estimasi Total
+                        </p>
+                        <p className="font-headline-sm text-headline-sm text-c57-primary tabular-nums">
+                          Rp {p.perkiraanHarga?.toLocaleString()}
+                        </p>
                         {p.dpAmount && (
-                          <p className="text-[10px] font-black text-[#810100]/60 mt-1">DP: Rp {p.dpAmount.toLocaleString()}</p>
+                          <p className="mt-1 text-body-sm text-c57-primary/80 tabular-nums">
+                            DP: Rp {p.dpAmount.toLocaleString()}
+                          </p>
                         )}
-                         {penalty.amount > 0 && (
-                          <div className="mt-2 text-[10px] font-bold bg-red-600 text-white px-2 py-1 rounded inline-block">
-                             DENDA: Rp {penalty.amount.toLocaleString()} ({penalty.hours}j)
+                        {penalty.amount > 0 && (
+                          <div className="mt-2">
+                            <Pill variant="danger">
+                              Denda: Rp {penalty.amount.toLocaleString()} ({penalty.hours}j)
+                            </Pill>
                           </div>
                         )}
                       </div>
                     </div>
 
                     {/* Item Bottom: Actions */}
-                    <div className="flex flex-wrap items-center justify-between gap-6">
-                      
+                    <div className="flex flex-wrap items-center justify-between gap-space-md">
                       {/* Action Group 1: Decisions */}
-                      <div className="flex flex-wrap gap-3">
-                         {p.status === "diproses" && (
+                      <div className="flex flex-wrap gap-space-sm">
+                        {p.status === "diproses" && (
                           <>
-                             <button onClick={() => handleStatus(p.id, "disetujui", p.mobilId)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md active:scale-95">Setujui</button>
-                             <button onClick={() => handleStatus(p.id, "ditolak", p.mobilId)} className="bg-white border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all">Tolak</button>
+                            <Button
+                              type="button"
+                              variant="success"
+                              onClick={() => handleStatus(p.id, "disetujui", p.mobilId)}
+                            >
+                              Setujui
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="danger"
+                              onClick={() => handleStatus(p.id, "ditolak", p.mobilId)}
+                            >
+                              Tolak
+                            </Button>
                           </>
                         )}
 
                         {p.status === "disetujui_cash" && p.paymentStatus === "dp_cash_submitted" && (
-                          <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex flex-col md:flex-row items-center gap-6">
-                            <div className="flex items-center gap-3">
-                              <DollarSign size={20} className="text-amber-600" />
+                          <div className="flex flex-col items-center gap-space-md rounded-c57-md border border-c57-tertiary-container bg-c57-tertiary-container/40 p-space-md md:flex-row">
+                            <div className="flex items-center gap-space-sm">
+                              <Icon name="payments" size="xl" className="text-c57-on-tertiary-container" />
                               <div>
-                                <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Nominal DP Tunai</p>
-                                <p className="text-lg font-black text-amber-700">Rp {p.dpAmount?.toLocaleString()}</p>
+                                <p className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                                  Nominal DP Tunai
+                                </p>
+                                <p className="font-headline-sm text-body-lg text-c57-on-surface tabular-nums">
+                                  Rp {p.dpAmount?.toLocaleString()}
+                                </p>
                               </div>
                             </div>
-                            <button onClick={() => handlePaymentApproval(p.id, "pembayaran berhasil")} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md active:scale-95">
+                            <Button
+                              type="button"
+                              variant="success"
+                              onClick={() => handlePaymentApproval(p.id, "pembayaran berhasil")}
+                            >
                               Konfirmasi Terima Uang
-                            </button>
+                            </Button>
                           </div>
                         )}
 
                         {p.status === "menunggu pembayaran" && p.paymentProof && (
-                           <div className="flex items-center gap-3">
-                              <a href={p.paymentProof} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-slate-800 text-white px-5 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all">
-                                 <Eye size={16} /> Bukti DP
-                              </a>
-                              <button onClick={() => handlePaymentApproval(p.id, "pembayaran berhasil")} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md">Verifikasi DP</button>
-                           </div>
+                          <div className="flex items-center gap-space-sm">
+                            <Button
+                              as="a"
+                              href={p.paymentProof}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              variant="secondary"
+                              size="sm"
+                              icon="visibility"
+                            >
+                              Bukti DP
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="success"
+                              onClick={() => handlePaymentApproval(p.id, "pembayaran berhasil")}
+                            >
+                              Verifikasi DP
+                            </Button>
+                          </div>
                         )}
 
                         {p.balancePaymentRequest?.status === "pending" && (
-                           <div className="flex items-center gap-3">
-                              <a href={p.balancePaymentRequest.paymentProof} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-slate-800 text-white px-5 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all">
-                                 <Eye size={16} /> Bukti Lunas
-                              </a>
-                              <button onClick={() => handleBalancePaymentApproval(p.id, "approved")} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md">Selesaikan Order</button>
-                              <button onClick={() => handleBalancePaymentApproval(p.id, "rejected")} className="bg-red-50 text-red-600 border border-red-100 px-5 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-100 transition-all">Tolak</button>
-                           </div>
+                          <div className="flex items-center gap-space-sm">
+                            <Button
+                              as="a"
+                              href={p.balancePaymentRequest.paymentProof}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              variant="secondary"
+                              size="sm"
+                              icon="visibility"
+                            >
+                              Bukti Lunas
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="success"
+                              onClick={() => handleBalancePaymentApproval(p.id, "approved")}
+                            >
+                              Selesaikan Order
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleBalancePaymentApproval(p.id, "rejected")}
+                            >
+                              Tolak
+                            </Button>
+                          </div>
                         )}
 
                         {(p.status === "pembayaran berhasil" || p.status === "disewa" || p.status === "tugas aktif") && (
-                           <button onClick={() => handleStatus(p.id, "selesai", p.mobilId)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md">Tandai Selesai</button>
+                          <Button
+                            type="button"
+                            variant="success"
+                            onClick={() => handleStatus(p.id, "selesai", p.mobilId)}
+                          >
+                            Tandai Selesai
+                          </Button>
                         )}
-                        
+
                         {p.status === "menunggu konfirmasi lunas" && (
-                           <button onClick={() => handleMarkAsLunas(p.id, p.mobilId)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md">Konfirmasi Pelunasan</button>
+                          <Button
+                            type="button"
+                            variant="success"
+                            onClick={() => handleMarkAsLunas(p.id, p.mobilId)}
+                          >
+                            Konfirmasi Pelunasan
+                          </Button>
                         )}
                       </div>
 
                       {/* Action Group 2: Document Printing */}
-                      <div className="flex items-center gap-3 ml-auto">
+                      <div className="ml-auto flex items-center gap-space-sm">
                         {(p.status === "pembayaran berhasil" || p.status === "menunggu pembayaran" || p.status === "disetujui") && (
-                          <button onClick={() => generateInvoicePDF(p, user, "dp")} className="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-widest hover:text-blue-800 transition-colors p-2">
-                             <Download size={14} /> Invoice DP
-                          </button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            icon="download"
+                            onClick={() => generateInvoicePDF(p, user, "dp")}
+                            className="!px-1"
+                          >
+                            Invoice DP
+                          </Button>
                         )}
                         {(p.status === "selesai" || p.status === "tugas aktif" || p.status === "pembayaran berhasil" || p.status === "lunas") && (
-                          <button onClick={() => generateInvoicePDF(p, user, "full")} className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all group">
-                             <Download size={16} className="text-[#810100] group-hover:scale-110 transition-transform" /> 
-                             Cetak Invoice Full
-                          </button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            icon="download"
+                            onClick={() => generateInvoicePDF(p, user, "full")}
+                          >
+                            Cetak Invoice Full
+                          </Button>
                         )}
                         {(p.status === "pembayaran berhasil" || p.status === "lunas" || p.status === "disetujui") && (
-                           <button 
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            icon="calendar_month"
                             onClick={() => handleSyncToCalendar(p)}
-                            className="flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-600 hover:bg-blue-100 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all group"
-                           >
-                            <CalendarIcon size={16} className="group-hover:scale-110 transition-transform" />
+                          >
                             Sync Calendar
-                           </button>
+                          </Button>
                         )}
                       </div>
-
                     </div>
-
                   </div>
-                </div>
-              )
+                </Card>
+              );
             })
           )}
         </div>
-
       </div>
     </div>
   );

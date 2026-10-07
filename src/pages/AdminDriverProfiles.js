@@ -1,9 +1,54 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
-import { User, Phone, MapPin, Star, DollarSign, ArrowRight } from "lucide-react";
+import { useToast } from "../components/Toast";
+
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import EmptyState from "../components/ui/EmptyState";
+import Icon from "../components/ui/Icon";
+import Modal from "../components/ui/Modal";
+import PageHeader from "../components/ui/PageHeader";
+import Pill from "../components/ui/Pill";
+import Select from "../components/ui/Select";
+
+/**
+ * Driver roster: identity, performance, and the per-driver status switch.
+ *
+ * The data contract is unchanged — `users` filtered to `role == "driver"`,
+ * sorted newest-first by `createdAt` client-side, plus a live read of all
+ * `pemesanan` documents that the per-driver order count and earnings are
+ * derived from. The earnings basis stays "orders whose status is one of
+ * selesai / lunas / cash_submitted", which is the same definition
+ * `handleStatusChange` is written against.
+ *
+ * The detail dialog is now the `Modal` primitive. This file's hand-rolled
+ * version had a `×` close button and no ESC, no focus trap and no scroll lock,
+ * so the two-column profile could not be read without a mouse.
+ */
+
+const FILTERS = [
+  { id: "all", label: "Semua" },
+  { id: "active", label: "Aktif" },
+  { id: "inactive", label: "Nonaktif" },
+];
+
+/** The status chip is the only place that decides active vs. not. */
+const ACTIVE_PILL = {
+  variant: "available",
+  icon: "check_circle",
+};
+
+const INACTIVE_PILL = {
+  variant: "danger",
+  icon: "cancel",
+};
+
+const statusPill = (status) =>
+  (status || "active") === "active" ? ACTIVE_PILL : INACTIVE_PILL;
 
 export default function AdminDriverProfiles() {
+  const toast = useToast();
   const [user, setUser] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState(null);
@@ -80,195 +125,266 @@ export default function AdminDriverProfiles() {
         status: newStatus,
         updatedAt: new Date()
       });
-      alert("Status mitra diperbarui.");
+      toast.success("Status mitra diperbarui.", "Berhasil");
     } catch (error) {
       console.error("Error updating driver status:", error);
+      toast.error("Status mitra gagal diperbarui. Silakan coba lagi.", "Gagal");
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-20 text-slate-800">
-      <div className="max-w-7xl mx-auto px-6">
-        
-        {/* Header */}
-        <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
-              <User size={14} />
-              <span>Mitra Pengemudi</span>
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 pb-space-xl">
+      <div className="max-w-7xl mx-auto px-gutter-mobile sm:px-gutter">
+        <PageHeader
+          eyebrow="Mitra Pengemudi"
+          title="Database Profil Driver"
+          subtitle="Monitor kinerja, status aktif, dan data fundamental mitra pengemudi."
+          actions={
+            <div
+              className="flex gap-1 rounded-full border border-c57-surface-variant bg-c57-surface-container-lowest p-1 shadow-c57-card"
+              role="group"
+              aria-label="Filter status mitra"
+            >
+              {FILTERS.map((f) => {
+                const active = filter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setFilter(f.id)}
+                    aria-pressed={active}
+                    className={[
+                      "rounded-full px-space-md py-2.5 font-label-sm uppercase tracking-widest",
+                      "transition-colors duration-300 ease-editorial",
+                      "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c57-primary",
+                      active
+                        ? "bg-c57-primary-container text-c57-on-primary shadow-c57-card"
+                        : "text-c57-on-surface-variant hover:text-c57-on-surface",
+                    ].join(" ")}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Database Profil Driver</h1>
-            <p className="text-slate-500 mt-1">Monitor kinerja, status aktif, dan data fundamental mitra pengemudi.</p>
-          </div>
-          
-          <div className="bg-white p-1 rounded-2xl border border-slate-200 flex gap-1 shadow-sm">
-            {[
-              { id: "all", label: "Semua" },
-              { id: "active", label: "Aktif" },
-              { id: "inactive", label: "Nonaktif" },
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${filter === f.id ? 'bg-[#810100] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
+          }
+        />
 
         {/* Dynamic Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="mt-space-xl grid grid-cols-1 gap-gutter md:grid-cols-2 lg:grid-cols-3">
           {filteredDrivers.length === 0 ? (
-            <div className="col-span-full bg-white rounded-3xl border border-dashed border-slate-200 py-24 text-center">
-              <User size={48} className="mx-auto text-slate-200 mb-4" />
-              <p className="text-slate-400 font-bold italic text-sm">Belum ada mitra pengemudi yang terdaftar.</p>
-            </div>
+            <EmptyState
+              icon="person"
+              title="Belum ada mitra pengemudi"
+              description="Belum ada mitra pengemudi yang terdaftar di ekosistem Cakra Lima Tujuh."
+              className="col-span-full py-space-xl"
+            />
           ) : (
-            filteredDrivers.map((driver) => (
-              <div key={driver.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition-all group overflow-hidden flex flex-col">
-                <div className="p-8">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center border border-slate-100 group-hover:scale-110 transition-transform">
-                      <User size={32} />
+            filteredDrivers.map((driver) => {
+              const pill = statusPill(driver.status);
+              return (
+                <Card key={driver.id} interactive className="group flex flex-col overflow-hidden">
+                  <div className="p-space-lg">
+                    <div className="mb-space-lg flex items-start justify-between gap-space-md">
+                      <span className="flex h-16 w-16 items-center justify-center rounded-c57-md border border-c57-surface-variant bg-c57-surface-container text-c57-outline transition-transform duration-500 ease-editorial group-hover:scale-110">
+                        <Icon name="person" size="3xl" />
+                      </span>
+                      <Pill variant={pill.variant} icon={pill.icon}>
+                        {driver.status || "active"}
+                      </Pill>
                     </div>
-                    <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
-                      (driver.status || 'active') === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-[#810100] border-red-100'
-                    }`}>
-                      {driver.status || 'active'}
-                    </span>
-                  </div>
-                  
-                  <h3 className="text-xl font-black text-slate-900 group-hover:text-[#810100] transition-colors mb-1">{driver.displayName || driver.name || driver.nama || 'Anonymous Driver'}</h3>
-                  <p className="text-xs font-bold text-slate-400 mb-6">{driver.email}</p>
 
-                  <div className="space-y-4 mb-8">
-                    <div className="flex items-center gap-3 text-xs font-bold text-slate-600">
-                       <Phone size={14} className="text-slate-300" />
-                       <span>{driver.phone || driver.noTelepon || "-"}</span>
+                    <h3 className="font-headline-sm text-headline-sm text-c57-on-surface transition-colors duration-300 group-hover:text-c57-primary mb-1">
+                      {driver.displayName || driver.name || driver.nama || "Anonymous Driver"}
+                    </h3>
+                    <p className="mb-space-lg text-body-sm text-c57-on-surface-variant">{driver.email}</p>
+
+                    <dl className="mb-space-lg space-y-space-md">
+                      <div className="flex items-center gap-space-sm text-body-md text-c57-on-surface">
+                        <Icon name="phone" size="sm" className="text-c57-outline" />
+                        <dd>{driver.phone || driver.noTelepon || "-"}</dd>
+                      </div>
+                      <div className="flex items-start gap-space-sm text-body-sm text-c57-on-surface-variant">
+                        <Icon name="location_on" size="sm" className="shrink-0 text-c57-outline" />
+                        <dd className="line-clamp-2 italic">
+                          {driver.address || "Alamat belum diverifikasi"}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <div className="grid grid-cols-2 gap-space-md border-t border-c57-surface-variant pt-space-md">
+                      <div>
+                        <dt className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant mb-1">
+                          Total Order
+                        </dt>
+                        <dd className="flex items-baseline gap-1.5 font-headline-sm text-headline-sm text-c57-on-surface tabular-nums">
+                          {getDriverStats(driver.id).totalOrders}
+                          <span className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                            Poin
+                          </span>
+                        </dd>
+                      </div>
+                      <div className="text-right">
+                        <dt className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant mb-1">
+                          Rating
+                        </dt>
+                        <dd className="flex items-baseline justify-end gap-1 font-headline-sm text-headline-sm text-c57-on-surface tabular-nums">
+                          <Icon name="star" size="sm" filled className="text-c57-tertiary" />
+                          {driver.rating || 0}
+                        </dd>
+                      </div>
                     </div>
-                    <div className="flex items-start gap-3 text-[10px] font-bold text-slate-400">
-                       <MapPin size={14} className="text-slate-300 flex-shrink-0" />
-                       <span className="line-clamp-2 italic">{driver.address || "Alamat belum diverifikasi"}</span>
-                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-50">
-                     <div>
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Order</p>
-                        <p className="text-lg font-black text-slate-900">{getDriverStats(driver.id).totalOrders} <span className="text-[10px] font-bold text-slate-400">Poin</span></p>
-                     </div>
-                     <div className="text-right">
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rating</p>
-                        <div className="flex items-center justify-end gap-1">
-                           <Star size={12} className="text-amber-400 fill-amber-400" />
-                           <p className="text-lg font-black text-slate-900">{driver.rating || 0}</p>
-                        </div>
-                     </div>
-                  </div>
-                </div>
+                  <div className="mt-auto flex items-center justify-between gap-space-md border-t border-c57-surface-variant bg-c57-surface-container px-space-lg py-space-md">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      icon="arrow_forward"
+                      iconPosition="right"
+                      onClick={() => setSelectedDriver(driver)}
+                      className="!px-0"
+                    >
+                      Lihat Detail Mitra
+                    </Button>
 
-                <div className="mt-auto px-8 py-6 bg-slate-50 flex items-center justify-between">
-                   <button 
-                    onClick={() => setSelectedDriver(driver)}
-                    className="flex items-center gap-2 text-[#810100] text-[10px] font-bold uppercase tracking-widest hover:gap-4 transition-all"
-                   >
-                     Lihat Detail Mitra <ArrowRight size={14} />
-                   </button>
-                   <div className="flex items-center gap-2">
-                      <select 
-                        value={driver.status || 'active'}
+                    <div className="w-36">
+                      <Select
+                        label={`Status ${driver.displayName || driver.name || driver.nama || "mitra"}`}
+                        value={driver.status || "active"}
                         onChange={(e) => handleStatusChange(driver.id, e.target.value)}
-                        className="bg-transparent border-none text-[10px] font-bold uppercase tracking-widest text-slate-400 focus:ring-0 cursor-pointer hover:text-slate-600"
                       >
-                         <option value="active">Aktif</option>
-                         <option value="inactive">Nonaktif</option>
-                      </select>
-                   </div>
-                </div>
-              </div>
-            ))
+                        <option value="active">Aktif</option>
+                        <option value="inactive">Nonaktif</option>
+                      </Select>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })
           )}
         </div>
+      </div>
 
-        {/* Modal Info */}
+      <Modal
+        open={!!selectedDriver}
+        onClose={() => setSelectedDriver(null)}
+        size="lg"
+        title="Profil Lengkap Mitra"
+        subtitle={
+          selectedDriver
+            ? `ID Log: ${selectedDriver.id.substring(0, 12).toUpperCase()}`
+            : undefined
+        }
+      >
         {selectedDriver && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white rounded-[2.5rem] w-full max-w-4xl shadow-2xl overflow-hidden animate-scaleUp max-h-[90vh] flex flex-col">
-              <div className="px-10 py-8 border-b border-slate-100 flex items-center justify-between">
-                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-red-50 text-[#810100] rounded-2xl flex items-center justify-center">
-                       <User size={24} />
-                    </div>
-                    <div>
-                       <h3 className="text-2xl font-black text-slate-900">Profil Lengkap Mitra</h3>
-                       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">ID Log: {selectedDriver.id.substring(0, 12).toUpperCase()}</p>
-                    </div>
-                 </div>
-                 <button onClick={() => setSelectedDriver(null)} className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all font-black text-2xl">×</button>
+          <div className="grid grid-cols-1 gap-space-xl md:grid-cols-2">
+            <div className="space-y-space-lg">
+              <section>
+                <h4 className="border-b border-c57-surface-variant pb-2 font-label-md uppercase tracking-widest text-c57-on-surface-variant">
+                  Informasi Autentikasi
+                </h4>
+                <dl className="mt-space-md space-y-space-sm">
+                  <ProfileRow
+                    label="Nama Terdaftar"
+                    value={
+                      selectedDriver.displayName
+                      || selectedDriver.name
+                      || selectedDriver.nama
+                    }
+                  />
+                  <ProfileRow label="Email Sistem" value={selectedDriver.email} />
+                  <ProfileRow
+                    label="Telepon / WA"
+                    value={selectedDriver.phone || selectedDriver.noTelepon || "-"}
+                  />
+                  <ProfileRow
+                    label="Bergabung Pada"
+                    value={formatDate(selectedDriver.createdAt)}
+                  />
+                </dl>
+              </section>
+
+              <div className="rounded-c57-md border border-c57-surface-variant bg-c57-surface-container-low p-space-md">
+                <h4 className="mb-2 flex items-center gap-1.5 font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                  <Icon name="location_on" size="xs" />
+                  Alamat Tinggal
+                </h4>
+                <p className="text-body-md text-c57-on-surface italic">
+                  &ldquo;{selectedDriver.address || "Informasi alamat belum diinput atau diverifikasi oleh mitra."}&rdquo;
+                </p>
               </div>
+            </div>
 
-              <div className="p-10 overflow-y-auto">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                    <div className="space-y-8">
-                       <div className="space-y-6">
-                          <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">Informasi Autentikasi</h4>
-                          {[
-                             { label: "Nama Terdaftar", val: selectedDriver.displayName || selectedDriver.name || selectedDriver.nama },
-                             { label: "Email Sistem", val: selectedDriver.email },
-                             { label: "Telepon / WA", val: selectedDriver.phone || selectedDriver.noTelepon || "-" },
-                            { label: "Bergabung Pada", val: formatDate(selectedDriver.createdAt) },
-                          ].map((item, i) => (
-                            <div key={i} className="flex justify-between items-center">
-                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.label}</span>
-                               <span className="text-sm font-black text-slate-900">{item.val}</span>
-                            </div>
-                          ))}
-                       </div>
+            <div className="space-y-space-lg">
+              <section>
+                <h4 className="border-b border-c57-surface-variant pb-2 font-label-md uppercase tracking-widest text-c57-on-surface-variant">
+                  Dashboard Performa
+                </h4>
 
-                       <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                             <MapPin size={10} /> Alamat Tinggal
-                          </h4>
-                          <p className="text-sm text-slate-600 font-medium italic">"{selectedDriver.address || "Informasi alamat belum diinput atau diverifikasi oleh mitra."}"</p>
-                       </div>
+                <div className="mt-space-md grid grid-cols-2 gap-space-md">
+                  <div className="rounded-c57-lg border border-c57-surface-variant bg-c57-surface-container-low p-space-md text-center">
+                    <p className="mb-2 font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                      Total Order
+                    </p>
+                    <p className="font-headline-md text-headline-md text-c57-on-surface tabular-nums">
+                      {getDriverStats(selectedDriver.id).totalOrders}
+                    </p>
+                  </div>
+
+                  <div className="rounded-c57-lg border border-c57-surface-variant bg-c57-surface-container-low p-space-md text-center">
+                    <p className="mb-2 font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+                      Rating
+                    </p>
+                    <p className="flex items-center justify-center gap-1 font-headline-md text-headline-md text-c57-tertiary tabular-nums">
+                      <Icon name="star" size="sm" filled />
+                      {selectedDriver.rating || 0}
+                    </p>
+                  </div>
+
+                  <div className="group relative col-span-2 overflow-hidden rounded-c57-lg border border-c57-available-bg bg-c57-available-bg p-space-lg text-center">
+                    <div className="relative z-10">
+                      <p className="mb-2 font-label-sm uppercase tracking-widest text-c57-available-text">
+                        Total Pendapatan
+                      </p>
+                      <p className="font-headline-md text-headline-md text-c57-available-text tabular-nums">
+                        Rp {getDriverStats(selectedDriver.id).totalEarnings.toLocaleString()}
+                      </p>
                     </div>
+                    <Icon
+                      name="payments"
+                      size={80}
+                      className="pointer-events-none absolute -bottom-6 -right-4 text-c57-available-text/20 transition-transform duration-500 group-hover:scale-110"
+                    />
+                  </div>
+                </div>
+              </section>
 
-                    <div className="space-y-8">
-                       <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">Dashboard Performa</h4>
-                       <div className="grid grid-cols-2 gap-6">
-                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-center">
-                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Order</p>
-                             <p className="text-3xl font-black text-slate-900 tracking-tighter">{getDriverStats(selectedDriver.id).totalOrders}</p>
-                          </div>
-                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-center">
-                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Rating</p>
-                             <p className="text-3xl font-black text-amber-500 tracking-tighter">{selectedDriver.rating || 0}</p>
-                          </div>
-                          <div className="col-span-2 bg-emerald-50 p-8 rounded-3xl border border-emerald-100 text-center relative overflow-hidden group">
-                             <div className="relative z-10">
-                                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2">Total Pendapatan</p>
-                                <p className="text-4xl font-black text-emerald-700 tracking-tighter">Rp {getDriverStats(selectedDriver.id).totalEarnings.toLocaleString()}</p>
-                             </div>
-                             <DollarSign size={80} className="absolute -right-8 -bottom-8 text-emerald-100 group-hover:scale-110 transition-transform" />
-                          </div>
-                       </div>
-
-                       {selectedDriver.notes && (
-                         <div className="p-6 bg-red-50 border border-red-100 rounded-3xl">
-                            <p className="text-[10px] font-bold text-[#810100] uppercase tracking-widest mb-1 italic">Internal Admin Notes:</p>
-                            <p className="text-sm text-slate-600 font-medium leading-relaxed italic">"{selectedDriver.notes}"</p>
-                         </div>
-                       )}
-                    </div>
-                 </div>
-              </div>
+              {selectedDriver.notes && (
+                <div className="rounded-c57-lg border border-c57-error-container p-space-md">
+                  <p className="mb-1 font-label-sm uppercase tracking-widest text-c57-on-error-container italic">
+                    Internal Admin Notes
+                  </p>
+                  <p className="text-body-md text-c57-on-surface italic leading-relaxed">
+                    &ldquo;{selectedDriver.notes}&rdquo;
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
+      </Modal>
+    </div>
+  );
+}
 
-      </div>
+/** One label/value pair in the profile dialog. */
+function ProfileRow({ label, value }) {
+  return (
+    <div className="flex items-center justify-between gap-space-md border-b border-c57-surface-variant py-1">
+      <dt className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">{label}</dt>
+      <dd className="text-body-md text-c57-on-surface text-right">{value}</dd>
     </div>
   );
 }

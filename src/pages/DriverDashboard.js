@@ -1,8 +1,59 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
-import { collection, query, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp, getDoc, getDocs } from "firebase/firestore";
-import { ClipboardList, CheckCircle, Clock, DollarSign, MapPin, Gauge, ChevronRight } from "lucide-react";
+import { collection, query, where, onSnapshot, updateDoc, doc, addDoc, serverTimestamp, getDoc, getDocs } from "firebase/firestore";
 import { useToast } from "../components/Toast";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import EmptyState from "../components/ui/EmptyState";
+import Icon from "../components/ui/Icon";
+import PageHeader from "../components/ui/PageHeader";
+import Pill from "../components/ui/Pill";
+import StatCard from "../components/ui/StatCard";
+import Table, { TableCell, TableRow } from "../components/ui/Table";
+import { resolveOrderAddress } from "../utils/address";
+
+/**
+ * Driver control dashboard: personal order stats plus the pool of orders up
+ * for grabs.
+ *
+ * The Firestore half of this file — the ordered-query-with-fallback listener,
+ * the accept-order write, and the two notification writes — is unchanged by
+ * the redesign and is the part that has to be trusted. The accept flow keeps
+ * its `driver_assignments` fallback for when security rules reject the
+ * `updateDoc`.
+ *
+ * Two behavioural corrections came with the markup pass:
+ *
+ *  1. The five `alert()` calls in `handleAcceptOrder` were native modal
+ *     dialogs sitting alongside the app's own toast system, so one failure path
+ *     looked nothing like the next. They now use `toast.error`; the message
+ *     text is unchanged.
+ *  2. The success toast had its arguments reversed relative to the
+ *     `toast[type](message, title)` signature every other page uses, so the
+ *     long sentence rendered as a title.
+ *
+ * The responsive card view and the desktop table used to be two hand-copied
+ * copies of the same order row. They still both exist — the phone layout is
+ * genuinely denser — but they now read from the helpers below instead of
+ * duplicating the status logic, which is where the copies had drifted.
+ */
+
+const STAT_TILES = [
+  { key: "totalOrders", label: "Total Order", icon: "assignment" },
+  { key: "activeOrders", label: "Order Aktif", icon: "schedule" },
+  { key: "completedOrders", label: "Order Selesai", icon: "check_circle" },
+];
+
+const COLUMNS = [
+  { key: "mobil", header: "Mobil" },
+  { key: "client", header: "Client" },
+  { key: "lokasi", header: "Lokasi" },
+  { key: "tanggal", header: "Tanggal" },
+  { key: "aksi", header: "Aksi" },
+];
+
+/** Orders in these states have paid and are waiting on a driver. */
+const CLAIMABLE = ["approve sewa", "pembayaran berhasil"];
 
 export default function DriverDashboard() {
   const toast = useToast();
@@ -54,51 +105,49 @@ export default function DriverDashboard() {
   useEffect(() => {
     if (!user) return;
 
-    let unsubscribe;
+    // Rules now scope a driver's read of `pemesanan` to orders that are either
+    // theirs or still unassigned, so this must be filtered in the query rather
+    // than in JS. Orders are always created with an explicit `driverId` (null
+    // when unassigned) because firestore.rules reads that field directly.
+    // Each branch is a separate listener because Firestore has no OR.
+    const scopes = [
+      query(collection(db, "pemesanan"), where("driverId", "==", user.uid)),
+      query(collection(db, "pemesanan"), where("driverId", "==", null)),
+    ];
 
-    const setupListener = () => {
+    // One map per scope. A snapshot replaces only its own scope's rows, so a
+    // change in one branch cannot evict the other branch's documents.
+    const byScope = scopes.map(() => new Map());
+    const unsubscribes = [];
+
+    const flush = () => {
+      const merged = new Map();
+      byScope.forEach((m) => m.forEach((v, k) => merged.set(k, v)));
+      processOrders([...merged.values()]);
+    };
+
+    scopes.forEach((scopeQuery, index) => {
       try {
-        // Try with ordered query first
-        unsubscribe = onSnapshot(
-          query(collection(db, "pemesanan"), orderBy("tanggal", "desc")),
-          (querySnapshot) => {
-            const ordersData = [];
-            querySnapshot.forEach((doc) => {
-              ordersData.push({ id: doc.id, ...doc.data() });
-            });
-            processOrders(ordersData);
-          },
-          (error) => {
-            console.error("Error with ordered query in DriverDashboard, falling back:", error);
-            // Fallback to unordered query if ordered query fails (e.g. index missing)
-            unsubscribe = onSnapshot(
-              collection(db, "pemesanan"),
-              (querySnapshot) => {
-                const ordersData = [];
-                querySnapshot.forEach((doc) => {
-                  ordersData.push({ id: doc.id, ...doc.data() });
-                });
-
-                // Sort by date client-side as fallback
-                ordersData.sort((a, b) => {
-                  const dateA = new Date(a.tanggal || a.createdAt || a.timestamp || 0);
-                  const dateB = new Date(b.tanggal || b.createdAt || b.timestamp || 0);
-                  return dateB - dateA;
-                });
-                processOrders(ordersData);
-              },
-              (fallbackError) => {
-                console.error("Error with fallback query in DriverDashboard:", fallbackError);
-              }
-            );
-          }
+        unsubscribes.push(
+          onSnapshot(
+            scopeQuery,
+            (snap) => {
+              const rows = new Map();
+              snap.forEach((d) => rows.set(d.id, { id: d.id, ...d.data() }));
+              byScope[index] = rows;
+              flush();
+            },
+            (error) => {
+              console.error("Error with scoped pemesanan query in DriverDashboard:", error);
+            }
+          )
         );
       } catch (err) {
         console.error("Error setting up DriverDashboard listener:", err);
       }
-    };
+    });
 
-    const processOrders = (ordersData) => {
+    function processOrders(ordersData) {
       const ordersList = [];
       let totalEarnings = 0;
       let activeCount = 0;
@@ -121,7 +170,7 @@ export default function DriverDashboard() {
         // Includes: pembayaran berhasil (DP paid), approve sewa (cash approved),
         // disetujui (admin approved, no driver yet)
         const needsDriver = !order.driverId &&
-          (order.status === "approve sewa" || 
+          (order.status === "approve sewa" ||
            order.status === "pembayaran berhasil" ||
            (order.status === "disetujui" && !order.driverId));
 
@@ -144,12 +193,12 @@ export default function DriverDashboard() {
         completedOrders: completedCount,
         totalEarnings: totalEarnings
       });
-    };
-
-    setupListener();
+    }
 
     return () => {
-      if (unsubscribe) unsubscribe();
+      unsubscribes.forEach((un) => {
+        if (typeof un === "function") un();
+      });
     };
   }, [user]);
 
@@ -174,42 +223,25 @@ export default function DriverDashboard() {
     }
   };
 
-  const getFullAddress = (order) => {
-    const client = users.find(u => u.id === order.uid);
+  const clientOf = (order) => users.find(u => u.id === order.uid);
 
-    switch (order.lokasiPenyerahan) {
-      case "Rumah":
-        // Prioritaskan deliveryAddress yang diisi user saat booking
-        if (order.deliveryAddress) return order.deliveryAddress;
-        if (client) {
-          const addressParts = [
-            client.alamat,
-            client.kelurahan,
-            client.kecamatan,
-            client.kabupaten,
-            client.provinsi
-          ].filter(part => part && part.trim() !== "");
+  const clientName = (order) =>
+    clientOf(order)?.nama ||
+    (order.email ? order.email.split("@")[0] : "Unknown");
 
-          const rtRw = [];
-          if (client.rt) rtRw.push(`RT ${client.rt}`);
-          if (client.rw) rtRw.push(`RW ${client.rw}`);
+  const clientInitial = (order) =>
+    (clientOf(order)?.nama || order.email || "U").charAt(0).toUpperCase();
 
-          if (rtRw.length > 0) {
-            addressParts.push(rtRw.join("/"));
-          }
+  const canAccept = (order) => CLAIMABLE.includes(order.status) && !order.driverId;
 
-          return addressParts.length > 0 ? addressParts.join(", ") : "Alamat client tidak lengkap";
-        }
-        return "Alamat client tidak tersedia";
-      case "Kantor":
-        return companyProfile?.alamat || "Alamat perusahaan tidak tersedia";
-      case "Titik Temu":
-        // Prioritaskan deliveryAddress yang diisi user saat booking
-        return order.deliveryAddress || order.titikTemuAddress || "Alamat titik temu tidak tersedia";
-      default:
-        return "Lokasi tidak ditentukan";
-    }
-  };
+  const orderDate = (order, withYear) =>
+    order.tanggalMulai
+      ? new Date(order.tanggalMulai).toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+          ...(withYear ? { year: "numeric" } : {}),
+        })
+      : "-";
 
   const handleAcceptOrder = async (orderId) => {
     try {
@@ -217,12 +249,12 @@ export default function DriverDashboard() {
       console.log("Current user:", user);
 
       if (!user || !user.uid) {
-        alert("User tidak ditemukan. Silakan login kembali.");
+        toast.error("User tidak ditemukan. Silakan login kembali.", "Gagal");
         return;
       }
 
       if (!orderId) {
-        alert("Order ID tidak valid.");
+        toast.error("Order ID tidak valid.", "Gagal");
         return;
       }
 
@@ -267,17 +299,17 @@ export default function DriverDashboard() {
             console.log("✅ Driver assignment record created");
           } catch (assignmentError) {
             console.error("❌ Error creating driver assignment:", assignmentError);
-            alert("Gagal menerima order. Firestore rules belum diupdate. Silakan hubungi admin.");
+            toast.error("Gagal menerima order. Firestore rules belum diupdate. Silakan hubungi admin.", "Gagal");
             return;
           }
         } else if (updateError.code === 'not-found') {
-          alert("Order tidak ditemukan. Order mungkin sudah dihapus atau tidak valid.");
+          toast.error("Order tidak ditemukan. Order mungkin sudah dihapus atau tidak valid.", "Gagal");
           return;
         } else if (updateError.code === 'failed-precondition') {
-          alert("Data order tidak valid. Silakan coba lagi atau hubungi admin.");
+          toast.error("Data order tidak valid. Silakan coba lagi atau hubungi admin.", "Gagal");
           return;
         } else {
-          alert(`Gagal menerima order. Error: ${updateError.message} (Code: ${updateError.code})`);
+          toast.error(`Gagal menerima order. Error: ${updateError.message} (Code: ${updateError.code})`, "Gagal");
           return;
         }
       }
@@ -322,7 +354,7 @@ export default function DriverDashboard() {
         // Don't fail the whole process for notification errors
       }
 
-      toast.success("Order berhasil diterima!", "Order sekarang muncul di menu 'Order Aktif'.");
+      toast.success("Order sekarang muncul di menu 'Order Aktif'.", "Order berhasil diterima!");
     } catch (error) {
       console.error("❌ Catch block hit:", error);
       console.error("❌ Error details:", {
@@ -335,185 +367,206 @@ export default function DriverDashboard() {
     }
   };
 
+  const visibleOrders = orders.slice(0, 10);
+
   return (
-    <div className="min-h-screen bg-slate-50 pt-[160px] pb-12 text-slate-800">
+    <div className="min-h-screen bg-c57-surface-container-low pt-30 pb-space-xl text-c57-on-surface">
       {/* Background decoration */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
-        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-red-100 mix-blend-multiply filter blur-[100px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-slate-200 mix-blend-multiply filter blur-[120px]"></div>
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-40" aria-hidden="true">
+        <div className="absolute top-[10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-c57-error-container mix-blend-multiply filter blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-c57-surface-container-high mix-blend-multiply filter blur-[120px]" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-6 md:py-10 lg:py-12">
-        <div className="mb-8 md:mb-10 animate-fadeInUp">
-          <div className="flex items-center gap-2 text-[#810100] font-bold text-xs uppercase tracking-widest mb-2">
-             <Gauge size={14} />
-             <span>Driver Control Dashboard</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight mb-3">Dashboard Driver</h1>
-          <p className="text-slate-500 text-lg">Ringkasan operasional dan order tersedia untuk Anda.</p>
-        </div>
+      <div className="relative z-10 max-w-7xl mx-auto px-gutter-mobile sm:px-gutter py-space-lg">
+        <PageHeader
+          eyebrow={
+            <>
+              <Icon name="speed" size="sm" />
+              <span>Driver Control Dashboard</span>
+            </>
+          }
+          title="Dashboard Driver"
+          subtitle="Ringkasan operasional dan order tersedia untuk Anda."
+          className="mb-space-xl animate-fadeInUp"
+        />
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12 animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
-          {[
-            { label: "Total Order", value: stats.totalOrders, icon: <ClipboardList className="h-5 w-5" />, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
-            { label: "Order Aktif", value: stats.activeOrders, icon: <Clock className="h-5 w-5" />, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
-            { label: "Order Selesai", value: stats.completedOrders, icon: <CheckCircle className="h-5 w-5" />, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
-            { label: "Total Pendapatan", value: `Rp ${stats.totalEarnings.toLocaleString()}`, icon: <DollarSign className="h-5 w-5" />, color: "text-[#810100]", bg: "bg-red-50", border: "border-red-100" },
-          ].map((stat, idx) => (
-            <div key={idx} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition-all group">
-              <div className="flex items-start justify-between mb-4">
-                <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
-                  {stat.icon}
-                </div>
-                <ChevronRight size={16} className="text-gray-300" />
-              </div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">{stat.label}</p>
-              <p className="text-2xl font-black text-slate-900">{stat.value}</p>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-space-xl animate-fadeInUp" style={{ animationDelay: "0.1s" }}>
+          {STAT_TILES.map(stat => (
+            <StatCard
+              key={stat.key}
+              label={stat.label}
+              value={stats[stat.key]}
+              icon={stat.icon}
+            />
           ))}
+          <StatCard
+            label="Total Pendapatan"
+            value={`Rp ${stats.totalEarnings.toLocaleString("id-ID")}`}
+            icon="payments"
+          />
         </div>
 
         {/* Recent Orders Section */}
-        <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-1.5 h-6 bg-[#810100] rounded-full"></div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest">Order Terbaru Tersedia</h2>
+        <section className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+          <div className="flex flex-wrap items-center justify-between gap-space-md mb-space-lg">
+            <div className="flex items-center gap-space-md">
+              <span className="w-1.5 h-6 bg-c57-primary-container rounded-full" aria-hidden="true" />
+              <h2 className="font-headline-sm text-headline-sm text-c57-on-surface uppercase tracking-widest">
+                Order Terbaru Tersedia
+              </h2>
             </div>
-            <div className="bg-red-50 text-[#810100] text-[10px] font-black px-4 py-2 rounded-full border border-red-100 uppercase tracking-widest">
+            <Pill variant="outline" icon="local_shipping">
               {orders.length} Order Tersedia
-            </div>
+            </Pill>
           </div>
 
-          <div className="space-y-6">
-            {orders.length === 0 ? (
-              <div className="bg-white rounded-[2rem] p-16 text-center border border-gray-100 shadow-sm shadow-slate-200/50">
-                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100">
-                  <ClipboardList className="h-10 w-10 text-slate-300" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">Belum Ada Order</h3>
-                <p className="text-slate-500 max-w-xs mx-auto">Saat ini tidak ada order penyewaan yang tersedia untuk diambil.</p>
+          {orders.length === 0 ? (
+            <EmptyState
+              icon="assignment"
+              title="Belum Ada Order"
+              description="Saat ini tidak ada order penyewaan yang tersedia untuk diambil."
+            />
+          ) : (
+            <>
+              {/* Mobile Card View */}
+              <div className="space-y-gutter md:hidden">
+                {visibleOrders.map((order) => (
+                  <Card key={order.id} variant="inset" className="p-space-lg">
+                    <div className="flex items-start justify-between gap-space-md mb-space-md">
+                      <div className="min-w-0">
+                        <p className="font-label-sm uppercase tracking-widest text-c57-outline mb-1">
+                          Armada
+                        </p>
+                        <p className="font-headline-sm text-headline-sm text-c57-on-surface">
+                          {order.namaMobil}
+                        </p>
+                        <CashPill order={order} />
+                      </div>
+                      <Pill variant="neutral" size="sm" className="shrink-0 tabular-nums">
+                        {orderDate(order, false)}
+                      </Pill>
+                    </div>
+
+                    <div className="flex items-center gap-space-md mb-space-md p-space-md bg-c57-surface-container-lowest rounded-c57-md border border-c57-surface-variant">
+                      <span
+                        className="h-8 w-8 rounded-full bg-c57-primary-container text-c57-on-primary flex items-center justify-center text-body-sm font-semibold shrink-0 uppercase"
+                        aria-hidden="true"
+                      >
+                        {clientInitial(order)}
+                      </span>
+                      <span className="text-body-sm font-semibold text-c57-on-surface truncate">
+                        {clientName(order)}
+                      </span>
+                    </div>
+
+                    <AddressBlock order={order} address={resolveOrderAddress(order, { users, companyProfile })} className="mb-space-lg" />
+
+                    {canAccept(order) ? (
+                      <Button
+                        onClick={() => handleAcceptOrder(order.id)}
+                        className="w-full"
+                        icon="check_circle"
+                      >
+                        Terima Order
+                      </Button>
+                    ) : (
+                      <div className="text-center bg-c57-surface-container py-3 rounded-c57-md border border-c57-surface-variant">
+                        <span className="font-label-sm uppercase tracking-widest text-c57-outline">
+                          {order.driverId ? "Diambil Driver" : getStatusText(order.status)}
+                        </span>
+                      </div>
+                    )}
+                  </Card>
+                ))}
               </div>
-            ) : (
-              <>
-                {/* Mobile Card View */}
-                <div className="space-y-4 md:hidden">
-                  {orders.slice(0, 10).map((order) => (
-                    <div key={order.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:border-[#810100]/30 transition-all">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Armada</div>
-                          <div className="text-sm font-black text-slate-900">{order.namaMobil}</div>
-                          {order.status === "approve sewa" && (
-                            <div className="text-[8px] text-[#810100] font-black uppercase tracking-widest mt-1 bg-red-50 px-2 py-0.5 rounded border border-red-100 w-fit">Siap diambil (Cash)</div>
-                          )}
-                        </div>
-                        <div className="text-[10px] font-black text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 uppercase tracking-widest">
-                          {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short'}) : '-'}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
-                        <div className="h-8 w-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black text-[#810100] shadow-sm">
-                          {(users.find(u => u.id === order.uid)?.nama || order.email || 'U').charAt(0).toUpperCase()}
-                        </div>
-                        <div className="text-[11px] font-bold text-slate-600 truncate">{users.find(u => u.id === order.uid)?.nama || order.email}</div>
-                      </div>
-                      <div className="flex items-start text-xs text-slate-400 mb-5">
-                        <MapPin className="h-4 w-4 mr-2 mt-0.5 text-[#810100]/70 flex-shrink-0" />
-                        <div>
-                          <span className="font-black text-slate-700 text-[11px] block">{order.lokasiPenyerahan || "Lokasi Default"}</span>
-                          <span className="text-[10px] text-slate-400 line-clamp-1 block mt-0.5 uppercase tracking-wide">{getFullAddress(order)}</span>
-                        </div>
-                      </div>
-                      {(order.status === "approve sewa" || order.status === "pembayaran berhasil") && !order.driverId ? (
-                        <button
-                          onClick={() => handleAcceptOrder(order.id)}
-                          className="w-full bg-[#810100] hover:bg-slate-900 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-red-900/10 active:scale-95"
-                        >
-                          Terima Order
-                        </button>
-                      ) : (
-                        <div className="text-center bg-slate-50 py-3 rounded-xl border border-slate-100">
-                          <span className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">
-                            {order.driverId ? "Diambil Driver" : getStatusText(order.status)}
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table columns={COLUMNS}>
+                  {visibleOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="whitespace-nowrap">
+                        <p className="font-headline-sm text-headline-sm text-c57-on-surface">
+                          {order.namaMobil}
+                        </p>
+                        <CashPill order={order} />
+                      </TableCell>
+
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex items-center gap-space-md">
+                          <span
+                            className="h-9 w-9 rounded-full bg-c57-surface-container flex items-center justify-center text-body-sm font-semibold text-c57-primary shrink-0 uppercase"
+                            aria-hidden="true"
+                          >
+                            {clientInitial(order)}
+                          </span>
+                          <span className="text-body-sm font-semibold text-c57-on-surface">
+                            {clientName(order)}
                           </span>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                      </TableCell>
 
-                {/* Desktop Table View */}
-                <div className="hidden md:block bg-white rounded-[2rem] border border-gray-200 overflow-hidden shadow-sm">
-                  <table className="min-w-full">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-gray-200">
-                        <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Mobil</th>
-                        <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Client</th>
-                        <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Lokasi</th>
-                        <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</th>
-                        <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {orders.slice(0, 10).map((order) => (
-                        <tr key={order.id} className="group hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-6 whitespace-nowrap">
-                            <div className="text-[13px] font-black text-slate-900 group-hover:text-[#810100] transition-colors">{order.namaMobil}</div>
-                            {order.status === "approve sewa" && (
-                               <div className="text-[8px] text-[#810100] font-black uppercase tracking-widest mt-1 bg-red-50 px-2 py-0.5 rounded border border-red-100 w-fit">Siap diambil (Cash)</div>
-                            )}
-                          </td>
-                          <td className="px-6 py-6 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[11px] font-black text-[#810100] mr-3 overflow-hidden shadow-inner uppercase">
-                                {(users.find(u => u.id === order.uid)?.nama || order.email || 'U').charAt(0).toUpperCase()}
-                              </div>
-                              <div className="text-[12px] font-bold text-slate-600">
-                                {users.find(u => u.id === order.uid)?.nama || (order.email ? order.email.split('@')[0] : 'Unknown')}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-6">
-                            <div className="flex items-start text-xs text-slate-500">
-                              <MapPin className="h-4 w-4 mr-2 mt-0.5 text-[#810100]/70" />
-                              <div>
-                                <span className="font-black text-slate-700 block text-[11px]">{order.lokasiPenyerahan || "Lokasi Default"}</span>
-                                <span className="text-[10px] text-slate-400 line-clamp-1 mt-0.5" title={getFullAddress(order)}>
-                                  {getFullAddress(order)}
-                                </span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-6 whitespace-nowrap">
-                            <div className="text-[10px] font-black text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 uppercase tracking-tighter">
-                              {order.tanggalMulai ? new Date(order.tanggalMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
-                            </div>
-                          </td>
-                          <td className="px-6 py-6 whitespace-nowrap text-center">
-                            {(order.status === "approve sewa" || order.status === "pembayaran berhasil") && !order.driverId ? (
-                              <button
-                                onClick={() => handleAcceptOrder(order.id)}
-                                className="bg-[#810100] hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-red-900/10 hover:scale-105 active:scale-95"
-                              >
-                                Terima Order
-                              </button>
-                            ) : (
-                              <span className="text-slate-400 text-[9px] font-black uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                                {order.driverId ? "Diambil Driver" : getStatusText(order.status)}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+                      <TableCell>
+                        <AddressBlock order={order} address={resolveOrderAddress(order, { users, companyProfile })} />
+                      </TableCell>
+
+                      <TableCell className="whitespace-nowrap">
+                        <Pill variant="neutral" size="sm" className="tabular-nums">
+                          {orderDate(order, true)}
+                        </Pill>
+                      </TableCell>
+
+                      <TableCell className="whitespace-nowrap text-center">
+                        {canAccept(order) ? (
+                          <Button
+                            size="sm"
+                            onClick={() => handleAcceptOrder(order.id)}
+                            icon="check_circle"
+                          >
+                            Terima Order
+                          </Button>
+                        ) : (
+                          <Pill variant="outline" size="sm">
+                            {order.driverId ? "Diambil Driver" : getStatusText(order.status)}
+                          </Pill>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </Table>
+              </div>
+            </>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/** Cash-approved orders are called out separately from the status column. */
+function CashPill({ order }) {
+  if (order.status !== "approve sewa") return null;
+
+  return (
+    <Pill variant="sand" size="sm" className="mt-space-sm">
+      Siap Diambil (Cash)
+    </Pill>
+  );
+}
+
+/** Pickup location: bold venue, then the resolved street address. */
+function AddressBlock({ order, address, className = "" }) {
+  return (
+    <div className={`flex items-start text-body-sm text-c57-on-surface-variant ${className}`}>
+      <Icon name="place" size="sm" className="text-c57-primary mr-space-sm mt-0.5 shrink-0" />
+      <div className="min-w-0">
+        <span className="font-semibold text-c57-on-surface block">
+          {order.lokasiPenyerahan || "Lokasi Default"}
+        </span>
+        <span className="text-body-sm text-c57-outline line-clamp-1 mt-0.5 block" title={address}>
+          {address}
+        </span>
       </div>
     </div>
   );

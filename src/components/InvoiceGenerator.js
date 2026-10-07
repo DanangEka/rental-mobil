@@ -2,16 +2,34 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import logo from '../assets/logo.png';
 
-// Design System Constants
+import { resolveTokens } from '../utils/tokens';
+
+// Design System Constants — Editorial Crimson
 const COLORS = {
-  PRIMARY: [129, 1, 0],      // Cherry Red (Brand)
-  SUCCESS: [34, 197, 94],    // Green
-  INFO: [59, 130, 246],      // Blue
-  DARK: [27, 23, 23],        // Noir Black
-  LIGHT_GRAY: [245, 243, 234], // Cotton light
-  BORDER: [216, 213, 199],   // Cotton dark
-  TEXT_DARK: [27, 23, 23],
-  TEXT_GRAY: [107, 114, 128]
+  PRIMARY: [153, 0, 0],   // primary-container: the only permitted red FILL
+  SUCCESS: [35, 92, 43],  // available-text
+  INFO: [91, 64, 60],     // on-surface-variant
+  DARK: [21, 21, 21],     // scrim
+  LIGHT_GRAY: [255, 248, 245], // surface
+  BORDER: [233, 225, 221],// surface-variant
+  TEXT_DARK: [30, 27, 25], // on-surface
+  TEXT_GRAY: [143, 112, 107] // outline
+};
+
+/**
+ * Re-point the palette at whatever the stylesheet currently resolves to.
+ * Called immediately before generating, so a theme change is picked up.
+ */
+const syncColors = () => {
+  const t = resolveTokens();
+  COLORS.PRIMARY = t['--c57-primary-container'];
+  COLORS.SUCCESS = t['--c57-available-text'];
+  COLORS.INFO = t['--c57-on-surface-variant'];
+  COLORS.DARK = t['--c57-scrim'];
+  COLORS.LIGHT_GRAY = t['--c57-surface'];
+  COLORS.BORDER = t['--c57-surface-variant'];
+  COLORS.TEXT_DARK = t['--c57-on-surface'];
+  COLORS.TEXT_GRAY = t['--c57-outline'];
 };
 
 const COMPANY_INFO = {
@@ -213,6 +231,7 @@ const openPdfInNewTab = (doc, filename) => {
 const InvoiceGenerator = {
   // Generate DP Invoice (50% payment)
   generateDPInvoice: (order, user) => {
+    syncColors();
     const doc = new jsPDF();
     const dpAmount = order.dpAmount || Math.ceil(order.perkiraanHarga * 0.5);
     const remainingAmount = order.perkiraanHarga - dpAmount;
@@ -229,9 +248,9 @@ const InvoiceGenerator = {
 
   // Generate Full Payment Invoice
   generateFullInvoice: (order, user, penaltyAmount = 0, overtimeHours = 0) => {
+    syncColors();
     const doc = new jsPDF();
     const invNo = `INV-FULL-${order.id.slice(-8).toUpperCase()}`;
-    const totalWithPenalty = (order.perkiraanHarga || 0) + penaltyAmount;
 
     addHeader(doc, "INVOICE PELUNASAN", COLORS.SUCCESS);
     let statusText = "LUNAS / FULLY PAID";
@@ -291,6 +310,7 @@ const InvoiceGenerator = {
 
   // Generate Driver Invoice
   generateDriverInvoice: (order, user) => {
+    syncColors();
     const doc = new jsPDF();
     const invNo = `DRV-DP-${order.id.slice(-8).toUpperCase()}`;
 

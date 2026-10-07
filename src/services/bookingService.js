@@ -10,14 +10,62 @@
 
 import {
   collection,
-  query,
-  where,
+  doc,
   getDocs,
   addDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
   onSnapshot,
   Timestamp,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { auth, db } from "./firebase";
+
+/**
+ * Kembalikan mobil ke pool tersedia setelah sebuah pesanan selesai.
+ *
+ * Kenapa tidak `updateDoc(doc(db, "mobil", id), {tersedia, status})` langsung?
+ * Aturan Firestore tidak bisa melakukan query, jadi rules tidak dapat
+ * menjawab pertanyaan "apakah pemanggil ini punya pesanan untuk mobil ini?".
+ * Kontrol sebelumnya karena itu hanya `signedIn()`, yang membuat akun mana pun
+ * able menulis field apa pun pada dokumen mobil mana pun.
+ *
+ * Sebagai gantinya, pemanggil memegang "tanda" di
+ * `mobil/{mobilId}/renters/{uid}`. Rules memverifikasi tanda itu dengan `get()`
+ * ke dokumen pemesanan yang disebut di dalamnya, sehingga akun acak tetap
+ * tidak bisa mendapat hak mengubah mobil. Tanda dibuat tepat di sini, jadi
+ * alur pemesanan tidak perlu diubah.
+ *
+ * @param {string} mobilId
+ * @param {string} pemesananId pesanan yang dipunyai /tepat oleh pemanggil
+ * @returns {Promise<boolean>} true bila mobil berhasil dikembalikan
+ */
+export async function releaseVehicle(mobilId, pemesananId) {
+  if (!mobilId) return false;
+
+  const vehicleRef = doc(db, "mobil", mobilId);
+  const markerRef = doc(db, "mobil", mobilId, "renters", auth.currentUser.uid);
+
+  try {
+    await setDoc(markerRef, {
+      pemesananId,
+      uid: auth.currentUser.uid,
+      at: Timestamp.now(),
+    });
+
+    await updateDoc(vehicleRef, {
+      tersedia: true,
+      status: "normal",
+      updatedAt: Timestamp.now(),
+    });
+
+    return true;
+  } finally {
+    // Tanda hanya berlaku untuk satu pembaruan. Buang agar tidak menjadi
+    // tombol permanen untuk mobil ini.
+    await deleteDoc(markerRef).catch(() => {});
+  }
+}
 
 /**
  * Ambil semua rentang booking untuk satu unit.

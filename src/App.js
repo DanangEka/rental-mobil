@@ -1,10 +1,12 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Seo from "./components/Seo";
 import { ToastProvider } from "./components/Toast";
+import RouteLoading from "./components/ui/RouteLoading";
 
 // ── Lazy-loaded pages ──────────────────────────────────────────────────────
 const Login                    = lazy(() => import("./pages/Login"));
@@ -12,6 +14,7 @@ const LandingPage              = lazy(() => import("./pages/LandingPage"));
 const ListMobil                = lazy(() => import("./pages/ListMobil"));
 const ManajemenPesanan         = lazy(() => import("./pages/ManajemenPesanan"));
 const CarManagement            = lazy(() => import("./pages/CarManagement"));
+const AdminJadwalArmada        = lazy(() => import("./pages/AdminJadwalArmada"));
 const ClientManagement         = lazy(() => import("./pages/ClientManagement"));
 const AdminDashboard           = lazy(() => import("./pages/AdminDashboard"));
 const Profile                  = lazy(() => import("./pages/Profile"));
@@ -35,23 +38,11 @@ const TourPackages             = lazy(() => import("./pages/TourPackages"));
 const DestinasiDetail          = lazy(() => import("./pages/DestinasiDetail"));
 const DiscoveryPage            = lazy(() => import("./pages/DiscoveryPage"));
 const DestinationDetailPage    = lazy(() => import("./pages/DestinationDetailPage"));
-
-// ── Suspense fallback — full-screen charcoal/gold spinner ──────────────────
-function PageLoadingFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F6F0]">
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative w-14 h-14">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
-          <div className="absolute inset-0 rounded-full border-4 border-t-[#810100] animate-spin" />
-        </div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-          Memuat…
-        </p>
-      </div>
-    </div>
-  );
-}
+// TourShowcase merged into /open-trip — route /jelajah redirects to /open-trip
+const LaporanKeuanganRekapKas  = lazy(() => import("./pages/LaporanKeuanganRekapKas"));
+const TripPlanner             = lazy(() => import("./pages/TripPlanner"));
+const Testimoni               = lazy(() => import("./pages/Testimoni"));
+const AdminTestimoni          = lazy(() => import("./pages/AdminTestimoni"));
 
 // ── Page transition wrapper ────────────────────────────────────────────────
 const PageTransition = ({ children }) => (
@@ -85,12 +76,20 @@ function AnimatedRoutes() {
           element={<ProtectedRoute role="admin"><PageTransition><CarManagement /></PageTransition></ProtectedRoute>}
         />
         <Route
+          path="/jadwal-armada"
+          element={<ProtectedRoute role="admin"><PageTransition><AdminJadwalArmada /></PageTransition></ProtectedRoute>}
+        />
+        <Route
           path="/client-management"
           element={<ProtectedRoute role="admin"><PageTransition><ClientManagement /></PageTransition></ProtectedRoute>}
         />
         <Route
           path="/admin-dashboard"
           element={<ProtectedRoute role="admin"><PageTransition><AdminDashboard /></PageTransition></ProtectedRoute>}
+        />
+        <Route
+          path="/laporan-keuangan-rekap-kas"
+          element={<ProtectedRoute role="admin"><PageTransition><LaporanKeuanganRekapKas /></PageTransition></ProtectedRoute>}
         />
         <Route
           path="/profil"
@@ -111,6 +110,10 @@ function AnimatedRoutes() {
         <Route
           path="/admin/open-trip"
           element={<ProtectedRoute role="admin"><PageTransition><AdminOpenTrip /></PageTransition></ProtectedRoute>}
+        />
+        <Route
+          path="/admin-testimoni"
+          element={<ProtectedRoute role="admin"><PageTransition><AdminTestimoni /></PageTransition></ProtectedRoute>}
         />
         <Route
           path="/tour-packages"
@@ -169,6 +172,11 @@ function AnimatedRoutes() {
         <Route path="/destinasi/:region/:slug" element={<PageTransition><DestinationDetailPage /></PageTransition>} />
         <Route path="/discovery" element={<PageTransition><DiscoveryPage /></PageTransition>} />
         <Route path="/discovery/:region" element={<PageTransition><DiscoveryPage /></PageTransition>} />
+        <Route path="/jelajah" element={<Navigate to="/open-trip" replace />} />
+
+        <Route path="/trip-planner" element={<PageTransition><TripPlanner /></PageTransition>} />
+
+        <Route path="/testimoni" element={<PageTransition><Testimoni /></PageTransition>} />
 
         <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
       </Routes>
@@ -180,8 +188,9 @@ function App() {
   return (
     <ToastProvider>
       <Router>
+        <Seo />
         <Navbar />
-        <Suspense fallback={<PageLoadingFallback />}>
+        <Suspense fallback={<RouteLoading />}>
           <AnimatedRoutes />
         </Suspense>
       </Router>

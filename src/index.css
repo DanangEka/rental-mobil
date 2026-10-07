@@ -2,23 +2,234 @@
 @tailwind components;
 @tailwind utilities;
 
-/* C57 Design System Tokens — Cherry Red + Noir Black + Cotton Accent */
+/* ==========================================
+   Editorial Crimson — Design Tokens
+   Source of truth for the entire UI. tailwind.config.js maps its `c57` colour
+   scale onto these via var(), so a value is changed here and nowhere else.
+
+   Token names are shortened from the DESIGN.md frontmatter
+   (`-variant` suffix dropped) for CSS ergonomics. Values are verbatim.
+
+   Replaces the previous ad-hoc --c57-* set (cherry red #810100, charcoal,
+   cotton, gold), which was defined but never consumed.
+   ========================================== */
 :root {
-  --c57-red:            #810100;
-  --c57-red-dark:       #630000;
-  --c57-red-light:      #991A19;
-  --c57-red-soft:       #F5E6E6;
-  --c57-charcoal:       #1B1717;
-  --c57-charcoal-soft:  #2A2525;
-  --c57-slate:          #3D3636;
-  --c57-cotton:         #EDEBDD;
-  --c57-cotton-light:   #F5F3EA;
-  --c57-cotton-dark:    #D8D5C7;
-  --c57-cream:          #F8F6F0;
-  --c57-ivory:          #FAFAF6;
-  --c57-gold:           #C9A84C;
-  --c57-gold-light:     #E8D48B;
+  /* ---- Brand ---------------------------------------------------------- */
+  --c57-primary:                   #6E0000;  /* red text on light; AA */
+  --c57-primary-rgb:      110 0 0;
+  --c57-primary-container:         #990000;  /* the only permitted red FILL */
+  --c57-primary-container-rgb:      153 0 0;
+  --c57-on-primary:                #FFFFFF;
+  --c57-on-primary-rgb:      255 255 255;
+  --c57-primary-fixed:             #FFDAD4;
+  --c57-primary-fixed-rgb:      255 218 212;
+  --c57-primary-fixed-dim:         #FFB4A8;
+  --c57-primary-fixed-dim-rgb:      255 180 168;
+  --c57-on-primary-fixed:          #410000;
+  --c57-on-primary-fixed-rgb:      65 0 0;
+  --c57-on-primary-fixed-variant:  #930000;
+  --c57-on-primary-fixed-variant-rgb:      147 0 0;
+  --c57-inverse-primary:           #FFB4A8;
+  --c57-inverse-primary-rgb:      255 180 168;
+  --c57-surface-tint:              #B82014;
+  --c57-surface-tint-rgb:      184 32 20;
+
+  /* ---- Surfaces ------------------------------------------------------- */
+  --c57-surface:                   #FFF8F5;  /* canvas */
+  --c57-surface-rgb:      255 248 245;
+  --c57-surface-dim:               #E0D8D5;
+  --c57-surface-dim-rgb:      224 216 213;
+  --c57-surface-bright:            #FFF8F5;
+  --c57-surface-bright-rgb:      255 248 245;
+  --c57-surface-container-lowest:  #FFFFFF;  /* cards, photo frames */
+  --c57-surface-container-lowest-rgb:      255 255 255;
+  --c57-surface-container-low:     #FAF2EE;  /* inputs, filter bars */
+  --c57-surface-container-low-rgb:      250 242 238;
+  --c57-surface-container:         #F4ECE8;
+  --c57-surface-container-rgb:      244 236 232;
+  --c57-surface-container-high:    #EEE7E3;
+  --c57-surface-container-high-rgb:      238 231 227;
+  --c57-surface-container-highest: #E9E1DD;
+  --c57-surface-container-highest-rgb:      233 225 221;
+  --c57-surface-variant:           #E9E1DD;  /* hairlines, dividers */
+  --c57-surface-variant-rgb:      233 225 221;
+  --c57-background:                #FFF8F5;
+  --c57-background-rgb:      255 248 245;
+  --c57-on-background:             #1E1B19;
+  --c57-on-background-rgb:      30 27 25;
+
+  /* ---- Ink ------------------------------------------------------------ */
+  --c57-on-surface:                #1E1B19;  /* headlines, primary data */
+  --c57-on-surface-rgb:      30 27 25;
+  --c57-on-surface-variant:        #5B403C;  /* body, secondary labels */
+  --c57-on-surface-variant-rgb:      91 64 60;
+  --c57-outline:                   #8F706B;
+  --c57-outline-rgb:      143 112 107;
+  --c57-outline-variant:           #E4BEB8;
+  --c57-outline-variant-rgb:      228 190 184;
+
+  /* ---- Secondary — warm umber ----------------------------------------- */
+  --c57-secondary:                        #73584E;
+  --c57-secondary-rgb:      115 88 78;
+  --c57-on-secondary:                     #FFFFFF;
+  --c57-on-secondary-rgb:      255 255 255;
+  --c57-secondary-container:              #FCD8CA;
+  --c57-secondary-container-rgb:      252 216 202;
+  --c57-on-secondary-container:           #785D52;
+  --c57-on-secondary-container-rgb:      120 93 82;
+  --c57-secondary-fixed:                  #FFDBCD;
+  --c57-secondary-fixed-rgb:      255 219 205;
+  --c57-secondary-fixed-dim:              #E2BFB2;  /* body text on scrim */
+  --c57-secondary-fixed-dim-rgb:      226 191 178;
+  --c57-on-secondary-fixed:               #2A170F;
+  --c57-on-secondary-fixed-rgb:      42 23 15;
+  --c57-on-secondary-fixed-variant:       #5A4137;
+  --c57-on-secondary-fixed-variant-rgb:      90 65 55;
+
+  /* ---- Tertiary — warm sand; VIP badges, luxury tiers ------------------ */
+  --c57-tertiary:                   #433011;
+  --c57-tertiary-rgb:      67 48 17;
+  --c57-on-tertiary:                #FFFFFF;
+  --c57-on-tertiary-rgb:      255 255 255;
+  --c57-tertiary-container:         #5B4626;
+  --c57-tertiary-container-rgb:      91 70 38;
+  --c57-on-tertiary-container:      #D2B58C;
+  --c57-on-tertiary-container-rgb:      210 181 140;
+  --c57-tertiary-fixed:             #FEDEB2;
+  --c57-tertiary-fixed-rgb:      254 222 178;
+  --c57-tertiary-fixed-dim:         #E0C298;
+  --c57-tertiary-fixed-dim-rgb:      224 194 152;
+  --c57-on-tertiary-fixed:          #281800;
+  --c57-on-tertiary-fixed-rgb:      40 24 0;
+  --c57-on-tertiary-fixed-variant:  #584323;
+  --c57-on-tertiary-fixed-variant-rgb:      88 67 35;
+
+  /* ---- Inverse — deep footer fields ----------------------------------- */
+  --c57-inverse-surface:     #33302D;
+  --c57-inverse-surface-rgb:      51 48 45;
+  --c57-inverse-on-surface:  #F7EFEB;
+  --c57-inverse-on-surface-rgb:      247 239 235;
+
+  /* ---- Status ---------------------------------------------------------- */
+  --c57-error:              #BA1A1A;
+  --c57-error-rgb:      186 26 26;
+  --c57-on-error:           #FFFFFF;
+  --c57-on-error-rgb:      255 255 255;
+  --c57-error-container:    #FFDAD6;
+  --c57-error-container-rgb:      255 218 214;
+  --c57-on-error-container: #93000A;
+  --c57-on-error-container-rgb:      147 0 10;
+
+  /* ---- Dark surfaces — heroes, footers, navbar utility strip ----------- */
+  --c57-scrim:        #151515;
+  --c57-scrim-rgb:      21 21 21;
+  --c57-on-scrim:     #EEE7E3;
+  --c57-on-scrim-rgb:      238 231 227;
+  --c57-accent-line:  #D2B58C;
+  --c57-accent-line-rgb:      210 181 140;
+
+  /* ---- Semantic --------------------------------------------------------- */
+  --c57-available-bg:   #EDF4EE;
+  --c57-available-bg-rgb:      237 244 238;
+  --c57-available-text: #235C2B;
+  --c57-available-text-rgb:      35 92 43;
+
+  /* ---- Elevation (DESIGN.md §Elevation) -------------------------------- */
+  --c57-shadow-card:        0 8px 30px -4px rgba(42, 23, 15, 0.04);
+  --c57-shadow-card-hover:  0 16px 40px -6px rgba(153, 0, 0, 0.08);
+  --c57-shadow-overlay:     0 24px 48px -12px rgba(42, 23, 15, 0.12);
+  --c57-hairline:           1px solid rgba(30, 27, 25, 0.06);
 }
+
+/* ==========================================
+   Self-hosted fonts (Editorial Crimson)
+   Files land in public/fonts/ — see phase 2 of the implementation plan.
+   Declared here so primitives can rely on them before the binary exists.
+   ========================================== */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./assets/fonts/playfair-display-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./assets/fonts/playfair-display-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+20A0-20AB, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url('./assets/fonts/plus-jakarta-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215;
+}
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: italic;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url('./assets/fonts/plus-jakarta-sans-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215;
+}
+/* Playfair Display italic, latin only — editorial emphasis. The 2023-25 unit
+   guarantee badge and similar marketing emphasis do not need latin-ext. */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./assets/fonts/playfair-display-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215;
+}
+
+/* Material Symbols Outlined, subset to exactly the glyphs the mockups use and
+   pinned to the FILL axis (~25KB, from 2.2MB unsubsetted). Generated by
+   scripts/build-icon-subset.py. Icons resolve by codepoint, not ligature —
+   see src/components/ui/Icon.js and src/icon-codepoints.json. */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url('./assets/fonts/material-symbols-subset.woff2') format('woff2');
+}
+
+/* Inter is retained only for pages not yet migrated onto the type scale.
+   Remove with the final migration batch. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: local('Inter'), local('Inter-Regular');
+}
+
+/* Icon baseline: Material Symbols is designed on a 24px em with the glyph
+   optically centred, so it must not inherit the text line-height. */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0;
+}
+
 
 /* ==========================================
    Base Styles
@@ -34,11 +245,36 @@ html {
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 24px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #FAFAF6;
+  background-color: var(--c57-surface);
+  color: var(--c57-on-surface);
   overflow-x: hidden;
+}
+
+/* Editorial Crimson surface utilities.
+   Heroes, footers and the navbar utility strip are dark (#151515) in every
+   mockup and were being hand-rolled as inline hex in 30+ places. */
+.surface-scrim {
+  background-color: var(--c57-scrim);
+  color: var(--c57-on-scrim);
+}
+.text-on-scrim {
+  color: var(--c57-on-scrim);
+}
+/* Body copy on dark surfaces. Never pure white. */
+.text-on-scrim-body {
+  color: var(--c57-secondary-fixed-dim);
+}
+/* The hairline + gold accent detail above editorial headlines. */
+.accent-line {
+  display: inline-block;
+  width: 2rem;
+  height: 1px;
+  background-color: var(--c57-accent-line);
 }
 
 code {
@@ -67,11 +303,11 @@ code {
   background: #1B1717;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--c57-red);
+  background: var(--c57-primary-container);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--c57-red-light);
+  background: var(--c57-primary-fixed-dim);
 }
 
 /* ==========================================
@@ -209,14 +445,14 @@ code {
    Gradient text
    ========================================== */
 .gradient-text {
-  background: linear-gradient(135deg, var(--c57-red-light) 0%, var(--c57-red) 50%, var(--c57-cotton) 100%);
+  background: linear-gradient(135deg, var(--c57-primary-fixed-dim) 0%, var(--c57-primary-container) 50%, var(--c57-surface-variant) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .gradient-text-gold {
-  background: linear-gradient(135deg, var(--c57-gold) 0%, var(--c57-gold-light) 50%, var(--c57-gold) 100%);
+  background: linear-gradient(135deg, var(--c57-tertiary-fixed-dim) 0%, var(--c57-tertiary-fixed) 50%, var(--c57-tertiary-fixed-dim) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -304,7 +540,7 @@ code {
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  background: linear-gradient(135deg, var(--c57-red), var(--c57-cotton));
+  background: linear-gradient(135deg, var(--c57-primary-container), var(--c57-surface-variant));
   z-index: -1;
 }
 
@@ -322,7 +558,7 @@ code {
   content: '';
   height: 1px;
   width: 48px;
-  background: linear-gradient(90deg, transparent, var(--c57-cotton-dark), transparent);
+  background: linear-gradient(90deg, transparent, var(--c57-outline-variant), transparent);
 }
 
 /* ==========================================
@@ -344,7 +580,7 @@ code {
    Button base (shared style)
    ========================================== */
 .btn-brand {
-  background-color: var(--c57-red);
+  background-color: var(--c57-primary-container);
   color: white;
   font-weight: 600;
   padding: 0.75rem 1.5rem;
@@ -353,12 +589,12 @@ code {
   box-shadow: 0 4px 15px rgba(129, 1, 0, 0.25);
 }
 .btn-brand:hover {
-  background-color: var(--c57-red-dark);
+  background-color: var(--c57-primary);
   box-shadow: 0 8px 30px rgba(129, 1, 0, 0.35);
   transform: translateY(-1px);
 }
 .btn-brand:focus {
-  outline: 2px solid var(--c57-red-light);
+  outline: 2px solid var(--c57-primary-fixed-dim);
   outline-offset: 2px;
 }
 .btn-outline {
@@ -373,7 +609,7 @@ code {
 }
 .btn-outline:hover {
   background: white;
-  color: var(--c57-red);
+  color: var(--c57-primary-container);
   transform: translateY(-1px);
 }
 .btn-outline:focus {
@@ -453,3 +689,15 @@ code {
   display: none !important;
 }
 
+/* ==========================================
+   Masonry grid — Testimoni page
+   CSS columns-based masonry with staggered entrance.
+   ========================================== */
+.masonry-grid > * {
+  animation: masonryReveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes masonryReveal {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}

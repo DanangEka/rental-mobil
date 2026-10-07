@@ -2,38 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { doc, getDoc } from "firebase/firestore";
-
-function LoadingSkeleton() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F6F0]">
-      <div className="flex flex-col items-center gap-4">
-        {/* Spinner ring */}
-        <div className="relative w-14 h-14">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
-          <div className="absolute inset-0 rounded-full border-4 border-t-[#810100] animate-spin" />
-        </div>
-        {/* Bouncing dots */}
-        <div className="flex items-center gap-1.5">
-          <span
-            className="w-2 h-2 bg-[#810100] rounded-full animate-bounce"
-            style={{ animationDelay: "0ms" }}
-          />
-          <span
-            className="w-2 h-2 bg-[#810100] rounded-full animate-bounce"
-            style={{ animationDelay: "150ms" }}
-          />
-          <span
-            className="w-2 h-2 bg-[#810100] rounded-full animate-bounce"
-            style={{ animationDelay: "300ms" }}
-          />
-        </div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-          Memuat halaman…
-        </p>
-      </div>
-    </div>
-  );
-}
+import RouteLoading from "./ui/RouteLoading";
 
 export default function ProtectedRoute({ children, role }) {
   const [allowed, setAllowed] = useState(null);
@@ -62,7 +31,7 @@ export default function ProtectedRoute({ children, role }) {
     checkRole();
   }, [role]);
 
-  if (allowed === null) return <LoadingSkeleton />;
+  if (allowed === null) return <RouteLoading label="Memuat halaman…" showDots />;
   if (!allowed)         return <Navigate to="/login" replace />;
   return children;
 }
