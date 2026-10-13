@@ -74,7 +74,7 @@ export default function CompanyProfile() {
 
         {/* ── Mission + About ──────────────────────────────────── */}
         <section className="grid grid-cols-1 items-center gap-space-xl lg:grid-cols-2">
-          <Card variant="scrim" className="relative overflow-hidden p-10 md:p-14">
+          <Card variant="scrim" className="relative overflow-hidden p-6 md:p-10 lg:p-14">
             <div
               className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-c57-primary-container/15 blur-[60px]"
               aria-hidden="true"
@@ -273,7 +273,7 @@ export default function CompanyProfile() {
 
         {/* ── Experience & trust ───────────────────────────────── */}
         <Card variant="flat" className="overflow-hidden">
-          <div className="relative overflow-hidden px-10 py-14 md:px-16 md:py-20">
+          <div className="relative overflow-hidden px-6 py-10 md:px-16 md:py-20">
             <img
               src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1200&q=80"
               alt=""
@@ -296,7 +296,7 @@ export default function CompanyProfile() {
             </div>
           </div>
 
-          <div className="space-y-space-lg p-10 md:p-16">
+          <div className="space-y-space-lg p-6 md:p-16">
             <p className="text-body-lg text-c57-on-surface-variant font-light leading-relaxed">
               Kami memahami bahwa perjalanan bukan sekadar berpindah tempat — ini tentang
               menciptakan kenangan, menjalin hubungan, dan menemukan sesuatu yang baru. Setiap trip

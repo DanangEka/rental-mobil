@@ -18,7 +18,6 @@ import Modal from "../components/ui/Modal";
 import Select from "../components/ui/Select";
 import Textarea from "../components/ui/Textarea";
 import {
-  BRAND_STATS,
   CATEGORIES,
   PUBLIC_FILTERS,
   RATING_LABELS,
@@ -209,6 +208,55 @@ export default function Testimoni() {
     [live]
   );
 
+  /** Average rating (1–5, one decimal) across published testimonials. */
+  const heroRating = useMemo(() => {
+    const rated = live
+      .filter((t) => t.status === "published")
+      .map((t) => Number(t.rating))
+      .filter((n) => n >= 1 && n <= 5);
+    if (!rated.length) return null;
+    return rated.reduce((s, n) => s + n, 0) / rated.length;
+  }, [live]);
+
+  /**
+   * Live stat band, derived from the same `live` snapshot the gallery uses —
+   * no extra subscription. Averages skip docs missing the field (older rows
+   * have no `punctuality`) and fall back to "—" when there is nothing to
+   * average yet.
+   */
+  const liveStats = useMemo(() => {
+    const published = live.filter((t) => t.status === "published");
+    const pct = (n) => `${Math.round(n * 100)}%`;
+
+    const avgOf = (field) => {
+      const rated = published
+        .map((t) => Number(t[field]))
+        .filter((n) => n >= 1 && n <= 5);
+      if (!rated.length) return null;
+      return rated.reduce((s, n) => s + n, 0) / rated.length / 5;
+    };
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const thisMonth = published.filter((t) => toMillis(t.createdAt) >= monthStart).length;
+
+    const punctuality = avgOf("punctuality");
+    const satisfaction = heroRating != null ? heroRating / 5 : null;
+
+    return [
+      { value: String(published.length), label: "Ulasan Terverifikasi" },
+      {
+        value: punctuality != null ? pct(punctuality) : "—",
+        label: "Ketepatan Jadwal",
+      },
+      {
+        value: satisfaction != null ? pct(satisfaction) : "—",
+        label: "Kepuasan Tamu",
+      },
+      { value: String(thisMonth), label: "Testimoni Bulan Ini" },
+    ];
+  }, [live, heroRating]);
+
   const submitTestimonial = async () => {
     if (!form.clientName.trim()) {
       toast.warning("Isi nama lengkap atau instansi terlebih dahulu.");
@@ -248,7 +296,7 @@ export default function Testimoni() {
   return (
     <div className="min-h-screen bg-c57-surface pb-space-xl">
       {/* ── Hero ── */}
-      <section className="relative w-full overflow-hidden bg-c57-inverse-surface px-margin-mobile pt-36 pb-space-xl md:px-margin-tablet lg:px-margin">
+      <section className="relative w-full overflow-hidden bg-c57-inverse-surface px-margin-mobile pt-30 pb-space-xl md:pt-36 md:px-margin-tablet lg:px-margin">
         <div className="relative z-10 mx-auto max-w-[1360px]">
           <span className="mb-space-md inline-flex items-center gap-1.5 rounded-full bg-c57-inverse-on-surface/10 px-space-md py-1.5 font-label-sm uppercase tracking-widest text-c57-inverse-on-surface/85 backdrop-blur">
             <Icon name="auto_awesome" size="sm" />
@@ -269,12 +317,17 @@ export default function Testimoni() {
           <div className="flex flex-wrap items-center gap-space-md">
             <div className="flex items-center gap-space-sm">
               <span className="font-headline-xl text-headline-xl text-c57-inverse-on-surface">
-                4.9
+                {heroRating != null ? heroRating.toFixed(1) : "—"}
               </span>
               <div className="flex flex-col">
-                <Stars value={5} className="[&_*]:!text-c57-primary-fixed" />
+                <Stars
+                  value={heroRating != null ? Math.round(heroRating) : 0}
+                  className="[&_*]:!text-c57-primary-fixed"
+                />
                 <span className="font-label-sm uppercase tracking-widest text-c57-inverse-on-surface/70">
-                  Sangat Puas · Google &amp; TripAdvisor
+                  {heroRating != null
+                    ? `${RATING_LABELS[Math.round(heroRating)]} · ${publishedCount} Ulasan Terverifikasi`
+                    : "Belum ada ulasan terverifikasi"}
                 </span>
               </div>
             </div>
@@ -284,8 +337,8 @@ export default function Testimoni() {
 
       {/* ── Stat band ── */}
       <section className="relative z-10 mx-auto max-w-[1360px] px-margin-mobile md:px-margin-tablet lg:px-margin">
-        <div className="-mt-space-lg grid grid-cols-2 gap-space-md lg:grid-cols-4">
-          {BRAND_STATS.map((stat) => (
+        <div className="mt-4 md:-mt-space-lg grid grid-cols-2 gap-space-md lg:grid-cols-4">
+          {liveStats.map((stat) => (
             <div
               key={stat.label}
               className="rounded-c57-lg border border-c57-surface-variant bg-c57-surface-container-lowest p-space-lg shadow-c57-card"

@@ -91,7 +91,9 @@ service cloud.firestore {
         "kelurahan", "rt", "rw", "nomorTelepon", "noTelepon", "penanggungJawab",
         "penanggungJawabAlamat", "penanggungJawabTelepon", "ktpURL",
         "simNumber", "tanggalLahir", "birthDate", "displayName", "name",
-        "phone", "updatedAt", "verificationStatus"
+        "phone", "updatedAt", "verificationStatus",
+        "jenisKelamin", "kotaBasisUtama", "titikAntarFavorit",
+        "kontakDaruratNama", "kontakDaruratHubungan", "kontakDaruratTelepon"
       ];
     }
 
@@ -101,7 +103,9 @@ service cloud.firestore {
         "kelurahan", "rt", "rw", "nomorTelepon", "noTelepon", "penanggungJawab",
         "penanggungJawabAlamat", "penanggungJawabTelepon", "ktpURL",
         "simNumber", "tanggalLahir", "birthDate", "displayName", "name",
-        "phone", "updatedAt"
+        "phone", "updatedAt",
+        "jenisKelamin", "kotaBasisUtama", "titikAntarFavorit",
+        "kontakDaruratNama", "kontakDaruratHubungan", "kontakDaruratTelepon"
       ];
     }
 
@@ -255,7 +259,9 @@ service cloud.firestore {
       // `driverVerifiedAt` (DriverOrders.js) and
       // `vehicleVerificationBefore` / `vehicleVerificationAfter`
       // (VehicleVerification.js) were written by the app but missing here, so
-      // those writes were rejected.
+      // those writes were rejected. `paymentProof` + `paymentStatus` ditambahkan
+      // karena DriverOrders.js:364 mengunggah bukti bayar atas nama driver —
+      // tanpa keduanya alur "driver upload bukti" selalu permission-denied.
 
       allow update: if isDriverClaimingOrder()
         && request.resource.data.diff(resource.data).affectedKeys()
@@ -268,7 +274,9 @@ service cloud.firestore {
                "paymentVerifiedAt",
                "driverVerifiedAt",
                "vehicleVerificationBefore",
-               "vehicleVerificationAfter"
+               "vehicleVerificationAfter",
+               "paymentProof",
+               "paymentStatus"
              ]);
     }
 

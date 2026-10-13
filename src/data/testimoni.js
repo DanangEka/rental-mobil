@@ -14,14 +14,9 @@
  */
 
 export const CATEGORIES = [
-  { id: "bromo",     label: "Open Trip Bromo & Ijen" },
-  { id: "bali",      label: "Private Tour Bali" },
-  { id: "overland",  label: "Overland Jawa & Jogja" },
-  { id: "chauffeur", label: "Chauffeur VIP Korporat" },
-  { id: "family",    label: "Family Vacation" },
-  { id: "wedding",   label: "VIP Wedding Car" },
-  { id: "transfer",  label: "Airport Transfer Juanda" },
-  { id: "sewa",      label: "Sewa Mobil Lepas Kunci" },
+  { id: "open_trip",    label: "Open Trip" },
+  { id: "private_trip", label: "Private Trip" },
+  { id: "rental_mobil", label: "Rental Mobil" },
 ];
 
 export const categoryLabel = (id) =>
@@ -29,24 +24,10 @@ export const categoryLabel = (id) =>
 
 /** Public filter pills. `all` is the catch-all and has no category entry. */
 export const PUBLIC_FILTERS = [
-  { id: "all",        label: "Semua Cerita" },
-  { id: "bromo",      label: "Open Trip Bromo & Ijen" },
-  { id: "bali",       label: "Private Tour Bali" },
-  { id: "overland",   label: "Overland Jawa & Jogja" },
-  { id: "chauffeur",  label: "VIP Executive Rental" },
-  { id: "family",     label: "Family Vacation" },
-];
-
-/**
- * Aggregate proof points for the public stat band. These are brand claims, not
- * derived data — the count of published testimonials lives in the collection and
- * is counted at render time. Keep the two apart deliberately.
- */
-export const BRAND_STATS = [
-  { value: "850+",   label: "Ulasan Terverifikasi" },
-  { value: "99.2%",  label: "Ketepatan Jadwal" },
-  { value: "100%",   label: "Armada 2023–2025" },
-  { value: "98.6%",  label: "Kepuasan Tamu" },
+  { id: "all",          label: "Semua Cerita" },
+  { id: "open_trip",    label: "Open Trip" },
+  { id: "private_trip", label: "Private Trip" },
+  { id: "rental_mobil", label: "Rental Mobil" },
 ];
 
 export const RATING_LABELS = {

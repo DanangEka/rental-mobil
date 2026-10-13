@@ -108,6 +108,39 @@ function StatCard({ icon, label, value, sub, tone = "neutral" }) {
   );
 }
 
+function StarRatingInput({ label, value, onChange }) {
+  return (
+    <div>
+      <span className="mb-2 block font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
+        {label}
+      </span>
+      <div className="flex flex-wrap items-center gap-1 rounded-c57-md bg-c57-surface-container-low p-space-sm">
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type="button"
+              aria-label={`${n} bintang`}
+              aria-pressed={n === value}
+              onClick={() => onChange(n)}
+              className="rounded-full p-0.5 transition-transform hover:scale-110"
+            >
+              <Icon
+                name="star"
+                size="lg"
+                className={n <= value ? "text-c57-primary-container" : "text-c57-surface-variant"}
+              />
+            </button>
+          ))}
+        </div>
+        <span className="font-body-sm text-body-sm text-c57-on-surface-variant">
+          {value}.0 ({RATING_LABELS[value]})
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminTestimoni() {
   const toast = useToast();
   const [items, setItems] = useState([]);
@@ -118,6 +151,7 @@ export default function AdminTestimoni() {
   const [page, setPage] = useState(1);
 
   const [rating, setRating] = useState(5);
+  const [punctuality, setPunctuality] = useState(5);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -277,6 +311,7 @@ export default function AdminTestimoni() {
         category: form.category,
         tripDate: form.tripDate || null,
         rating,
+        punctuality,
         testimonial: form.testimonial.trim(),
         photoUrl: form.photoUrl || null,
         featured: form.featured,
@@ -298,6 +333,7 @@ export default function AdminTestimoni() {
         watermark: true,
       });
       setRating(5);
+      setPunctuality(5);
     } catch (err) {
       console.error(err);
       toast.error("Gagal menyimpan testimoni", err.message);
@@ -413,31 +449,17 @@ export default function AdminTestimoni() {
                   </Field>
                 </div>
 
-                <div>
-                  <span className="mb-2 block font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
-                    Kepuasan / Star Rating
-                  </span>
-                  <div className="flex w-fit items-center gap-1 rounded-c57-md bg-c57-surface-container-low p-space-sm">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        aria-label={`${n} bintang`}
-                        aria-pressed={n === rating}
-                        onClick={() => setRating(n)}
-                        className="rounded-full p-0.5 transition-transform hover:scale-110"
-                      >
-                        <Icon
-                          name="star"
-                          size="lg"
-                          className={n <= rating ? "text-c57-primary-container" : "text-c57-surface-variant"}
-                        />
-                      </button>
-                    ))}
-                    <span className="ml-space-sm font-body-sm text-body-sm text-c57-on-surface-variant">
-                      {rating}.0 ({RATING_LABELS[rating]})
-                    </span>
-                  </div>
+                <div className="grid grid-cols-1 gap-space-md sm:grid-cols-2">
+                  <StarRatingInput
+                    label="Kepuasan"
+                    value={rating}
+                    onChange={setRating}
+                  />
+                  <StarRatingInput
+                    label="Ketepatan Jadwal"
+                    value={punctuality}
+                    onChange={setPunctuality}
+                  />
                 </div>
 
                 {/* Photo dropzone */}
@@ -560,9 +582,9 @@ export default function AdminTestimoni() {
               </div>
             </Card>
 
-            <div className="mt-space-md flex items-start gap-space-sm rounded-c57-md border border-c57-tertiary-container bg-c57-tertiary-container/40 p-space-md">
-              <Icon name="security" size="md" className="mt-0.5 shrink-0 text-c57-on-tertiary-container" />
-              <p className="text-body-sm text-c57-on-tertiary-container">
+            <div className="mt-space-md flex items-start gap-space-sm rounded-c57-md border border-c57-outline-variant bg-c57-surface-container p-space-md">
+              <Icon name="security" size="md" className="mt-0.5 shrink-0 text-c57-primary-container" />
+              <p className="font-body-sm text-body-sm text-c57-on-surface-variant">
                 Pastikan telah mendapatkan persetujuan lisan maupun tertulis dari
                 client sebelum foto wajah dipublikasikan. Foto berwatermark aktif
                 secara default untuk konten kiriman client.

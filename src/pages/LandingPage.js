@@ -103,7 +103,7 @@ export default function LandingPage() {
       </section>
 
       {/* ===== SERVICE CATALOG ===== */}
-      <div className="relative z-20 -mt-20 px-gutter-mobile md:px-gutter max-w-7xl mx-auto w-full">
+      <div className="relative z-20 mt-4 md:-mt-20 px-gutter-mobile md:px-gutter max-w-7xl mx-auto w-full">
         <Card className="overflow-hidden">
           <div className="h-1 w-full bg-gradient-to-r from-c57-primary via-c57-accent-line to-c57-primary" />
 
@@ -169,7 +169,7 @@ export default function LandingPage() {
 
       {/* ===== TRIP CLASSIFICATION ===== */}
       <div className="section-luxury bg-c57-surface">
-        <div className="max-w-7xl mx-auto px-gutter">
+        <div className="max-w-7xl mx-auto px-gutter-mobile sm:px-gutter">
           <SectionHeading
             align="center"
             eyebrow="Kategori Perjalanan"
@@ -258,7 +258,7 @@ export default function LandingPage() {
       {/* ===== WHY CHOOSE US ===== */}
       <div className="section-luxury bg-c57-surface-container-lowest relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-c57-primary/5 rounded-full blur-[120px] pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-gutter relative z-10">
+          <div className="max-w-7xl mx-auto px-gutter-mobile sm:px-gutter relative z-10">
           <SectionHeading
             align="center"
             eyebrow="Keunggulan Kami"
@@ -303,7 +303,7 @@ export default function LandingPage() {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-c57-primary/10 rounded-full -translate-y-1/2 translate-x-1/3 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-c57-accent-line/5 rounded-full translate-y-1/2 -translate-x-1/3 pointer-events-none" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-gutter">
+          <div className="relative z-10 max-w-7xl mx-auto px-gutter-mobile sm:px-gutter">
           <div className="text-center mb-14">
             <p className="font-label-md text-label-md uppercase tracking-[0.3em] text-c57-on-scrim/40 mb-3">
               Rating &amp; Ulasan
@@ -324,7 +324,7 @@ export default function LandingPage() {
 
       {/* ===== CTA ===== */}
       <div className="section-luxury bg-c57-surface relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-gutter text-center relative z-10">
+          <div className="max-w-4xl mx-auto px-gutter-mobile sm:px-gutter text-center relative z-10">
           <p className="font-label-md text-label-md text-c57-primary uppercase tracking-[0.3em] mb-4">
             Siap Berpetualang?
           </p>

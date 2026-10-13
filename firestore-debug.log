@@ -1,0 +1,106 @@
+Oct 08, 2026 1:54:57 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start
+INFO: Started WebSocket server on ws://127.0.0.1:9150
+API endpoint: http://127.0.0.1:8080
+If you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:
+
+   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
+
+If you are running a Firestore in Datastore Mode project, run:
+
+   export DATASTORE_EMULATOR_HOST=127.0.0.1:8080
+
+Note: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.
+Dev App Server is now running.
+
+Oct 08, 2026 1:55:02 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+Oct 08, 2026 1:55:02 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected HTTP/2 connection.
+Oct 08, 2026 1:55:23 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+Oct 08, 2026 1:55:36 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+Oct 08, 2026 1:55:36 AM com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+WARNING: Operation failed: Document parent name "projects/rental-mobil-746c9/databases/(default)/documents/testimoni" lacks "/" at index 67.
+com.google.cloud.datastore.core.exception.InvalidConversionException: Document parent name "projects/rental-mobil-746c9/databases/(default)/documents/testimoni" lacks "/" at index 67.
+	at com.google.cloud.datastore.core.exception.InvalidConversionException.checkConversion(InvalidConversionException.java:51)
+	at com.google.cloud.datastore.core.firestorev1.converter.FirestoreV1ResourceNameParser.parseSlashAllowTrailing(FirestoreV1ResourceNameParser.java:132)
+	at com.google.cloud.datastore.core.firestorev1.converter.FirestoreV1ResourceNameParser.parseSlash(FirestoreV1ResourceNameParser.java:127)
+	at com.google.cloud.datastore.core.firestorev1.converter.FirestoreV1ResourceRefToRepConverter.parsePath(FirestoreV1ResourceRefToRepConverter.java:338)
+	at com.google.cloud.datastore.core.firestorev1.converter.FirestoreV1ResourceRefToRepConverter.convertEntityParentRefAllowFirestoreRelative(FirestoreV1ResourceRefToRepConverter.java:90)
+	at com.google.cloud.datastore.core.firestorev1.converter.FirestoreV1RequestToRepConverter.constructNewEntityRef(FirestoreV1RequestToRepConverter.java:450)
+	at com.google.cloud.datastore.emulator.impl.util.FirestoreEmulatorConverters.toEntityRef(FirestoreEmulatorConverters.java:534)
+	at com.google.cloud.datastore.emulator.impl.firestore.CloudFirestoreV1Router.inferDatabaseRef(CloudFirestoreV1Router.java:529)
+	at com.google.cloud.datastore.emulator.impl.firestore.CloudFirestoreV1Router.createDocument(CloudFirestoreV1Router.java:141)
+	at com.google.cloud.datastore.emulator.firestore.v1.FirestoreV1GrpcAdapter$1.lambda$createDocument$3(FirestoreV1GrpcAdapter.java:126)
+	at com.google.cloud.datastore.emulator.firestore.v1.FirestoreV1GrpcAdapter.unary(FirestoreV1GrpcAdapter.java:72)
+	at com.google.cloud.datastore.emulator.firestore.v1.FirestoreV1GrpcAdapter$1.createDocument(FirestoreV1GrpcAdapter.java:126)
+	at com.google.firestore.v1.FirestoreGrpc$MethodHandlers.invoke(FirestoreGrpc.java:1266)
+	at io.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+	at io.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+	at io.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+	at io.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+	at io.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+	at io.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+	at io.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+	at io.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+	at io.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+	at io.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+	at io.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+	at io.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+	at io.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1128)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
+	at java.base/java.lang.Thread.run(Thread.java:829)
+
+Oct 08, 2026 1:55:36 AM io.gapi.emulators.netty.HttpHandler$1 onError
+INFO: Exception when handling request: INVALID_ARGUMENT: Document parent name "projects/rental-mobil-746c9/databases/(default)/documents/testimoni" lacks "/" at index 67.
+Oct 08, 2026 1:55:38 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+Oct 08, 2026 1:55:55 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+Oct 08, 2026 1:55:55 AM com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+WARNING: Operation failed: Document parent name "projects/rental-mobil-746c9/databases/(default)/documents/testimoni" lacks "/" at index 67.
+com.google.cloud.datastore.core.exception.InvalidConversionException: Document parent name "projects/rental-mobil-746c9/databases/(default)/documents/testimoni" lacks "/" at index 67.
+	at com.google.cloud.datastore.core.exception.InvalidConversionException.checkConversion(InvalidConversionException.java:51)
+	at com.google.cloud.datastore.core.firestorev1.converter.FirestoreV1ResourceNameParser.parseSlashAllowTrailing(FirestoreV1ResourceNameParser.java:132)
+	at com.google.cloud.datastore.core.firestorev1.converter.FirestoreV1ResourceNameParser.parseSlash(FirestoreV1ResourceNameParser.java:127)
+	at com.google.cloud.datastore.core.firestorev1.converter.FirestoreV1ResourceRefToRepConverter.parsePath(FirestoreV1ResourceRefToRepConverter.java:338)
+	at com.google.cloud.datastore.core.firestorev1.converter.FirestoreV1ResourceRefToRepConverter.convertEntityParentRefAllowFirestoreRelative(FirestoreV1ResourceRefToRepConverter.java:90)
+	at com.google.cloud.datastore.core.firestorev1.converter.FirestoreV1RequestToRepConverter.constructNewEntityRef(FirestoreV1RequestToRepConverter.java:450)
+	at com.google.cloud.datastore.emulator.impl.util.FirestoreEmulatorConverters.toEntityRef(FirestoreEmulatorConverters.java:534)
+	at com.google.cloud.datastore.emulator.impl.firestore.CloudFirestoreV1Router.inferDatabaseRef(CloudFirestoreV1Router.java:529)
+	at com.google.cloud.datastore.emulator.impl.firestore.CloudFirestoreV1Router.createDocument(CloudFirestoreV1Router.java:141)
+	at com.google.cloud.datastore.emulator.firestore.v1.FirestoreV1GrpcAdapter$1.lambda$createDocument$3(FirestoreV1GrpcAdapter.java:126)
+	at com.google.cloud.datastore.emulator.firestore.v1.FirestoreV1GrpcAdapter.unary(FirestoreV1GrpcAdapter.java:72)
+	at com.google.cloud.datastore.emulator.firestore.v1.FirestoreV1GrpcAdapter$1.createDocument(FirestoreV1GrpcAdapter.java:126)
+	at com.google.firestore.v1.FirestoreGrpc$MethodHandlers.invoke(FirestoreGrpc.java:1266)
+	at io.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+	at io.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+	at io.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+	at io.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+	at io.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+	at io.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+	at io.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+	at io.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+	at io.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+	at io.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+	at io.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+	at io.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+	at io.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1128)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
+	at java.base/java.lang.Thread.run(Thread.java:829)
+
+Oct 08, 2026 1:55:55 AM io.gapi.emulators.netty.HttpHandler$1 onError
+INFO: Exception when handling request: INVALID_ARGUMENT: Document parent name "projects/rental-mobil-746c9/databases/(default)/documents/testimoni" lacks "/" at index 67.
+Oct 08, 2026 1:56:10 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+Oct 08, 2026 1:56:13 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+Oct 08, 2026 1:56:56 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+Oct 08, 2026 1:56:59 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+*** shutting down gRPC server since JVM is shutting down
+*** server shut down

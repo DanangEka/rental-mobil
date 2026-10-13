@@ -1,0 +1,799 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><title>Cakra Lima Tujuh — Admin Portal</title><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface":"#fff8f5","surface-container-high":"#eee7e3","on-primary":"#ffffff","on-tertiary-fixed-variant":"#584323","tertiary-fixed-dim":"#e0c298","tertiary-fixed":"#fedeb2","on-tertiary-fixed":"#281800","outline-variant":"#e4beb8","inverse-primary":"#ffb4a8","error-container":"#ffdad6","secondary-container":"#fcd8ca","inverse-surface":"#33302d","surface-bright":"#fff8f5","primary-fixed-dim":"#ffb4a8","tertiary":"#433011","primary-container":"#990000","on-background":"#1e1b19","surface-container-lowest":"#ffffff","on-secondary-container":"#785d52","on-primary-fixed":"#410000","background":"#fff8f5","on-tertiary-container":"#d2b58c","on-secondary":"#ffffff","on-tertiary":"#ffffff","secondary-fixed-dim":"#e2bfb2","on-secondary-fixed":"#2a170f","error":"#ba1a1a","surface-container-highest":"#e9e1dd","on-error":"#ffffff","primary-fixed":"#ffdad4","secondary-fixed":"#ffdbcd","on-secondary-fixed-variant":"#5a4137","outline":"#8f706b","surface-variant":"#e9e1dd","primary":"#6e0000","surface-dim":"#e0d8d5","on-primary-container":"#ffa092","surface-tint":"#b82014","surface-container-low":"#faf2ee","on-primary-fixed-variant":"#930000","on-surface-variant":"#5b403c","inverse-on-surface":"#f7efeb","tertiary-container":"#5b4626","surface-container":"#f4ece8","on-error-container":"#93000a","on-surface":"#1e1b19","secondary":"#73584e"},borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},spacing:{"gutter":"1.5rem","gutter-mobile":"1rem","margin-mobile":"1.25rem","space-sm":"0.5rem","space-md":"1rem","margin-tablet":"2rem","space-xs":"0.25rem","margin":"4rem","space-xl":"3rem","space-lg":"1.75rem"},fontFamily:{"label-md":["Plus Jakarta Sans"],"label-lg":["Plus Jakarta Sans"],"headline-lg-mobile":["Playfair Display"],"headline-xl":["Playfair Display"],"headline-xl-mobile":["Playfair Display"],"headline-md":["Playfair Display"],"headline-sm":["Playfair Display"],"body-md":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"],"label-sm":["Plus Jakarta Sans"],"headline-lg":["Playfair Display"],"body-sm":["Plus Jakarta Sans"]},fontSize:{"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.06em","fontWeight":"600"}],"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.04em","fontWeight":"600"}],"headline-lg-mobile":["28px",{"lineHeight":"36px","fontWeight":"600"}],"headline-xl":["56px",{"lineHeight":"64px","letterSpacing":"-0.02em","fontWeight":"600"}],"headline-xl-mobile":["36px",{"lineHeight":"44px","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-md":["28px",{"lineHeight":"36px","fontWeight":"500"}],"headline-sm":["22px",{"lineHeight":"28px","fontWeight":"500"}],"body-md":["15px",{"lineHeight":"24px","fontWeight":"400"}],"body-lg":["18px",{"lineHeight":"28px","fontWeight":"400"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.08em","fontWeight":"600"}],"headline-lg":["40px",{"lineHeight":"48px","letterSpacing":"-0.015em","fontWeight":"600"}],"body-sm":["13px",{"lineHeight":"20px","fontWeight":"400"}]}}}}</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 w-full z-50 shadow-[0_4px_24px_rgba(43,24,16,0.06)]"><div class="bg-[#151515] text-[#ded2cd] border-b border-white/10 px-6 py-2 text-xs flex items-center justify-between whitespace-nowrap overflow-hidden"><div class="flex items-center gap-2.5 shrink-0 whitespace-nowrap"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0"></span><span class="font-bold text-emerald-400">LAYANAN 24 JAM</span><span class="text-white/40">|</span><span class="text-[#ded2cd] font-medium hidden md:inline truncate">TARIF TRANSPARAN &amp; KOMPETITIF — MELAYANI PERJALANAN ANDA DENGAN SEPENUH HATI</span></div><div class="flex items-center gap-3 shrink-0 whitespace-nowrap"><div class="hidden xl:flex items-center gap-1 text-[#ded2cd] font-medium"><span class="material-symbols-outlined text-[14px]">location_on</span><span class="">Surabaya / Sidoarjo Hub Operasional Juanda</span></div><span class="hidden xl:inline text-white/40">•</span><div class="flex items-center gap-1 text-white font-bold tracking-wider"><span class="material-symbols-outlined text-[14px]">call</span><span class="">HOTLINE: +62 812-5757-0057</span></div></div></div><div class="h-20 bg-surface-container-lowest/95 backdrop-blur-xl px-margin-mobile md:px-margin-tablet lg:px-margin flex items-center justify-between gap-gutter"><div class="flex items-center gap-space-md shrink-0"><img alt="Cakra Lima Tujuh Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UKMFd5J-hXvvey8iZsVaubFcPdnsQj3R5Jp9h1lig_uLH0XrBV11yL5vuETUDOazc35UF7VczreUtev6rJuxbXTCA6ZGDZN1Z2I3iX77cMwKrhLtTcefrq3pJrOZamowNhbsMOWrE_rQirLJMQwhZsFFzuX3GRlpGiRYc1cRDPHZFI0tgUU09gBoMb-GbE0Pbp_RsKoJudqQec04RLgU4k-RO7E90TdRo-ahUEeZcy3a5e5NxRsaXxLMV6"><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-primary leading-none font-bold tracking-tight">Cakra Lima Tujuh</span><span class="font-label-sm text-label-sm text-secondary tracking-widest mt-1">PREMIUM TOUR &amp; TRAVEL</span></div></div><nav class="hidden 2xl:flex items-center gap-1 bg-[#f0e8e4] p-1.5 rounded-full text-xs font-semibold text-[#5c4033] shadow-inner"><a class="px-3.5 py-1.5 rounded-full hover:text-on-surface transition-all" data-path="dashboard" href="#">DASHBOARD</a><a class="px-3.5 py-1.5 rounded-full hover:text-on-surface transition-all" data-path="pesanan" href="#">PESANAN</a><a class="px-3.5 py-1.5 rounded-full hover:text-on-surface transition-all" data-path="sewa-mobil" href="#">SEWA MOBIL</a><a aria-current="page" class="bg-[#990000] text-white px-4 py-1.5 rounded-full shadow-sm transition-all" data-path="mobil" href="#">MOBIL</a><a class="px-3.5 py-1.5 rounded-full hover:text-on-surface transition-all" data-path="client" href="#">CLIENT</a><a class="px-3.5 py-1.5 rounded-full hover:text-on-surface transition-all" data-path="driver" href="#">DRIVER</a><a class="px-3.5 py-1.5 rounded-full hover:text-on-surface transition-all" data-path="open-trip" href="#">OPEN TRIP</a><a class="px-3.5 py-1.5 rounded-full hover:text-on-surface transition-all" data-path="paket-wisata" href="#">PAKET WISATA</a><a class="px-3.5 py-1.5 rounded-full hover:text-on-surface transition-all" data-path="laporan-keuangan" href="#">LAPORAN KEUANGAN</a></nav><div class="flex items-center gap-space-md shrink-0"><div class="relative p-2 rounded-full hover:bg-surface-container transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary ring-2 ring-surface-container-lowest"></span></div><div class="flex items-center gap-3 pl-3 py-1 pr-4 bg-surface-container rounded-full shadow-sm hover:bg-surface-container-high transition-colors cursor-pointer"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-on-primary text-[15px]">A</div><div class="flex flex-col text-left"><span class="font-label-md text-label-md text-primary font-bold uppercase tracking-wider leading-tight">ADMIN</span><span class="font-label-sm text-[10px] text-on-surface-variant leading-none">Admin Operasional</span></div></div></div></div></header><main class="w-full pt-28 bg-surface min-h-[calc(100vh-80px)]"><div class="flex flex-col w-full">
+<!-- Top Operational Context & KPIs Banner -->
+<section class="w-full px-margin-mobile md:px-margin-tablet lg:px-margin py-space-md">
+<div class="max-w-[1360px] mx-auto flex flex-col gap-space-md">
+<!-- Sub-Bar Breadcrumbs & Title Bar -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-md pb-space-xs">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs text-primary font-label-sm uppercase tracking-widest">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+<span class="">MANAJEMEN OPERASIONAL ARMADA • JADWAL REAL-TIME</span>
+</div>
+<h1 class="font-headline-md md:font-headline-lg text-headline-md md:text-headline-lg text-on-surface tracking-tight">
+            Timeline &amp; Kalender Ketersediaan Armada
+          </h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+            Pantau alokasi unit kendaraan, status booking DP 50%, penugasan chauffeur, dan jadwal servis berkala secara visual.
+          </p>
+</div>
+<!-- Quick Primary Action Group -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<button class="bg-primary text-on-primary hover:bg-primary-container px-space-md py-2.5 rounded-full font-label-md text-label-md flex items-center gap-space-xs shadow-md transition-all" id="btnOpenNewBooking">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span class="">INPUT JADWAL / BOOKING</span>
+</button>
+<button class="bg-surface-container-high text-on-surface hover:bg-surface-dim px-space-md py-2.5 rounded-full font-label-md text-label-md flex items-center gap-space-xs transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">file_download</span>
+<span class="">EKSPOR JADWAL</span>
+</button>
+</div>
+</div>
+<!-- Quick Operational Metrics Bento Cards -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-space-sm pt-space-xs">
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm uppercase">Total Armada</span>
+<span class="material-symbols-outlined text-[18px] text-primary">directions_car</span>
+</div>
+<div class="flex items-baseline gap-space-xs mt-space-xs">
+<span class="font-headline-md text-headline-md text-on-surface font-semibold">14</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Unit Registered</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-primary">
+<span class="font-label-sm text-label-sm uppercase">Sedang Bertugas</span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+</div>
+<div class="flex items-baseline gap-space-xs mt-space-xs">
+<span class="font-headline-md text-headline-md text-primary font-bold">8</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">On Duty (57%)</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-emerald-700">
+<span class="font-label-sm text-label-sm uppercase">Ready di Pool</span>
+<span class="material-symbols-outlined text-[18px] text-emerald-700">local_parking</span>
+</div>
+<div class="flex items-baseline gap-space-xs mt-space-xs">
+<span class="font-headline-md text-headline-md text-emerald-700 font-semibold">4</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Standby Juanda</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-label-sm text-label-sm uppercase">Servis / Rawat</span>
+<span class="material-symbols-outlined text-[18px]">build</span>
+</div>
+<div class="flex items-baseline gap-space-xs mt-space-xs">
+<span class="font-headline-md text-headline-md text-secondary font-semibold">2</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Auto2000 &amp; Salon</span>
+</div>
+</div>
+<div class="col-span-2 md:col-span-1 bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-tertiary">
+<span class="font-label-sm text-label-sm uppercase">Utilisasi Armada</span>
+<span class="font-label-sm text-label-sm text-primary font-bold">+12% WoW</span>
+</div>
+<div class="flex items-center gap-space-sm mt-space-xs">
+<span class="font-headline-md text-headline-md text-primary font-bold">85.7%</span>
+<div class="flex-1 bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[85.7%] rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Interactive Timeline Control Toolbar & Legend -->
+<section class="w-full px-margin-mobile md:px-margin-tablet lg:px-margin py-space-sm">
+<div class="max-w-[1360px] mx-auto bg-surface-container-lowest rounded-2xl shadow-sm p-space-md flex flex-col gap-space-md">
+<!-- Date Navigation & View Filters -->
+<div class="flex flex-wrap items-center justify-between gap-space-md">
+<!-- Left: Date Picker & Pager -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<div class="inline-flex items-center bg-surface-container rounded-full p-1 shadow-inner">
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container-lowest transition-colors" title="Minggu Sebelumnya">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<div class="px-space-md py-1 flex items-center gap-space-xs text-on-surface font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px] text-primary">event</span>
+<span class="font-bold">Minggu Ini: 12 - 18 Oktober 2026</span>
+</div>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container-lowest transition-colors" title="Minggu Berikutnya">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+<button class="px-3.5 py-1.5 rounded-full font-label-sm text-label-sm bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+            Hari Ini (15 Okt)
+          </button>
+<!-- Category Quick Filter -->
+<div class="relative">
+<select class="appearance-none bg-surface-container text-on-surface font-label-sm text-label-sm pl-3.5 pr-8 py-2 rounded-full cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary shadow-inner">
+<option value="all">Semua Kategori (14 Unit)</option>
+<option value="luxury">Luxury Passenger Van</option>
+<option value="executive">First-Class Executive</option>
+<option value="mpv">Family &amp; Business MPV</option>
+<option value="suv">SUV &amp; 4x4 All-Terrain</option>
+</select>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Right: Time Zoom & View Modes -->
+<div class="flex items-center gap-space-sm">
+<div class="hidden sm:inline-flex items-center bg-surface-container p-1 rounded-full text-on-surface-variant font-label-sm text-label-sm">
+<button class="px-3 py-1 rounded-full hover:text-on-surface transition-colors">24 Jam</button>
+<button class="px-3 py-1 rounded-full bg-surface-container-lowest text-primary font-bold shadow-sm">7 Hari</button>
+<button class="px-3 py-1 rounded-full hover:text-on-surface transition-colors">14 Hari</button>
+<button class="px-3 py-1 rounded-full hover:text-on-surface transition-colors">30 Hari</button>
+</div>
+<div class="inline-flex items-center bg-surface-container p-1 rounded-full">
+<button class="px-3 py-1 rounded-full bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[15px]">view_timeline</span>
+<span class="">Gantt</span>
+</button>
+<button class="px-3 py-1 rounded-full text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[15px]">calendar_view_month</span>
+<span class="">Grid</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Color Legend Bar -->
+<div class="flex flex-wrap items-center gap-x-space-md gap-y-space-xs pt-space-xs text-body-sm text-body-sm text-on-surface-variant bg-surface-container-low px-space-md py-2 rounded-xl">
+<span class="font-label-sm text-label-sm uppercase font-bold text-on-surface">Keterangan:</span>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-primary"></span>
+<span class="">DP 50% Lunas</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-amber-600"></span>
+<span class="">Menunggu Pelunasan</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-emerald-600"></span>
+<span class="">Standby Pool Juanda</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-sky-700"></span>
+<span class="">Bespoke / Private Tour</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-purple-700"></span>
+<span class="">Open Trip Reguler</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-sm bg-surface-dim bg-[repeating-linear-gradient(45deg,#b0a8a4,#b0a8a4_2px,#e0d8d5_2px,#e0d8d5_6px)]"></span>
+<span class="">Servis &amp; Detailing</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Master Interactive Gantt Schedule Matrix -->
+<section class="w-full px-margin-mobile md:px-margin-tablet lg:px-margin py-space-sm pb-space-xl">
+<div class="max-w-[1360px] mx-auto bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col">
+<!-- Timeline Header: Vehicle Column Header + 7 Day Headers -->
+<div class="grid grid-cols-12 bg-surface-container-high text-on-surface border-b border-surface-container py-3 px-space-md text-left font-label-md text-label-md uppercase tracking-wider items-center select-none">
+<!-- Left: Vehicle Profile header -->
+<div class="col-span-12 lg:col-span-4 flex items-center justify-between pr-space-md">
+<span class="font-bold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-primary">directions_car</span>
+            Unit Armada &amp; Penugasan Driver
+          </span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">10 Aktif ditampilkan</span>
+</div>
+<!-- Right 7 Days (Senin to Minggu) -->
+<div class="hidden lg:grid col-span-8 grid-cols-7 text-center">
+<div class="flex flex-col py-1">
+<span class="text-on-surface-variant font-label-sm text-[11px]">SEN</span>
+<span class="font-headline-sm text-body-lg font-bold text-on-surface">12</span>
+<span class="text-[10px] text-on-surface-variant">Okt</span>
+</div>
+<div class="flex flex-col py-1">
+<span class="text-on-surface-variant font-label-sm text-[11px]">SEL</span>
+<span class="font-headline-sm text-body-lg font-bold text-on-surface">13</span>
+<span class="text-[10px] text-on-surface-variant">Okt</span>
+</div>
+<div class="flex flex-col py-1">
+<span class="text-on-surface-variant font-label-sm text-[11px]">RAB</span>
+<span class="font-headline-sm text-body-lg font-bold text-on-surface">14</span>
+<span class="text-[10px] text-on-surface-variant">Okt</span>
+</div>
+<!-- Highlight Today (Kamis 15 Okt) -->
+<div class="flex flex-col py-1 bg-primary text-on-primary rounded-xl shadow-sm relative">
+<span class="font-label-sm text-[11px] tracking-widest text-primary-fixed">HARI INI</span>
+<span class="font-headline-sm text-body-lg font-bold">15</span>
+<span class="text-[10px] text-primary-fixed">Kamis</span>
+<span class="absolute -bottom-3 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rotate-45"></span>
+</div>
+<div class="flex flex-col py-1">
+<span class="text-on-surface-variant font-label-sm text-[11px]">JUM</span>
+<span class="font-headline-sm text-body-lg font-bold text-on-surface">16</span>
+<span class="text-[10px] text-on-surface-variant">Okt</span>
+</div>
+<div class="flex flex-col py-1 text-primary">
+<span class="font-label-sm text-[11px]">SAB</span>
+<span class="font-headline-sm text-body-lg font-bold">17</span>
+<span class="text-[10px] text-on-surface-variant">Weekend</span>
+</div>
+<div class="flex flex-col py-1 text-primary">
+<span class="font-label-sm text-[11px]">MIN</span>
+<span class="font-headline-sm text-body-lg font-bold">18</span>
+<span class="text-[10px] text-on-surface-variant">Weekend</span>
+</div>
+</div>
+</div>
+<!-- Matrix Rows Body Container -->
+<div class="flex flex-col divide-y divide-surface-container relative">
+<!-- ================= CATEGORY 1: LUXURY PASSENGER VAN ================= -->
+<div class="bg-surface-container-low px-space-md py-1.5 flex items-center justify-between">
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-widest">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="">KATEGORI: LUXURY PASSENGER VAN (COMMUTER &amp; PREMIO)</span>
+</div>
+<span class="font-label-sm text-[11px] text-on-surface-variant">3 Unit Siap Operasi</span>
+</div>
+<!-- Row 1: HiAce Premio Luxury VIP (L 1957 CK) -->
+<div class="grid grid-cols-12 min-h-[96px] items-stretch hover:bg-surface transition-colors relative group">
+<!-- Left Vehicle Card -->
+<div class="col-span-12 lg:col-span-4 p-space-md flex items-center justify-between gap-space-sm bg-surface-container-lowest lg:bg-transparent">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden">
+<span class="material-symbols-outlined text-[26px] text-primary">airport_shuttle</span>
+<span class="absolute bottom-0 inset-x-0 bg-primary text-on-primary text-[8px] text-center font-bold tracking-tighter">VIP</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md font-bold text-on-surface">HiAce Premio Luxury VIP</h4>
+<span class="bg-primary text-on-primary text-[10px] font-label-sm px-2 py-0.5 rounded-full uppercase">On Duty</span>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-body-sm text-[12px] mt-0.5">
+<span class="font-bold text-on-surface">L 1957 CK</span>
+<span class="">•</span>
+<span class="">10 Seats</span>
+<span class="">•</span>
+<span class="text-primary font-medium flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[13px]">person</span> Bambang S.
+                  </span>
+</div>
+</div>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Right 7-Days Schedule Canvas -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-7 relative items-center p-2 min-h-[70px] lg:min-h-0 bg-surface-container-low/40">
+<!-- Today Vertical Line Guide -->
+<div class="hidden lg:block absolute left-[50%] top-0 bottom-0 w-[1px] bg-primary/20 pointer-events-none z-0"></div>
+<!-- Booking Bar: Span Kam 15 to Sab 17 (3 columns) -->
+<div class="col-start-4 col-span-3 z-10 mx-1 bg-primary text-on-primary rounded-xl p-2.5 shadow-md hover:shadow-xl hover:scale-[1.01] transition-all cursor-pointer flex flex-col justify-between" onclick="inspectBooking('CKR-2026-8891')">
+<div class="flex items-center justify-between text-[11px] font-label-sm text-primary-fixed">
+<span class="flex items-center gap-1 font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> #CKR-2026-8891 (DP 50% LUNAS)
+                </span>
+<span class="bg-black/25 px-1.5 py-0.5 rounded text-[10px]">Kam 08:00 → Sab 20:00</span>
+</div>
+<div class="font-body-sm text-body-sm font-semibold truncate mt-0.5">
+                Trip Bromo - Batu 3D2N • Hendra Wijaya, S.E.
+              </div>
+<div class="flex items-center justify-between text-[11px] text-surface-container-high mt-1">
+<span class="">Chauffeur: Bambang Suprayitno</span>
+<span class="font-bold underline text-surface-bright">Lihat Detail →</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 2: Toyota HiAce Premio Luxury (L 1128 CK) -->
+<div class="grid grid-cols-12 min-h-[96px] items-stretch hover:bg-surface transition-colors relative group">
+<div class="col-span-12 lg:col-span-4 p-space-md flex items-center justify-between gap-space-sm bg-surface-container-lowest lg:bg-transparent">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center shrink-0 shadow-sm text-secondary">
+<span class="material-symbols-outlined text-[26px]">airport_shuttle</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md font-bold text-on-surface">HiAce Premio Luxury</h4>
+<span class="bg-sky-800 text-on-primary text-[10px] font-label-sm px-2 py-0.5 rounded-full uppercase">Ending Today</span>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-body-sm text-[12px] mt-0.5">
+<span class="font-bold text-on-surface">L 1128 CK</span>
+<span class="">•</span>
+<span class="">10 Seats</span>
+<span class="">•</span>
+<span class="text-on-surface font-medium flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[13px]">person</span> Agus Hermawan
+                  </span>
+</div>
+</div>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Schedule: Span Sel 13 to Kam 15 (Ending 17:00 today) -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-7 relative items-center p-2 min-h-[70px] lg:min-h-0 bg-surface-container-low/40">
+<div class="hidden lg:block absolute left-[50%] top-0 bottom-0 w-[1px] bg-primary/20 pointer-events-none z-0"></div>
+<div class="col-start-2 col-span-3 z-10 mx-1 bg-sky-900 text-on-primary rounded-xl p-2.5 shadow-md flex flex-col justify-between">
+<div class="flex items-center justify-between text-[11px] font-label-sm text-sky-200">
+<span class="font-bold">#CKR-2026-8874 • KORPORAT</span>
+<span class="bg-black/30 px-1.5 py-0.5 rounded text-[10px]">Selesai 17:00 WIB</span>
+</div>
+<div class="font-body-sm text-body-sm font-semibold truncate mt-0.5">
+                Private Tour Ijen - Baluran • PT Telkomsel Regional
+              </div>
+<div class="text-[11px] text-sky-200 mt-1 flex justify-between">
+<span class="">Driver: Agus Hermawan</span>
+<span class="text-amber-300 font-bold">Siap Return Juanda</span>
+</div>
+</div>
+<!-- Standby on Weekend -->
+<div class="col-start-6 col-span-2 mx-1 rounded-xl bg-emerald-100 text-emerald-900 p-2 flex items-center justify-center font-label-sm text-[11px] font-bold">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Standby Siap Sewa
+              </span>
+</div>
+</div>
+</div>
+<!-- Row 3: Toyota HiAce Commuter (W 7820 PA) -->
+<div class="grid grid-cols-12 min-h-[96px] items-stretch hover:bg-surface transition-colors relative group">
+<div class="col-span-12 lg:col-span-4 p-space-md flex items-center justify-between gap-space-sm bg-surface-container-lowest lg:bg-transparent">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[26px]">airport_shuttle</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md font-bold text-on-surface">HiAce Commuter Standard</h4>
+<span class="bg-emerald-700 text-on-primary text-[10px] font-label-sm px-2 py-0.5 rounded-full uppercase">Standby</span>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-body-sm text-[12px] mt-0.5">
+<span class="font-bold text-on-surface">W 7820 PA</span>
+<span class="">•</span>
+<span class="">15 Seats</span>
+<span class="">•</span>
+<span class="text-emerald-800 font-medium">Pool Juanda</span>
+</div>
+</div>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Schedule: Green Standby then Purple Open Trip on weekend -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-7 relative items-center p-2 min-h-[70px] lg:min-h-0 bg-surface-container-low/40">
+<div class="hidden lg:block absolute left-[50%] top-0 bottom-0 w-[1px] bg-primary/20 pointer-events-none z-0"></div>
+<!-- Standby bar Mon - Fri -->
+<div class="col-start-1 col-span-5 mx-1 h-10 rounded-xl bg-emerald-50 border-0 flex items-center justify-center gap-2 text-emerald-900 font-label-sm text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[15px] text-emerald-700">check_circle</span>
+<span class="">Tersedia • Pool Juanda T1 / Sidoarjo (Siap Booking Instan)</span>
+</div>
+<!-- Purple Open Trip Weekend -->
+<div class="col-start-6 col-span-2 mx-1 bg-purple-900 text-on-primary rounded-xl p-2 shadow-md flex flex-col justify-between">
+<div class="flex items-center justify-between text-[10px] text-purple-200">
+<span class="font-bold uppercase tracking-wider">OPEN TRIP BROMO</span>
+<span class="bg-black/30 px-1 rounded">15 Pax Full</span>
+</div>
+<div class="text-[12px] font-semibold truncate mt-0.5">Midnight Sunrise Tour</div>
+<div class="text-[10px] text-purple-300">Driver: Sukirman</div>
+</div>
+</div>
+</div>
+<!-- ================= CATEGORY 2: FIRST-CLASS EXECUTIVE ================= -->
+<div class="bg-surface-container-low px-space-md py-1.5 flex items-center justify-between">
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-widest">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="">KATEGORI: FIRST-CLASS EXECUTIVE (ALPHARD &amp; VELLFIRE)</span>
+</div>
+<span class="font-label-sm text-[11px] text-on-surface-variant">2 Unit Terjadwal</span>
+</div>
+<!-- Row 4: Toyota Alphard Transformer VIP (L 1007 QQ) -->
+<div class="grid grid-cols-12 min-h-[96px] items-stretch hover:bg-surface transition-colors relative group">
+<div class="col-span-12 lg:col-span-4 p-space-md flex items-center justify-between gap-space-sm bg-surface-container-lowest lg:bg-transparent">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-900 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden">
+<span class="material-symbols-outlined text-[26px]">star</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md font-bold text-on-surface">Alphard Transformer VIP</h4>
+<span class="bg-primary text-on-primary text-[10px] font-label-sm px-2 py-0.5 rounded-full uppercase">Protokoler</span>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-body-sm text-[12px] mt-0.5">
+<span class="font-bold text-on-surface">L 1007 QQ</span>
+<span class="">•</span>
+<span class="">5 Seat Ottoman</span>
+<span class="">•</span>
+<span class="text-primary font-medium">Chauffeur: Dwi Santoso</span>
+</div>
+</div>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Schedule: Rab 14 to Jum 16 -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-7 relative items-center p-2 min-h-[70px] lg:min-h-0 bg-surface-container-low/40">
+<div class="hidden lg:block absolute left-[50%] top-0 bottom-0 w-[1px] bg-primary/20 pointer-events-none z-0"></div>
+<div class="col-start-3 col-span-3 z-10 mx-1 bg-primary text-on-primary rounded-xl p-2.5 shadow-md flex flex-col justify-between">
+<div class="flex items-center justify-between text-[11px] font-label-sm text-primary-fixed">
+<span class="font-bold">#CKR-2026-VIP01 • PROTOKOLER RESMI</span>
+<span class="bg-black/30 px-1.5 py-0.5 rounded text-[10px]">Aktif Hari Ini</span>
+</div>
+<div class="font-body-sm text-body-sm font-semibold truncate mt-0.5">
+                VIP Airport Shuttle &amp; Tamu Walikota Surabaya • Sekretariat Pemkot
+              </div>
+<div class="flex items-center justify-between text-[11px] text-surface-container-high mt-1">
+<span class="">Chauffeur: Dwi Santoso (Standby VVIP)</span>
+<span class="text-emerald-300 font-bold">Lunas 100%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 5: Toyota Alphard Vellfire Executive (L 1888 AA) -->
+<div class="grid grid-cols-12 min-h-[96px] items-stretch hover:bg-surface transition-colors relative group">
+<div class="col-span-12 lg:col-span-4 p-space-md flex items-center justify-between gap-space-sm bg-surface-container-lowest lg:bg-transparent">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-surface-container-highest text-secondary flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[26px]">car_repair</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md font-bold text-on-surface">Alphard Vellfire Executive</h4>
+<span class="bg-secondary text-on-secondary text-[10px] font-label-sm px-2 py-0.5 rounded-full uppercase">Servis Berkala</span>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-body-sm text-[12px] mt-0.5">
+<span class="font-bold text-on-surface">L 1888 AA</span>
+<span class="">•</span>
+<span class="">5 Seats</span>
+<span class="">•</span>
+<span class="">Bengkel Resmi</span>
+</div>
+</div>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Schedule: Servis Berkala Kam 15 - Jum 16 -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-7 relative items-center p-2 min-h-[70px] lg:min-h-0 bg-surface-container-low/40">
+<div class="hidden lg:block absolute left-[50%] top-0 bottom-0 w-[1px] bg-primary/20 pointer-events-none z-0"></div>
+<div class="col-start-4 col-span-2 mx-1 bg-surface-dim bg-[repeating-linear-gradient(45deg,#b0a8a4,#b0a8a4_3px,#ded5d1_3px,#ded5d1_8px)] text-on-surface rounded-xl p-2.5 shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-[11px] font-label-sm font-bold text-primary">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">build</span> SERVIS RUTIN 40.000 KM
+                </span>
+<span class="bg-surface-container-lowest px-1.5 py-0.5 rounded text-[10px]">Bengkel Auto2000</span>
+</div>
+<div class="font-body-sm text-body-sm font-semibold truncate mt-0.5">
+                Pergantian Kampas Rem, Oli Mesin &amp; Detailing Interior
+              </div>
+<div class="text-[10px] text-on-surface-variant mt-1">Estimasi Selesai: Jumat 16:00 WIB</div>
+</div>
+<!-- Standby weekend -->
+<div class="col-start-6 col-span-2 mx-1 rounded-xl bg-emerald-50 text-emerald-900 p-2 flex items-center justify-center font-label-sm text-[11px] font-bold">
+<span class="">Siap Operasional Weekend</span>
+</div>
+</div>
+</div>
+<!-- ================= CATEGORY 3: FAMILY & BUSINESS MPV ================= -->
+<div class="bg-surface-container-low px-space-md py-1.5 flex items-center justify-between">
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-widest">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="">KATEGORI: FAMILY &amp; BUSINESS MPV (INNOVA SERIES)</span>
+</div>
+<span class="font-label-sm text-[11px] text-on-surface-variant">3 Unit Terjadwal</span>
+</div>
+<!-- Row 6: Toyota Innova Zenix Hybrid VIP (W 1455 NV) -->
+<div class="grid grid-cols-12 min-h-[96px] items-stretch hover:bg-surface transition-colors relative group">
+<div class="col-span-12 lg:col-span-4 p-space-md flex items-center justify-between gap-space-sm bg-surface-container-lowest lg:bg-transparent">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center shrink-0 shadow-sm text-primary">
+<span class="material-symbols-outlined text-[26px]">electric_car</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md font-bold text-on-surface">Innova Zenix Hybrid VIP</h4>
+<span class="bg-primary text-on-primary text-[10px] font-label-sm px-2 py-0.5 rounded-full uppercase">On Duty</span>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-body-sm text-[12px] mt-0.5">
+<span class="font-bold text-on-surface">W 1455 NV</span>
+<span class="">•</span>
+<span class="">6 Seat Panoramic</span>
+<span class="">•</span>
+<span class="text-primary font-medium">Budi Prasetyo</span>
+</div>
+</div>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Schedule: Kam 15 to Min 18 (4 Days) -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-7 relative items-center p-2 min-h-[70px] lg:min-h-0 bg-surface-container-low/40">
+<div class="hidden lg:block absolute left-[50%] top-0 bottom-0 w-[1px] bg-primary/20 pointer-events-none z-0"></div>
+<div class="col-start-4 col-span-4 z-10 mx-1 bg-amber-700 text-on-primary rounded-xl p-2.5 shadow-md flex flex-col justify-between">
+<div class="flex items-center justify-between text-[11px] font-label-sm text-amber-100">
+<span class="font-bold">#CKR-2026-8898 (DP 50% VERIFIED)</span>
+<span class="bg-black/30 px-1.5 py-0.5 rounded text-[10px]">Pelunasan di Hotel</span>
+</div>
+<div class="font-body-sm text-body-sm font-semibold truncate mt-0.5">
+                Family Holiday Jogja - Solo 4D3N • dr. Maya Puspita
+              </div>
+<div class="flex items-center justify-between text-[11px] text-amber-200 mt-1">
+<span class="">Driver: Budi Prasetyo</span>
+<span class="font-bold">Total: Rp 3.800.000</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 7: Toyota Innova Reborn Diesel Matic (L 1234 XY) -->
+<div class="grid grid-cols-12 min-h-[96px] items-stretch hover:bg-surface transition-colors relative group">
+<div class="col-span-12 lg:col-span-4 p-space-md flex items-center justify-between gap-space-sm bg-surface-container-lowest lg:bg-transparent">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center shrink-0 shadow-sm text-secondary">
+<span class="material-symbols-outlined text-[26px]">directions_car</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md font-bold text-on-surface">Innova Reborn Diesel A/T</h4>
+<span class="bg-surface-variant text-on-surface-variant text-[10px] font-label-sm px-2 py-0.5 rounded-full uppercase">Lepas Kunci</span>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-body-sm text-[12px] mt-0.5">
+<span class="font-bold text-on-surface">L 1234 XY</span>
+<span class="">•</span>
+<span class="">7 Seats</span>
+<span class="">•</span>
+<span class="text-on-surface font-medium">Self-Drive</span>
+</div>
+</div>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Schedule: Mon 12 - Kam 15 -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-7 relative items-center p-2 min-h-[70px] lg:min-h-0 bg-surface-container-low/40">
+<div class="hidden lg:block absolute left-[50%] top-0 bottom-0 w-[1px] bg-primary/20 pointer-events-none z-0"></div>
+<div class="col-start-1 col-span-4 z-10 mx-1 bg-surface-container-highest text-on-surface rounded-xl p-2.5 shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-[11px] font-label-sm text-on-surface-variant">
+<span class="font-bold">#CKR-LK-5502 • SEWA LEPAS KUNCI</span>
+<span class="bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded text-[10px] font-bold">KTP &amp; Deposit Valid</span>
+</div>
+<div class="font-body-sm text-body-sm font-semibold truncate mt-0.5">
+                Perjalanan Bisnis Pasuruan - Surabaya • Michael Tan
+              </div>
+<div class="text-[11px] text-primary font-bold mt-1">Pengembalian Unit: Hari Ini 21:00 WIB (Pool Juanda)</div>
+</div>
+<!-- Ready for Rent on Weekend -->
+<div class="col-start-5 col-span-3 mx-1 rounded-xl bg-emerald-50 text-emerald-900 p-2 flex items-center justify-center font-label-sm text-[11px] font-bold">
+<span class="">Slot Weekend Kosong (Siap Disewa)</span>
+</div>
+</div>
+</div>
+<!-- ================= CATEGORY 4: SUV & 4X4 ALL-TERRAIN ================= -->
+<div class="bg-surface-container-low px-space-md py-1.5 flex items-center justify-between">
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-widest">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="">KATEGORI: SUV &amp; ALL-TERRAIN 4X4 (OFF-ROAD &amp; TOURING)</span>
+</div>
+<span class="font-label-sm text-[11px] text-on-surface-variant">2 Unit Terjadwal</span>
+</div>
+<!-- Row 8: Toyota Fortuner GR Sport 4x4 (L 4444 FG) -->
+<div class="grid grid-cols-12 min-h-[96px] items-stretch hover:bg-surface transition-colors relative group">
+<div class="col-span-12 lg:col-span-4 p-space-md flex items-center justify-between gap-space-sm bg-surface-container-lowest lg:bg-transparent">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center shrink-0 shadow-sm text-primary">
+<span class="material-symbols-outlined text-[26px]">terrain</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md font-bold text-on-surface">Fortuner GR Sport 4x4</h4>
+<span class="bg-primary text-on-primary text-[10px] font-label-sm px-2 py-0.5 rounded-full uppercase">Bromo Escort</span>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-body-sm text-[12px] mt-0.5">
+<span class="font-bold text-on-surface">L 4444 FG</span>
+<span class="">•</span>
+<span class="">Bromo Grade</span>
+<span class="">•</span>
+<span class="text-primary font-medium">Chauffeur: Rian Hidayat</span>
+</div>
+</div>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Schedule: Kam 15 (22:00) to Jum 16 (14:00) -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-7 relative items-center p-2 min-h-[70px] lg:min-h-0 bg-surface-container-low/40">
+<div class="hidden lg:block absolute left-[50%] top-0 bottom-0 w-[1px] bg-primary/20 pointer-events-none z-0"></div>
+<div class="col-start-4 col-span-2 z-10 mx-1 bg-stone-900 text-surface-container-lowest rounded-xl p-2.5 shadow-md flex flex-col justify-between">
+<div class="flex items-center justify-between text-[11px] font-label-sm text-stone-300">
+<span class="font-bold text-amber-400">#CKR-BRM-091 • MIDNIGHT SUNRISE</span>
+<span class="bg-stone-800 px-1.5 py-0.5 rounded text-[10px]">Kam 22:00 - Jum 14:00</span>
+</div>
+<div class="font-body-sm text-body-sm font-semibold truncate mt-0.5">
+                Private Escort Penanjakan Bromo • Tamu Asing (Mr. David Jenkins)
+              </div>
+<div class="text-[11px] text-stone-400 mt-1">Driver: Rian H. (Spesialis Bromo Jeep)</div>
+</div>
+<!-- Standby Weekend -->
+<div class="col-start-6 col-span-2 mx-1 rounded-xl bg-emerald-50 text-emerald-900 p-2 flex items-center justify-center font-label-sm text-[11px] font-bold">
+<span class="">Standby Pool Juanda</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Detailed Booking Inspector / Bottom Floating Slate (Active selection preview) -->
+<section class="w-full px-margin-mobile md:px-margin-tablet lg:px-margin -mt-space-lg mb-space-xl" id="bookingInspector">
+<div class="max-w-[1360px] mx-auto bg-surface-container-lowest rounded-2xl shadow-xl p-space-lg flex flex-col lg:flex-row items-start lg:items-center justify-between gap-space-lg relative overflow-hidden">
+<div class="absolute -right-10 -bottom-10 w-48 h-48 bg-primary/5 rounded-full pointer-events-none"></div>
+<!-- Left Inspector Header & Client Badge -->
+<div class="flex flex-col md:flex-row items-start md:items-center gap-space-md">
+<div class="w-16 h-16 rounded-2xl bg-primary text-on-primary flex items-center justify-center shadow-lg shrink-0">
+<span class="material-symbols-outlined text-[32px]">fact_check</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-bold uppercase">Detail Booking Aktif</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">#CKR-2026-8891</span>
+<span class="font-label-sm text-[11px] bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-full font-bold">DP 50% TERVERIFIKASI</span>
+</div>
+<h3 class="font-headline-md text-headline-sm text-on-surface font-bold mt-1">
+            Trip Bromo – Batu (3 Hari 2 Malam) • Hendra Wijaya, S.E.
+          </h3>
+<div class="flex flex-wrap items-center gap-x-space-md gap-y-1 text-on-surface-variant font-body-sm text-body-sm mt-1">
+<span class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[16px] text-primary">directions_car</span> HiAce Premio Luxury (L 1957 CK)</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">pin_drop</span> Penjemputan: Bandara Juanda T1 (15 Okt, 08:30 WIB)</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">person</span> Chauffeur: Bambang Suprayitno (+62 812-3456-7890)</span>
+</div>
+</div>
+</div>
+<!-- Center Financial Metric Status -->
+<div class="flex items-center gap-space-md bg-surface-container p-space-md rounded-xl shrink-0">
+<div class="flex flex-col">
+<span class="font-label-sm text-[11px] text-on-surface-variant uppercase">Total Tagihan</span>
+<span class="font-headline-sm text-body-lg font-bold text-on-surface">Rp 5.000.000</span>
+</div>
+<div class="w-[1px] h-8 bg-surface-container-high"></div>
+<div class="flex flex-col">
+<span class="font-label-sm text-[11px] text-emerald-800 uppercase font-bold">DP Diterima (50%)</span>
+<span class="font-headline-sm text-body-lg font-bold text-emerald-800">Rp 2.500.000</span>
+</div>
+<div class="w-[1px] h-8 bg-surface-container-high"></div>
+<div class="flex flex-col">
+<span class="font-label-sm text-[11px] text-primary uppercase font-bold">Sisa Pelunasan</span>
+<span class="font-headline-sm text-body-lg font-bold text-primary">Rp 2.500.000</span>
+</div>
+</div>
+<!-- Right Action Tools -->
+<div class="flex flex-wrap items-center gap-space-sm shrink-0 w-full lg:w-auto">
+<button class="flex-1 lg:flex-initial bg-primary text-on-primary hover:bg-primary-container px-4 py-2.5 rounded-full font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm transition-all">
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+<span class="">CETAK SURAT JALAN</span>
+</button>
+<button class="flex-1 lg:flex-initial bg-surface-container-high hover:bg-surface-dim text-on-surface px-4 py-2.5 rounded-full font-label-md text-label-md flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+<span class="">REMINDER WA</span>
+</button>
+<button class="p-2.5 rounded-full bg-surface-container hover:bg-surface-dim text-on-surface-variant hover:text-on-surface" title="Tukar Unit / Driver">
+<span class="material-symbols-outlined text-[18px]">swap_horiz</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Interactive Slide-Out Modal for Quick Booking Creation -->
+<div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4" id="bookingModal">
+<div class="bg-surface-container-lowest w-full max-w-2xl rounded-2xl shadow-2xl p-space-lg flex flex-col gap-space-md animate-in fade-in zoom-in-95 duration-200">
+<div class="flex items-center justify-between pb-space-sm border-b border-surface-container">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">calendar_add_on</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Input Jadwal &amp; Alokasi Armada</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Tambahkan pemesanan manual dan kunci jadwal unit.</p>
+</div>
+</div>
+<button class="p-2 rounded-full hover:bg-surface-container text-on-surface-variant hover:text-on-surface" id="btnCloseModal">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm uppercase text-on-surface font-bold">Pilih Unit Armada</label>
+<select class="bg-surface-container text-on-surface rounded-xl p-2.5 font-body-sm text-body-sm focus:outline-none">
+<option>Toyota HiAce Premio Luxury VIP (L 1957 CK)</option>
+<option>Toyota HiAce Commuter Standard (W 7820 PA)</option>
+<option>Toyota Alphard Transformer VIP (L 1007 QQ)</option>
+<option>Toyota Innova Zenix Hybrid (W 1455 NV)</option>
+<option>Toyota Fortuner GR Sport 4x4 (L 4444 FG)</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm uppercase text-on-surface font-bold">Nama Klien / Instansi</label>
+<input class="bg-surface-container text-on-surface rounded-xl p-2.5 font-body-sm text-body-sm focus:outline-none" placeholder="Contoh: Hendra Wijaya / PT Telkom" type="text">
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm uppercase text-on-surface font-bold">Waktu Mulai Sewa</label>
+<input class="bg-surface-container text-on-surface rounded-xl p-2.5 font-body-sm text-body-sm focus:outline-none" type="datetime-local">
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm uppercase text-on-surface font-bold">Waktu Selesai Sewa</label>
+<input class="bg-surface-container text-on-surface rounded-xl p-2.5 font-body-sm text-body-sm focus:outline-none" type="datetime-local">
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm uppercase text-on-surface font-bold">Penugasan Sopir / Driver</label>
+<select class="bg-surface-container text-on-surface rounded-xl p-2.5 font-body-sm text-body-sm focus:outline-none">
+<option>Bambang Suprayitno (Standby)</option>
+<option>Agus Hermawan (Standby)</option>
+<option>Dwi Santoso (Standby)</option>
+<option>Lepas Kunci (Tanpa Sopir)</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm uppercase text-on-surface font-bold">Status Pembayaran</label>
+<select class="bg-surface-container text-on-surface rounded-xl p-2.5 font-body-sm text-body-sm focus:outline-none">
+<option>DP 50% Lunas (Terkonfirmasi)</option>
+<option>Lunas 100%</option>
+<option>Menunggu Pembayaran DP</option>
+</select>
+</div>
+</div>
+<div class="flex items-center justify-end gap-space-sm pt-space-md border-t border-surface-container">
+<button class="px-space-md py-2.5 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors" id="btnCancelModal">
+          Batal
+        </button>
+<button class="bg-primary hover:bg-primary-container text-on-primary px-space-md py-2.5 rounded-full font-label-md text-label-md shadow-md transition-all" onclick="saveNewBooking()">
+          Simpan Alokasi Jadwal
+        </button>
+</div>
+</div>
+</div>
+<script>
+    const modal = document.getElementById('bookingModal');
+    const btnOpen = document.getElementById('btnOpenNewBooking');
+    const btnClose = document.getElementById('btnCloseModal');
+    const btnCancel = document.getElementById('btnCancelModal');
+
+    if (btnOpen && modal) {
+      btnOpen.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      });
+    }
+
+    const hideModal = () => {
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    };
+
+    if (btnClose) btnClose.addEventListener('click', hideModal);
+    if (btnCancel) btnCancel.addEventListener('click', hideModal);
+
+    function inspectBooking(bookingId) {
+      const inspector = document.getElementById('bookingInspector');
+      if (inspector) {
+        inspector.scrollIntoView({ behavior: 'smooth' });
+        inspector.classList.add('ring-2', 'ring-primary');
+        setTimeout(() => {
+          inspector.classList.remove('ring-2', 'ring-primary');
+        }, 1500);
+      }
+    }
+
+    function saveNewBooking() {
+      hideModal();
+      alert('Jadwal baru berhasil disimpan ke matriks armada Cakra Lima Tujuh.');
+    }
+  </script>
+</div></main><footer class="w-full bg-surface-container-low py-space-lg"><div class="max-w-[1360px] mx-auto px-margin-mobile md:px-margin-tablet lg:px-margin flex flex-col md:flex-row items-center justify-between gap-space-sm text-center md:text-left"><div class="font-body-sm text-body-sm text-on-surface-variant">© 2025 PT Cakra Lima Tujuh Transindo. Hak Cipta Dilindungi Undang-Undang.</div><div class="flex items-center gap-space-xs font-label-md text-label-md text-secondary"><span class="w-2 h-2 rounded-full bg-primary"></span><span class="">Sistem Operasional Armada Terintegrasi</span></div></div></footer>
+
+
+
+</body></html>

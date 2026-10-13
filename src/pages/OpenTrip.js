@@ -392,7 +392,7 @@ export default function OpenTripPage() {
             </Button>
           </div>
 
-          <div className="mt-12 grid w-full grid-cols-2 gap-4 rounded-2xl bg-c57-surface-bright/[0.04] p-6 backdrop-blur-sm md:grid-cols-4">
+          <div className="mt-12 grid w-full grid-cols-1 gap-4 rounded-2xl bg-c57-surface-bright/[0.04] p-6 backdrop-blur-sm sm:grid-cols-2 md:grid-cols-4">
             {FEATURES.map((f) => (
               <div key={f.title} className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-c57-primary-container/20 text-c57-primary-fixed-dim">
@@ -410,7 +410,7 @@ export default function OpenTripPage() {
 
       {/* ── FILTER PANEL ── */}
       {!showPengajuan && (
-        <section className="relative z-20 mx-auto -mt-8 w-full max-w-7xl px-5 md:px-10">
+        <section className="relative z-20 mx-auto mt-0 md:-mt-8 w-full max-w-7xl px-5 md:px-10">
           <div className="rounded-2xl bg-c57-surface-container-lowest p-6 shadow-c57-overlay">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <FilterSelect
@@ -455,7 +455,7 @@ export default function OpenTripPage() {
       {/* ── MAIN CONTENT AREA ── */}
       <div className="mx-auto max-w-7xl px-5 pb-24 md:px-10">
         {/* Category Tabs */}
-        <div className="flex flex-wrap items-center gap-2 pt-12">
+        <div className="flex items-center gap-2 pt-12 overflow-x-auto pb-2 scrollbar-hide">
           {CATEGORIES.map((item) => {
             const active = category === item.key;
             return (
@@ -463,7 +463,7 @@ export default function OpenTripPage() {
                 key={item.key}
                 onClick={() => setCategory(item.key)}
                 aria-pressed={active}
-                className={`flex items-center gap-2 rounded-full px-6 py-2.5 font-label-md uppercase tracking-wider transition-colors ${
+                className={`shrink-0 flex items-center gap-2 rounded-full px-6 py-2.5 font-label-md uppercase tracking-wider transition-colors ${
                   active ? "bg-c57-primary-container text-c57-on-primary shadow-sm" : "text-c57-on-surface-variant hover:bg-c57-surface-container hover:text-c57-on-surface"
                 }`}
               >
