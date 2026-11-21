@@ -52,19 +52,16 @@ export default function OpenTripTestimonials() {
   };
 
   return (
-    <section className="bg-c57-scrim py-14 md:py-16 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-96 h-96 bg-c57-primary/10 rounded-full -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-64 h-64 bg-c57-accent-line/5 rounded-full translate-y-1/2 -translate-x-1/3 pointer-events-none" />
-
-      <div className="relative z-10 max-w-7xl mx-auto px-0 md:px-gutter">
-        <div className="px-5 md:px-0 text-center mb-8 md:mb-10">
-          <p className="font-label-md text-label-md text-c57-primary-fixed/60 uppercase tracking-[0.28em] mb-2">
+    <section className="relative overflow-hidden bg-c57-surface-container py-16 md:py-20">
+      <div className="editorial-shell relative z-10 px-0 md:px-0">
+        <div className="mb-8 px-5 text-center md:mb-12 md:px-0">
+          <p className="mb-3 font-label-sm uppercase tracking-[0.28em] text-c57-secondary">
             Testimoni
           </p>
-          <h2 className="font-display text-headline-md text-c57-surface-bright">
+          <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.7rem)] font-normal leading-[1.05] tracking-[-0.02em] text-c57-on-surface">
             Testimoni Open Trip
           </h2>
-          <p className="text-body-md text-c57-on-scrim/60">
+          <p className="mt-3 text-body-md text-c57-on-surface-variant">
             Cerita nyata dari peserta trip bareng Cakra Lima Tujuh
           </p>
         </div>
@@ -93,7 +90,7 @@ export default function OpenTripTestimonials() {
                   <div className="mb-2 font-label-sm text-label-sm text-c57-on-scrim/80 uppercase">
                     {t.rating}&#9733; &middot; {t.trip}
                   </div>
-                  <p className="font-display italic text-headline-sm text-c57-surface-bright leading-snug mb-2">
+                  <p className="font-display italic text-[1.15rem] leading-snug text-c57-surface-bright mb-2">
                     &ldquo;{t.quote}&rdquo;
                   </p>
                   <p className="font-label-md text-label-md text-c57-surface-bright">{t.name}</p>
@@ -105,7 +102,7 @@ export default function OpenTripTestimonials() {
           <button
             onClick={prev}
             aria-label="Sebelumnya"
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-c57-surface-bright/10 backdrop-blur-md border border-c57-surface-bright/20 text-c57-surface-bright flex items-center justify-center disabled:opacity-40"
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-c57-surface-container-lowest/95 backdrop-blur-md border border-c57-outline-variant text-c57-on-surface flex items-center justify-center disabled:opacity-40"
             disabled={active === 0}
           >
             <Icon name="chevron_left" size="xl" />
@@ -113,7 +110,7 @@ export default function OpenTripTestimonials() {
           <button
             onClick={next}
             aria-label="Berikutnya"
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-c57-surface-bright/10 backdrop-blur-md border border-c57-surface-bright/20 text-c57-surface-bright flex items-center justify-center disabled:opacity-40"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-c57-surface-container-lowest/95 backdrop-blur-md border border-c57-outline-variant text-c57-on-surface flex items-center justify-center disabled:opacity-40"
             disabled={active === testimonials.length - 1}
           >
             <Icon name="chevron_right" size="xl" />
@@ -127,7 +124,7 @@ export default function OpenTripTestimonials() {
                 aria-label={`Testimoni ${i + 1}`}
                 aria-current={i === active}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === active ? "w-6 bg-c57-primary-fixed" : "w-1.5 bg-c57-surface-bright/25"
+                  i === active ? "w-6 bg-c57-secondary" : "w-1.5 bg-c57-outline/50"
                 }`}
               />
             ))}
@@ -151,7 +148,7 @@ export default function OpenTripTestimonials() {
                   className={[
                     "relative overflow-hidden rounded-c57-md cursor-pointer",
                     "flex-1 basis-0 transition-all duration-500 ease-editorial",
-                    "group outline-none focus-visible:ring-2 focus-visible:ring-c57-primary",
+                    "group outline-none focus-visible:ring-2 focus-visible:ring-c57-accent-line",
                     isActive ? "flex-[5]" : "flex-1 hover:flex-[2]",
                   ].join(" ")}
                 >
@@ -190,7 +187,7 @@ export default function OpenTripTestimonials() {
                     <div className="mb-2 font-label-sm text-label-sm text-c57-on-scrim/70 uppercase">
                       {t.rating}&#9733; &middot; {t.trip}
                     </div>
-                    <p className="font-display italic text-headline-md text-c57-surface-bright leading-snug mb-2">
+                    <p className="font-display italic text-[1.5rem] leading-snug text-c57-surface-bright mb-2">
                       &ldquo;{t.quote}&rdquo;
                     </p>
                     <p className="font-label-md text-label-md text-c57-surface-bright">{t.name}</p>
@@ -205,10 +202,12 @@ export default function OpenTripTestimonials() {
         <div className="text-center mt-8 md:mt-10 px-5 md:px-0">
           <Link
             to="/testimoni"
-            className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-c57-primary text-c57-on-primary font-label-md text-label-md uppercase tracking-wider shadow-lg hover:shadow-c57-primary/30 hover:scale-105 transition-all duration-300"
+            className="group inline-flex items-center gap-3 rounded-full bg-c57-primary-container py-3 pl-7 pr-3 font-label-md text-label-md uppercase tracking-[0.14em] text-c57-on-primary transition-all duration-500 hover:bg-c57-tertiary-container"
           >
             Lihat Semua Testimoni
-            <Icon name="arrow_forward" size="lg" />
+            <span className="round-arrow">
+              <Icon name="north_east" size="sm" />
+            </span>
           </Link>
         </div>
       </div>

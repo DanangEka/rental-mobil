@@ -72,6 +72,9 @@ export default function Button({
         "inline-flex items-center justify-center rounded-full",
         "font-label-md uppercase tracking-wider",
         "transition-all duration-300 ease-editorial select-none",
+        // Press answers at feedback speed (150ms); the release relaxes back
+        // on the house 300ms curve.
+        "active:scale-[0.98] active:duration-150",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
         "focus-visible:outline-c57-primary",
         "disabled:opacity-50 disabled:pointer-events-none",

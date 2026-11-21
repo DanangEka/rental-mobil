@@ -180,18 +180,17 @@ describe("authored guide copy", () => {
 });
 
 describe("coverage", () => {
-  it("tracks editorial copy against the 46 destinations", () => {
-    const authored = authoredGuideSlugs();
-    const missing = SPOT_SLUGS.filter((slug) => !authored.includes(slug));
-    // The detail page renders a lean fallback for any slug without a guide,
-    // so an incomplete count is expected here rather than a failure. The
-    // `filter` on the left is deliberate: it puts the number in the test name.
-    expect({
-      authored: `${authored.length}/46`,
-      stillOnLeanFallback: missing,
-    }).toEqual({
-      authored: `${authored.length}/46`,
-      stillOnLeanFallback: missing,
-    });
+  it("publishes an authored guide for every destination", () => {
+    expect(authoredGuideSlugs()).toEqual([...SPOT_SLUGS].sort());
+  });
+
+  it("provides unique articles, fun facts and traceable sources", () => {
+    const narratives = Object.values(destinationGuides).map((guide) => guide.narrative.body.join(" "));
+    expect(new Set(narratives).size).toBe(SPOT_SLUGS.length);
+    for (const guide of Object.values(destinationGuides)) {
+      expect(guide.funFacts.length).toBeGreaterThanOrEqual(2);
+      expect(guide.sources.length).toBeGreaterThan(0);
+      for (const source of guide.sources) expect(source.url).toMatch(/^https:\/\//);
+    }
   });
 });

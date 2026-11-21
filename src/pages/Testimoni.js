@@ -7,8 +7,10 @@ import {
   addDoc,
   serverTimestamp,
 } from "firebase/firestore";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { db } from "../services/firebase";
 import { useToast } from "../components/Toast";
+import { EDITORIAL_EASE } from "../motion/editorial";
 import Button from "../components/ui/Button";
 import EmptyState from "../components/ui/EmptyState";
 import Field from "../components/ui/Field";
@@ -25,6 +27,7 @@ import {
   initialsOf,
 } from "../data/testimoni";
 import Footer from "../components/Footer";
+import testimonialHero from "../assets/testimoni/WhatsApp Image 2026-09-02 at 22.03.38 (1).webp";
 
 /**
  * Public testimonial & documentation gallery.
@@ -57,7 +60,7 @@ const toMillis = (value) => {
 
 function Stars({ value, size = "sm", className = "" }) {
   return (
-    <div className={["flex items-center gap-0.5 text-c57-primary-container", className].join(" ")}>
+    <div className={["flex items-center gap-0.5 text-c57-secondary", className].join(" ")}>
       {Array.from({ length: 5 }, (_, i) => (
         <Icon
           key={i}
@@ -85,7 +88,7 @@ function TestimonialCard({ item }) {
             onError={(e) => {
               e.currentTarget.parentElement.style.display = "none";
             }}
-            className="h-full w-full object-cover transition-transform duration-700 ease-editorial group-hover:scale-105"
+            className="h-full w-full object-cover photo-warm transition-transform duration-700 ease-editorial group-hover:scale-105"
           />
           {item.label && (
             <div className="absolute left-space-md top-space-md z-10">
@@ -106,14 +109,14 @@ function TestimonialCard({ item }) {
 
         <Stars value={item.rating} className="mb-space-sm" />
 
-        <blockquote className="mb-space-md font-headline-sm text-headline-sm italic leading-relaxed text-c57-on-surface">
+        <blockquote className="mb-space-md font-display text-[1.35rem] italic leading-snug text-c57-on-surface">
           &ldquo;{item.testimonial}&rdquo;
         </blockquote>
 
         <div className="mt-auto flex items-center gap-space-sm pt-space-sm">
           <div
             className={[
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-headline-sm text-headline-sm font-semibold",
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-[1rem] font-semibold",
               item.photoUrl
                 ? "bg-c57-secondary-container text-c57-on-secondary-container"
                 : "bg-c57-secondary-fixed text-c57-on-secondary-fixed",
@@ -146,6 +149,7 @@ function TestimonialCard({ item }) {
 
 export default function Testimoni() {
   const toast = useToast();
+  const reduceMotion = useReducedMotion();
   const [live, setLive] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -296,42 +300,68 @@ export default function Testimoni() {
   return (
     <div className="min-h-screen bg-c57-surface pb-space-xl">
       {/* ── Hero ── */}
-      <section className="relative w-full overflow-hidden bg-c57-inverse-surface px-margin-mobile pt-30 pb-space-xl md:pt-36 md:px-margin-tablet lg:px-margin">
-        <div className="relative z-10 mx-auto max-w-[1360px]">
-          <span className="mb-space-md inline-flex items-center gap-1.5 rounded-full bg-c57-inverse-on-surface/10 px-space-md py-1.5 font-label-sm uppercase tracking-widest text-c57-inverse-on-surface/85 backdrop-blur">
-            <Icon name="auto_awesome" size="sm" />
-            Dokumentasi &amp; Cerita Otentik
-          </span>
+      <section className="relative w-full overflow-hidden border-b border-c57-outline-variant/60 px-margin-mobile pt-30 pb-14 md:px-margin-tablet md:pt-36 lg:px-margin lg:pb-20">
+        <div className="absolute inset-0" aria-hidden="true">
+          <img
+            src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2000&q=80"
+            alt=""
+            className="h-full w-full object-cover object-center photo-warm"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-c57-surface/95 via-c57-surface/85 to-c57-surface" />
+        </div>
 
-          <h1 className="mb-space-md max-w-3xl font-headline-xl text-headline-xl-mobile leading-[1.05] text-c57-inverse-on-surface md:text-headline-xl">
-            Momen Berharga Bersama Mereka yang{" "}
-            <span className="text-c57-primary-fixed">Telah Berkelana</span>
-          </h1>
+        <div className="editorial-shell relative grid items-end gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-c57-outline/40 bg-c57-surface-container-lowest/80 px-space-md py-1.5 font-label-sm uppercase tracking-[0.22em] text-c57-secondary backdrop-blur">
+              <Icon name="auto_awesome" size="sm" />
+              Dokumentasi &amp; Cerita Otentik
+            </span>
 
-          <p className="mb-space-lg max-w-2xl font-body-lg text-body-lg leading-relaxed text-c57-inverse-on-surface/70">
-            Kumpulan kisah tulus, dokumentasi visual lapangan, serta ulasan
-            jujur dari tamu istimewa, rombongan keluarga, dan pelanggan
-            korporat yang mempercayakan perjalanan mereka kepada kami.
-          </p>
+            <h1 className="mt-6 max-w-3xl font-display text-[clamp(2.6rem,6vw,4.6rem)] font-normal leading-[0.98] tracking-[-0.03em] text-c57-on-surface">
+              Momen berharga bersama mereka yang{" "}
+              <em className="font-normal italic text-c57-secondary">telah berkelana.</em>
+            </h1>
 
-          <div className="flex flex-wrap items-center gap-space-md">
-            <div className="flex items-center gap-space-sm">
-              <span className="font-headline-xl text-headline-xl text-c57-inverse-on-surface">
-                {heroRating != null ? heroRating.toFixed(1) : "—"}
-              </span>
-              <div className="flex flex-col">
-                <Stars
-                  value={heroRating != null ? Math.round(heroRating) : 0}
-                  className="[&_*]:!text-c57-primary-fixed"
-                />
-                <span className="font-label-sm uppercase tracking-widest text-c57-inverse-on-surface/70">
-                  {heroRating != null
-                    ? `${RATING_LABELS[Math.round(heroRating)]} · ${publishedCount} Ulasan Terverifikasi`
-                    : "Belum ada ulasan terverifikasi"}
+            <p className="mt-6 max-w-xl text-[0.98rem] leading-relaxed text-c57-on-surface-variant">
+              Kumpulan kisah tulus, dokumentasi visual lapangan, serta ulasan
+              jujur dari tamu istimewa, rombongan keluarga, dan pelanggan
+              korporat yang mempercayakan perjalanan mereka kepada kami.
+            </p>
+
+            <div className="mt-8 flex flex-wrap items-center gap-space-md">
+              <div className="flex items-center gap-space-sm">
+                <span className="font-display text-4xl leading-none text-c57-on-surface">
+                  {heroRating != null ? heroRating.toFixed(1) : "—"}
                 </span>
+                <div className="flex flex-col">
+                  <Stars
+                    value={heroRating != null ? Math.round(heroRating) : 0}
+                    className="[&_*]:!text-c57-secondary"
+                  />
+                  <span className="font-label-sm uppercase tracking-widest text-c57-secondary">
+                    {heroRating != null
+                      ? `${RATING_LABELS[Math.round(heroRating)]} · ${publishedCount} Ulasan Terverifikasi`
+                      : "Belum ada ulasan terverifikasi"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
+
+          <figure className="hidden lg:block">
+            <div className="aspect-[4/5] overflow-hidden rounded-[1.8rem] bg-c57-surface-container">
+              <img
+                src={testimonialHero}
+                alt="Dokumentasi perjalanan tamu Cakra Lima Tujuh"
+                className="h-full w-full object-cover photo-warm"
+              />
+            </div>
+            <figcaption className="mt-4 flex items-center justify-between gap-4 font-label-sm uppercase tracking-[0.2em] text-c57-secondary">
+              <span>Cerita Nyata di Lapangan</span>
+              <span className="h-px flex-1 bg-c57-outline-variant" aria-hidden="true" />
+              <span>Arsip Tamu</span>
+            </figcaption>
+          </figure>
         </div>
       </section>
 
@@ -343,7 +373,7 @@ export default function Testimoni() {
               key={stat.label}
               className="rounded-c57-lg border border-c57-surface-variant bg-c57-surface-container-lowest p-space-lg shadow-c57-card"
             >
-              <p className="mb-1 font-headline-md text-headline-md text-c57-on-surface tabular-nums">
+              <p className="mb-1 font-display text-[1.9rem] leading-none text-c57-on-surface tabular-nums">
                 {stat.value}
               </p>
               <p className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
@@ -390,7 +420,7 @@ export default function Testimoni() {
         {loading ? (
           <div className="flex flex-col items-center gap-space-md py-space-xl">
             <div
-              className="h-10 w-10 animate-spin rounded-full border-4 border-c57-surface-container-highest border-t-c57-primary-container"
+              className="h-10 w-10 animate-spin rounded-full border-4 border-c57-surface-container-highest border-t-c57-secondary"
               role="status"
               aria-label="Memuat testimoni"
             />
@@ -407,15 +437,30 @@ export default function Testimoni() {
           />
         ) : (
           <div className="masonry-grid columns-1 md:columns-2 lg:columns-3 gap-x-gutter [column-fill:balance]">
-            {items.map((item, idx) => (
-              <div
-                key={item.id}
-                className="mb-gutter break-inside-avoid"
-                style={{ animationDelay: `${idx * 60}ms` }}
-              >
-                <TestimonialCard item={item} />
-              </div>
-            ))}
+            {/* popLayout pops the leaving card out of the column flow at
+                once, so the remaining cards reflow immediately instead of
+                jumping after a deferred fade; the leaving card fades out in
+                place above them. */}
+            <AnimatePresence mode="popLayout">
+              {items.map((item, idx) => (
+                <motion.div
+                  key={item.id}
+                  className="mb-gutter break-inside-avoid"
+                  exit={
+                    reduceMotion
+                      ? { opacity: 0, transition: { duration: 0.1 } }
+                      : { opacity: 0, scale: 0.96, transition: { duration: 0.22, ease: EDITORIAL_EASE } }
+                  }
+                >
+                  {/* Entrance stagger lives on this inner element — a CSS
+                      animation with fill `both` would outrank the parent's
+                      framer exit styles on the same node. */}
+                  <div className="masonry-reveal" style={{ animationDelay: `${idx * 60}ms` }}>
+                    <TestimonialCard item={item} />
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </section>
@@ -431,7 +476,7 @@ export default function Testimoni() {
               <span className="font-label-sm uppercase tracking-widest text-c57-on-primary/70">
                 Berbagi Pengalaman
               </span>
-              <h2 className="mt-1 font-headline-sm text-headline-sm text-c57-on-primary md:text-headline-md">
+              <h2 className="mt-1 font-display text-[1.6rem] leading-tight text-c57-on-primary">
                 Punya Pengalaman Berkesan Bersama Kami?
               </h2>
               <p className="mt-2 max-w-xl text-body-md text-c57-on-primary/80">
@@ -523,7 +568,7 @@ export default function Testimoni() {
                   <Icon
                     name="star"
                     size="xl"
-                    className={n <= rating ? "text-c57-primary-container" : "text-c57-surface-variant"}
+                    className={n <= rating ? "text-c57-secondary" : "text-c57-surface-variant"}
                   />
                 </button>
               ))}

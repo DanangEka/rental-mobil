@@ -207,43 +207,15 @@ module.exports = {
       letterSpacing: {
         'editorial': '0.22em',
       },
+      /* Only keyframes that live exclusively here. fadeInUp / fadeIn / popIn /
+         shimmer are owned by src/index.css (its classes override these names,
+         so defining both was a silent conflict); slideIn* / float / pulseGlow
+         had no users. dropdownIn / swing / progressBar are used by Navbar and
+         Toast and have no index.css twin. */
       keyframes: {
-        fadeInUp: {
-          '0%':   { opacity: '0', transform: 'translateY(20px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        fadeIn: {
-          '0%':   { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideInRight: {
-          '0%':   { opacity: '0', transform: 'translateX(20px)' },
-          '100%': { opacity: '1', transform: 'translateX(0)' },
-        },
-        slideInLeft: {
-          '0%':   { opacity: '0', transform: 'translateX(-20px)' },
-          '100%': { opacity: '1', transform: 'translateX(0)' },
-        },
-        shimmer: {
-          '0%':   { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
-        },
-        float: {
-          '0%, 100%': { transform: 'translateY(0px)' },
-          '50%':      { transform: 'translateY(-10px)' },
-        },
-        pulseGlow: {
-          '0%, 100%': { boxShadow: '0 0 5px rgba(129,1,0,0.4)' },
-          '50%':      { boxShadow: '0 0 20px rgba(129,1,0,0.8)' },
-        },
         progressBar: {
           '0%':   { width: '100%' },
           '100%': { width: '0%' },
-        },
-        popIn: {
-          '0%':   { opacity: '0', transform: 'scale(0.8)' },
-          '70%':  { transform: 'scale(1.05)' },
-          '100%': { opacity: '1', transform: 'scale(1)' },
         },
         swing: {
           '0%, 100%': { transform: 'rotate(0deg)' },
@@ -258,15 +230,9 @@ module.exports = {
         },
       },
       animation: {
-        fadeInUp:     'fadeInUp 0.6s ease-out both',
-        fadeIn:       'fadeIn 0.5s ease-out both',
-        slideInRight: 'slideInRight 0.4s ease-out both',
-        slideInLeft:  'slideInLeft 0.4s ease-out both',
-        shimmer:      'shimmer 2s infinite linear',
-        float:        'float 3s ease-in-out infinite',
-        pulseGlow:    'pulseGlow 2s ease-in-out infinite',
-        progressBar:  'progressBar 3s linear forwards',
-        popIn:        'popIn 0.3s ease-out both',
+        // 3.5s matches the toast AUTO_DISMISS_MS so the bar empties exactly
+        // as the card leaves — they also pause/resume together on hover.
+        progressBar:  'progressBar 3.5s linear forwards',
         swing:        'swing 0.6s ease-in-out',
         dropdownIn:   'dropdownIn 0.2s cubic-bezier(0.16,1,0.3,1) both',
       },
@@ -281,12 +247,11 @@ module.exports = {
         'card-hover': '0 8px 40px rgba(0, 0, 0, 0.15)',
         'glass':    '0 4px 24px rgba(0, 0, 0, 0.2)',
 
-        /* Editorial Crimson elevation (DESIGN.md §Elevation). Hairline borders
-           and low-contrast warm ambient diffusion rather than heavy shadow.
-           Level 2 tints crimson on lift, which is the signature interaction. */
-        'c57-card': '0 8px 30px -4px rgba(42, 23, 15, 0.04)',
-        'c57-card-hover': '0 16px 40px -6px rgba(153, 0, 0, 0.08)',
-        'c57-overlay': '0 24px 48px -12px rgba(42, 23, 15, 0.12)',
+        /* Editorial elevation. Warm neutral ambient diffusion, never a red
+           halo. A lift deepens and spreads the shadow rather than tinting it. */
+        'c57-card': '0 10px 30px -12px rgba(35, 28, 16, 0.10)',
+        'c57-card-hover': '0 18px 45px -14px rgba(35, 28, 16, 0.22)',
+        'c57-overlay': '0 30px 60px -24px rgba(25, 20, 12, 0.28)',
       },
       backdropBlur: {
         xs: '2px',

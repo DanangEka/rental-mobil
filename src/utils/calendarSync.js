@@ -349,7 +349,11 @@ export function computeSyncActions({
  *   none    — nothing to sync (cancelled, malformed, or already historical
  *             without an event)
  */
-export function deriveSyncState(kind, doc, { connected, entries = {}, pending = {}, errors = {} } = {}) {
+export function deriveSyncState(
+  kind,
+  doc,
+  { connected, entries = {}, pending = {}, errors = {}, now = new Date() } = {}
+) {
   if (!connected) return "offline";
   const key = syncKey(kind, doc.id);
   if (pending[key]) return "pending";
@@ -357,9 +361,9 @@ export function deriveSyncState(kind, doc, { connected, entries = {}, pending = 
 
   const entry = entries[key];
   if (!entry) {
-    return isSyncable(kind, doc) ? "pending" : "none";
+    return isSyncable(kind, doc, now) ? "pending" : "none";
   }
   if (isCancelled(doc)) return "none";
-  if (!isSyncable(kind, doc)) return "synced";
+  if (!isSyncable(kind, doc, now)) return "synced";
   return entry.hash === eventHash(kind, doc) ? "synced" : "pending";
 }

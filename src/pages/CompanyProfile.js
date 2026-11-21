@@ -1,4 +1,5 @@
 import logo from "../assets/logo.png";
+import heroPhoto from "../assets/testimoni/WhatsApp Image 2026-09-02 at 22.03.38 (1).webp";
 import Card from "../components/ui/Card";
 import Icon from "../components/ui/Icon";
 import SectionHeading from "../components/ui/SectionHeading";
@@ -52,24 +53,55 @@ export default function CompanyProfile() {
     <div className="min-h-screen bg-c57-surface pt-32 pb-space-xl">
       <div className="mx-auto w-full max-w-6xl space-y-24 px-gutter-mobile sm:px-gutter">
         {/* ── Hero ─────────────────────────────────────────────── */}
-        <header className="flex flex-col items-center text-center animate-fadeInUp">
-          <img
-            src={logo}
-            alt="Logo Cakra Lima Tujuh"
-            className="mb-space-lg h-28 w-28 rounded-full border-4 border-c57-surface-container-lowest object-cover shadow-c57-card-hover md:h-36 md:w-36"
-          />
-          <h1 className="font-headline-lg text-headline-lg-mobile text-c57-on-surface md:text-headline-lg">
-            Cakra Lima Tujuh
-          </h1>
-          <p className="mt-space-sm flex items-center gap-space-md font-label-sm uppercase tracking-[0.28em] text-c57-primary">
-            <span className="accent-line" aria-hidden="true" />
-            Premium Travel Agen
-            <span className="accent-line" aria-hidden="true" />
-          </p>
-          <p className="mt-space-md max-w-2xl text-body-lg text-c57-on-surface-variant font-light leading-relaxed">
-            Mewujudkan perjalanan impian Anda bersama travel agen terpercaya — layanan premium,
-            personal, dan penuh pengalaman berharga.
-          </p>
+        <header className="grid items-end gap-12 border-b border-c57-outline-variant/60 pb-14 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:pb-20 animate-fadeInUp">
+          <div>
+            <div className="flex items-center gap-4">
+              <img
+                src={logo}
+                alt="Logo Cakra Lima Tujuh"
+                className="h-12 w-12 rounded-full ring-1 ring-c57-outline/30"
+              />
+              <div>
+                <p className="font-display text-xl leading-none text-c57-on-surface">Cakra Lima Tujuh</p>
+                <p className="mt-1.5 font-label-sm uppercase tracking-[0.24em] text-c57-secondary">
+                  Premium Travel Agen — Surabaya
+                </p>
+              </div>
+            </div>
+
+            <h1 className="mt-10 max-w-3xl font-display text-[clamp(2.9rem,5.4vw,4.5rem)] font-normal leading-[0.98] tracking-[-0.03em] text-c57-on-surface">
+              Perjalanan yang <em className="font-normal italic text-c57-secondary">bermakna.</em>
+            </h1>
+
+            <p className="mt-6 max-w-xl text-[1rem] font-light leading-relaxed text-c57-on-surface-variant">
+              Mewujudkan perjalanan impian Anda bersama travel agen terpercaya — layanan premium,
+              personal, dan penuh pengalaman berharga.
+            </p>
+
+            <div className="mt-9 grid max-w-xl grid-cols-3 gap-4 border-t border-c57-on-surface/15 pt-6">
+              {CREDENTIALS.map((item) => (
+                <div key={item.label}>
+                  <p className="font-display text-lg leading-tight text-c57-on-surface">{item.label}</p>
+                  <p className="mt-1 text-[0.72rem] uppercase tracking-[0.12em] text-c57-secondary">{item.sub}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <figure className="relative">
+            <div className="aspect-[4/5] overflow-hidden rounded-[1.8rem] bg-c57-surface-container">
+              <img
+                src={heroPhoto}
+                alt="Traveler Cakra Lima Tujuh di Bromo, Jawa Timur"
+                className="h-full w-full object-cover photo-warm"
+              />
+            </div>
+            <figcaption className="mt-4 flex items-center justify-between gap-4 font-label-sm uppercase tracking-[0.2em] text-c57-secondary">
+              <span>Bromo, Jawa Timur</span>
+              <span className="h-px flex-1 bg-c57-outline-variant" aria-hidden="true" />
+              <span>Momen Nyata</span>
+            </figcaption>
+          </figure>
         </header>
 
         {/* ── Mission + About ──────────────────────────────────── */}
@@ -84,7 +116,7 @@ export default function CompanyProfile() {
                 <span className="accent-line" aria-hidden="true" />
                 Cita-Cita Kami
               </p>
-              <p className="mt-space-lg font-headline-sm text-headline-sm text-c57-on-scrim leading-snug">
+              <p className="mt-space-lg font-display text-[1.5rem] leading-snug text-c57-on-scrim">
                 Menjadi partner perjalanan terpercaya yang menghadirkan pengalaman travel
                 personal, premium, dan penuh makna.
               </p>
@@ -111,12 +143,12 @@ export default function CompanyProfile() {
           </Card>
 
           <div>
-            <p className="font-label-sm uppercase tracking-[0.28em] text-c57-primary">
+            <p className="font-label-sm uppercase tracking-[0.28em] text-c57-secondary">
               Tentang Kami
             </p>
-            <h2 className="mt-3 font-headline-lg text-headline-lg-mobile text-c57-on-surface leading-tight md:text-headline-lg">
-              Lebih Dari Sekadar{" "}
-              <em className="font-normal italic text-c57-primary-container">Perjalanan</em>
+            <h2 className="mt-3 font-display text-[clamp(2rem,3.6vw,2.9rem)] font-normal leading-[1.02] tracking-[-0.02em] text-c57-on-surface">
+              Lebih dari sekadar{" "}
+              <em className="font-normal italic text-c57-secondary">perjalanan</em>
             </h2>
             <p className="mt-space-md text-body-lg text-c57-on-surface-variant font-light leading-relaxed">
               Cakra Lima Tujuh hadir sebagai travel agen Surabaya untuk Anda yang menginginkan
@@ -155,6 +187,7 @@ export default function CompanyProfile() {
         <section>
           <SectionHeading
             align="center"
+            editorial
             eyebrow="Yang Kami Tawarkan"
             title="Layanan "
             italic="Kami"
@@ -181,7 +214,7 @@ export default function CompanyProfile() {
                 >
                   <Icon name={item.icon} size="lg" />
                 </span>
-                <h3 className="mt-space-md font-headline-sm text-body-lg text-c57-on-surface transition-colors duration-300 group-hover:text-c57-primary-container">
+                <h3 className="mt-space-md font-display text-[1.35rem] leading-tight text-c57-on-surface transition-colors duration-300 group-hover:text-c57-secondary">
                   {item.title}
                 </h3>
                 <p className="mt-space-sm text-body-sm text-c57-on-surface-variant leading-relaxed">
@@ -195,12 +228,12 @@ export default function CompanyProfile() {
         {/* ── Destinations + commitment ───────────────────────── */}
         <section className="grid grid-cols-1 items-center gap-space-xl lg:grid-cols-2">
           <div>
-            <p className="font-label-sm uppercase tracking-[0.28em] text-c57-primary">
+            <p className="font-label-sm uppercase tracking-[0.28em] text-c57-secondary">
               Destinasi Populer
             </p>
-            <h2 className="mt-3 font-headline-lg text-headline-lg-mobile text-c57-on-surface md:text-headline-lg">
+            <h2 className="mt-3 font-display text-[clamp(2rem,3.6vw,2.9rem)] font-normal leading-[1.02] tracking-[-0.02em] text-c57-on-surface">
               Jelajahi{" "}
-              <em className="font-normal italic text-c57-primary-container">Indonesia</em>
+              <em className="font-normal italic text-c57-secondary">Indonesia</em>
             </h2>
             <p className="mt-space-md text-body-md text-c57-on-surface-variant leading-relaxed">
               Dari keindahan Jawa yang kaya budaya, pesona Bali yang memesona, hingga eksotisme
@@ -231,7 +264,7 @@ export default function CompanyProfile() {
             <img
               src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80"
               alt=""
-              className="absolute inset-0 h-full w-full object-cover opacity-15"
+              className="absolute inset-0 h-full w-full object-cover photo-warm opacity-15"
               aria-hidden="true"
             />
             <div
@@ -243,7 +276,7 @@ export default function CompanyProfile() {
                 <Icon name="explore" size="md" />
                 Komitmen Kami
               </p>
-              <p className="mt-space-md font-headline-md text-headline-md text-c57-on-scrim leading-snug">
+              <p className="mt-space-md font-display text-[1.7rem] leading-snug text-c57-on-scrim">
                 Perjalanan Anda,{" "}
                 <em className="font-normal italic text-c57-accent-line">Prioritas Kami</em>
               </p>
@@ -261,7 +294,7 @@ export default function CompanyProfile() {
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
                   <dt className="sr-only">{stat.label}</dt>
-                  <dd className="font-headline-sm text-headline-sm text-c57-on-scrim">{stat.num}</dd>
+                  <dd className="font-display text-[1.5rem] leading-none text-c57-on-scrim">{stat.num}</dd>
                   <p className="mt-1 font-label-sm uppercase tracking-widest text-c57-on-scrim/40">
                     {stat.label}
                   </p>
@@ -277,7 +310,7 @@ export default function CompanyProfile() {
             <img
               src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1200&q=80"
               alt=""
-              className="absolute inset-0 h-full w-full object-cover opacity-10"
+              className="absolute inset-0 h-full w-full object-cover photo-warm opacity-10"
               aria-hidden="true"
             />
             <div
@@ -288,7 +321,7 @@ export default function CompanyProfile() {
               <p className="font-label-sm uppercase tracking-[0.28em] text-c57-accent-line">
                 Pengalaman &amp; Kepercayaan
               </p>
-              <h2 className="mt-space-md font-headline-lg text-headline-lg-mobile text-c57-on-scrim leading-tight md:text-headline-lg">
+              <h2 className="mt-space-md font-display text-[clamp(2rem,3.6vw,2.9rem)] font-normal leading-[1.02] tracking-[-0.02em] text-c57-on-scrim">
                 Momen Berharga
                 <br />
                 <em className="font-normal italic text-c57-accent-line">Bermula dari Sini</em>
@@ -324,12 +357,12 @@ export default function CompanyProfile() {
         {/* ── Service standards ────────────────────────────────── */}
         <section className="grid grid-cols-1 items-center gap-space-xl lg:grid-cols-2">
           <div>
-            <p className="font-label-sm uppercase tracking-[0.28em] text-c57-primary">
+            <p className="font-label-sm uppercase tracking-[0.28em] text-c57-secondary">
               Standar Kami
             </p>
-            <h2 className="mt-3 font-headline-lg text-headline-lg-mobile text-c57-on-surface md:text-headline-lg">
+            <h2 className="mt-3 font-display text-[clamp(2rem,3.6vw,2.9rem)] font-normal leading-[1.02] tracking-[-0.02em] text-c57-on-surface">
               Komitmen{" "}
-              <em className="font-normal italic text-c57-primary-container">Pelayanan</em>
+              <em className="font-normal italic text-c57-secondary">Pelayanan</em>
             </h2>
             <p className="mt-space-md inline-block rounded-c57-md bg-c57-scrim px-6 py-4 font-label-md uppercase tracking-wider text-c57-on-scrim">
               Setiap perjalanan kami standarkan dengan penuh tanggung jawab:
@@ -354,7 +387,7 @@ export default function CompanyProfile() {
               <img
                 src="https://images.unsplash.com/photo-1488085061387-422e29b40080?w=800&q=80"
                 alt="Standar Perjalanan"
-                className="absolute inset-0 h-full w-full object-cover opacity-40"
+                className="absolute inset-0 h-full w-full object-cover photo-warm opacity-40"
               />
               <div
                 className="absolute inset-0 bg-gradient-to-t from-c57-scrim/60 to-transparent"
@@ -368,7 +401,7 @@ export default function CompanyProfile() {
               </div>
             </div>
             <div className="space-y-space-sm p-8">
-              <h3 className="font-headline-sm text-headline-sm text-c57-on-surface">
+              <h3 className="font-display text-[1.4rem] leading-tight text-c57-on-surface">
                 Kualitas yang Kami Jaga
               </h3>
               <p className="text-body-sm text-c57-on-surface-variant leading-relaxed">
@@ -393,6 +426,7 @@ export default function CompanyProfile() {
         <section>
           <SectionHeading
             align="center"
+            editorial
             eyebrow="Hubungi Kami"
             title="Terhubung "
             italic="Dengan Kami"
@@ -415,7 +449,7 @@ export default function CompanyProfile() {
                 <p className="mt-space-md font-label-sm uppercase tracking-[0.28em] text-c57-outline">
                   {c.label}
                 </p>
-                <p className="mt-1 font-headline-sm text-body-lg text-c57-on-surface">{c.value}</p>
+                <p className="mt-1 font-display text-[1.3rem] leading-tight text-c57-on-surface">{c.value}</p>
               </a>
             ))}
           </div>

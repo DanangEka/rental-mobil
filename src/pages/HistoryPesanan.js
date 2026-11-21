@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   collection,
   query,
@@ -12,6 +13,7 @@ import {
 } from "firebase/firestore";
 
 import { useToast } from "../components/Toast";
+import { EDITORIAL_EASE } from "../motion/editorial";
 import { uploadImage, validateImageFile } from "../utils/uploadImage";
 import { auth, db } from "../services/firebase";
 import { releaseVehicle } from "../services/bookingService";
@@ -112,6 +114,13 @@ export default function HistoryPesanan() {
   const [paymentModal, setPaymentModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [dpReceipt, setDpReceipt] = useState(null);
+
+  useEffect(() => {
+    if (!dpReceipt) return undefined;
+    const timer = setTimeout(() => setDpReceipt(null), 2600);
+    return () => clearTimeout(timer);
+  }, [dpReceipt]);
 
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
@@ -321,7 +330,11 @@ export default function HistoryPesanan() {
       addNotification(`Permintaan pembayaran dari ${auth.currentUser.email}`, "admin");
 
       closePayment();
-      toast.success("Pembayaran berhasil diajukan", "Menunggu verifikasi admin.");
+      setDpReceipt({ car: selectedOrder.namaMobil });
+      toast.success(
+        `DP untuk ${selectedOrder.namaMobil} sudah kami terima. Armada dan jadwalmu kami kunci sampai verifikasi admin selesai, ya.`,
+        "Terima kasih!"
+      );
     } catch (error) {
       console.error(error);
       toast.error("Gagal mengirim data pembayaran.");
@@ -784,7 +797,48 @@ export default function HistoryPesanan() {
           </p>
         </div>
       </Modal>
+
+      <AnimatePresence>
+        {dpReceipt && <DpReceipt key="dp-receipt" car={dpReceipt.car} />}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function DpReceipt({ car }) {
+  const reduceMotion = useReducedMotion();
+  return (
+    <motion.div
+      aria-hidden="true"
+      initial={reduceMotion ? false : { opacity: 0, y: 14, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={
+        reduceMotion
+          ? { opacity: 0, transition: { duration: 0 } }
+          : { opacity: 0, y: 10, scale: 0.98, transition: { duration: 0.18, ease: EDITORIAL_EASE } }
+      }
+      transition={{ duration: 0.3, ease: EDITORIAL_EASE }}
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] z-[9998] mx-auto flex w-fit max-w-[calc(100%-2rem)] items-center gap-3 rounded-full border border-white/10 bg-c57-scrim px-4 py-2.5 text-c57-on-scrim shadow-c57-overlay"
+    >
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-c57-available-bg text-c57-available-text">
+        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden="true">
+          <motion.path
+            d="M4.5 12.5l4.5 4.5L19.5 6.5"
+            stroke="currentColor"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            initial={reduceMotion ? false : { pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.5, ease: EDITORIAL_EASE, delay: 0.08 }}
+          />
+        </svg>
+      </span>
+      <span className="min-w-0">
+        <span className="block font-label-sm text-label-sm uppercase tracking-wider">DP terkirim</span>
+        <span className="block truncate font-body-sm text-body-sm text-c57-on-scrim/70">{car}</span>
+      </span>
+    </motion.div>
   );
 }
 

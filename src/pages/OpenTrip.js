@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   Timestamp,
@@ -12,9 +13,10 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { useToast } from "../components/Toast";
+import { EDITORIAL_EASE } from "../motion/editorial";
 import { auth, db } from "../services/firebase";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -364,43 +366,60 @@ export default function OpenTripPage() {
   return (
     <div className="min-h-screen bg-c57-surface text-c57-on-surface">
       {/* ── HERO ── */}
-      <section ref={heroRef} className="relative w-full overflow-hidden bg-c57-inverse-surface py-28 lg:py-36 text-c57-surface-bright">
-        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-c57-primary/25 blur-3xl" aria-hidden="true" />
-        <div className="pointer-events-none absolute -bottom-32 -right-10 h-[30rem] w-[30rem] rounded-full bg-c57-tertiary-fixed-dim/10 blur-3xl" aria-hidden="true" />
+      <section ref={heroRef} className="relative w-full overflow-hidden bg-c57-surface pb-14 pt-40 sm:pb-20 sm:pt-48">
+        <div className="absolute inset-0" aria-hidden="true">
+          <img
+            src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2000&q=80"
+            alt=""
+            className="h-full w-full object-cover object-center photo-warm"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-c57-surface/90 via-c57-surface/50 to-c57-surface" />
+          <div className="absolute inset-0 bg-gradient-to-r from-c57-surface/85 via-c57-surface/25 to-transparent" />
+        </div>
 
-        <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-start px-5 md:px-10">
-          <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-c57-tertiary-fixed/25 bg-c57-primary/25 px-4 py-1.5 font-label-sm uppercase tracking-[0.2em] text-c57-tertiary-fixed-dim backdrop-blur-md">
-            <span className="h-2 w-2 rounded-full bg-c57-primary-container" />
-            Open Trip &amp; Private Exploration
-          </p>
-
-          <div className="max-w-4xl space-y-6">
-            <h1 className="font-headline-xl text-headline-xl-mobile leading-tight tracking-tight md:text-headline-xl">
-              Jelajahi Setiap Detik, Rencanakan Perjalanan Terbaik.
+        <div className="editorial-shell relative">
+          <div className="max-w-3xl">
+            <p className="font-label-sm text-label-sm uppercase tracking-[0.3em] text-c57-secondary">
+              Open Trip &amp; Private Journey
+            </p>
+            <h1 className="mt-6 font-display text-[clamp(2.6rem,6.2vw,4.9rem)] font-normal leading-[0.98] tracking-[-0.03em] text-c57-on-surface">
+              Jelajahi setiap detik.
+              <br />
+              <em className="font-normal italic text-c57-secondary">Rencanakan perjalanan terbaik.</em>
             </h1>
-            <p className="max-w-2xl font-body-lg font-light leading-relaxed text-c57-surface-container-high">
-              Pilih petualangan terjadwal (<span className="font-medium text-c57-surface-bright">Open Trip</span>) atau nikmati kenyamanan privat tanpa kompromi (<span className="font-medium text-c57-surface-bright">Private Trip &amp; Bespoke Itinerary</span>).
+            <p className="mt-7 max-w-xl text-[0.98rem] leading-relaxed text-c57-on-surface-variant">
+              Pilih petualangan terjadwal bersama <span className="font-semibold text-c57-on-surface">Open Trip</span>, atau nikmati kenyamanan privat tanpa kompromi lewat <span className="font-semibold text-c57-on-surface">Private Trip &amp; Bespoke Itinerary</span>.
             </p>
           </div>
 
-          <div className="mt-8 flex flex-wrap gap-4">
-            <Button size="lg" icon="send" onClick={openRequestForm}>
+          <div className="mt-9 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={openRequestForm}
+              className="group inline-flex items-center gap-3 rounded-full bg-c57-primary px-6 py-3.5 font-label-sm text-label-sm uppercase tracking-[0.16em] text-c57-on-primary transition-colors hover:bg-c57-primary-container"
+            >
+              <Icon name="send" size="lg" />
               Ajukan Custom Trip
-            </Button>
-            <Button variant="secondary" size="lg" icon="explore" onClick={() => setCategory("semua")}>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCategory("semua")}
+              className="group inline-flex items-center gap-3 rounded-full border border-c57-outline/50 px-6 py-3.5 font-label-sm text-label-sm uppercase tracking-[0.16em] text-c57-on-surface transition-colors hover:border-c57-primary hover:bg-c57-primary hover:text-c57-on-primary"
+            >
               Jelajahi Katalog
-            </Button>
+              <span className="round-arrow h-6 w-6" aria-hidden="true">
+                <Icon name="arrow_forward" size="sm" />
+              </span>
+            </button>
           </div>
 
-          <div className="mt-12 grid w-full grid-cols-1 gap-4 rounded-2xl bg-c57-surface-bright/[0.04] p-6 backdrop-blur-sm sm:grid-cols-2 md:grid-cols-4">
+          <div className="mt-16 grid grid-cols-1 gap-x-8 gap-y-7 border-t border-c57-on-surface/15 pt-8 sm:grid-cols-2 md:grid-cols-4">
             {FEATURES.map((f) => (
-              <div key={f.title} className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-c57-primary-container/20 text-c57-primary-fixed-dim">
-                  <Icon name={f.icon} size="md" />
-                </div>
+              <div key={f.title} className="flex items-start gap-3">
+                <Icon name={f.icon} size="lg" className="mt-0.5 shrink-0 text-c57-secondary" />
                 <div>
-                  <span className="block font-label-sm uppercase tracking-wider text-c57-surface-bright">{f.title}</span>
-                  <span className="font-body-sm text-c57-surface-container-high">{f.desc}</span>
+                  <span className="block font-label-sm uppercase tracking-[0.16em] text-c57-on-surface">{f.title}</span>
+                  <span className="mt-1 block text-[0.8rem] leading-relaxed text-c57-on-surface-variant">{f.desc}</span>
                 </div>
               </div>
             ))}
@@ -410,8 +429,8 @@ export default function OpenTripPage() {
 
       {/* ── FILTER PANEL ── */}
       {!showPengajuan && (
-        <section className="relative z-20 mx-auto mt-0 md:-mt-8 w-full max-w-7xl px-5 md:px-10">
-          <div className="rounded-2xl bg-c57-surface-container-lowest p-6 shadow-c57-overlay">
+        <section className="relative z-20 mx-auto mt-0 w-full max-w-7xl px-5 md:-mt-8 md:px-10">
+          <div className="rounded-[1.4rem] border border-c57-surface-variant bg-c57-surface-container-lowest p-6 shadow-c57-overlay">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <FilterSelect
                 label="Wilayah Eksplorasi"
@@ -442,7 +461,7 @@ export default function OpenTripPage() {
                 <button
                   key={label}
                   onClick={() => setRegion(quickFilterRegion(label))}
-                  className="rounded-full bg-c57-surface-container px-4 py-1.5 font-label-sm uppercase text-c57-on-surface transition-colors hover:bg-c57-primary-container hover:text-white"
+                  className="rounded-full bg-c57-surface-container px-4 py-1.5 font-label-sm uppercase text-c57-on-surface transition-colors hover:bg-c57-secondary hover:text-c57-on-secondary"
                 >
                   {label}
                 </button>
@@ -464,7 +483,7 @@ export default function OpenTripPage() {
                 onClick={() => setCategory(item.key)}
                 aria-pressed={active}
                 className={`shrink-0 flex items-center gap-2 rounded-full px-6 py-2.5 font-label-md uppercase tracking-wider transition-colors ${
-                  active ? "bg-c57-primary-container text-c57-on-primary shadow-sm" : "text-c57-on-surface-variant hover:bg-c57-surface-container hover:text-c57-on-surface"
+                  active ? "bg-c57-primary text-c57-on-primary shadow-sm" : "text-c57-on-surface-variant hover:bg-c57-surface-container hover:text-c57-on-surface"
                 }`}
               >
                 <Icon name={item.icon} size="sm" />
@@ -562,8 +581,8 @@ export default function OpenTripPage() {
               <section className="pt-6">
                 <div className="flex items-center justify-between mb-space-lg">
                   <div>
-                    <p className="text-label-md uppercase tracking-editorial text-c57-primary mb-space-xs">Pengajuan Saya</p>
-                    <h2 className="font-headline-sm text-headline-sm text-c57-on-surface">Pantau Status Trip Anda</h2>
+                    <p className="text-label-md uppercase tracking-editorial text-c57-secondary mb-space-xs">Pengajuan Saya</p>
+                    <h2 className="font-display text-[1.8rem] leading-tight text-c57-on-surface">Pantau Status Trip Anda</h2>
                   </div>
                   {myRequests.length > 0 && <Pill variant="signature">{myRequests.length} Pengajuan</Pill>}
                 </div>
@@ -623,16 +642,16 @@ export default function OpenTripPage() {
 
 function FilterSelect({ label, icon, value, onChange, options }) {
   return (
-    <div className="flex flex-col justify-between rounded-xl bg-c57-surface-container-low p-4 transition-colors hover:bg-c57-surface-container">
+    <div className="flex flex-col justify-between rounded-[1rem] bg-c57-surface-container-low p-4 transition-colors hover:bg-c57-surface-container">
       <div className="mb-1 flex items-center justify-between">
         <span className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">{label}</span>
-        <Icon name={icon} size="md" className="text-c57-primary-container" />
+        <Icon name={icon} size="md" className="text-c57-secondary" />
       </div>
       <Select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-label={label}
-        className="border-0 bg-transparent px-0 font-headline-sm text-headline-sm font-semibold text-c57-on-surface focus:border-0"
+        className="border-0 bg-transparent px-0 font-display text-[1.15rem] font-normal text-c57-on-surface focus:border-0"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -648,9 +667,9 @@ function Section({ eyebrow, title, description, children }) {
   return (
     <section className="pt-16">
       <div className="mb-8 max-w-3xl">
-        <p className="font-label-sm uppercase tracking-[0.25em] text-c57-primary-container">{eyebrow}</p>
-        <h2 className="mt-2 font-headline-lg text-headline-lg-mobile leading-tight text-c57-on-surface md:text-headline-lg">{title}</h2>
-        <p className="mt-2 font-body-md leading-relaxed text-c57-secondary">{description}</p>
+        <p className="font-label-sm uppercase tracking-[0.25em] text-c57-secondary">{eyebrow}</p>
+        <h2 className="mt-3 font-display text-[clamp(2rem,3.6vw,2.9rem)] font-normal leading-[1.02] tracking-[-0.02em] text-c57-on-surface">{title}</h2>
+        <p className="mt-3 max-w-2xl text-[0.95rem] leading-relaxed text-c57-on-surface-variant">{description}</p>
       </div>
       {children}
     </section>
@@ -660,10 +679,10 @@ function Section({ eyebrow, title, description, children }) {
 function OpenTripCard({ trip }) {
   const full = trip.sisaKursi === 0;
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl bg-c57-surface-container-lowest shadow-c57-card transition-shadow duration-300 hover:shadow-c57-card-hover">
+    <article className="group flex flex-col overflow-hidden rounded-[1.4rem] border border-c57-surface-variant bg-c57-surface-container-lowest shadow-c57-card transition-all duration-500 hover:-translate-y-1 hover:shadow-c57-card-hover">
       <div className="relative h-64 overflow-hidden">
         <div
-          className="h-full w-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+          className="photo-warm h-full w-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
           style={{ backgroundImage: `url(${trip.imageUrl || "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&auto=format&fit=crop&q=80"})` }}
           aria-hidden="true"
         />
@@ -675,8 +694,8 @@ function OpenTripCard({ trip }) {
           {full ? "Kursi Penuh" : `Sisa ${trip.sisaKursi} Kursi`}
         </span>
         <div className="absolute bottom-4 left-4 right-4 text-white">
-          <span className="font-label-sm uppercase tracking-wider text-c57-tertiary-fixed-dim">{trip.tanggalLabel}</span>
-          <p className="mt-0.5 font-headline-sm text-headline-sm leading-tight text-white drop-shadow-sm">{trip.judul}</p>
+          <span className="font-label-sm uppercase tracking-[0.2em] text-c57-accent-line">{trip.tanggalLabel}</span>
+          <p className="mt-0.5 font-display text-[1.5rem] leading-tight">{trip.judul}</p>
         </div>
       </div>
 
@@ -685,16 +704,16 @@ function OpenTripCard({ trip }) {
           <div className="space-y-2">
             <span className="font-label-sm uppercase tracking-widest text-c57-secondary">Fasilitas Utama:</span>
             <ul className="space-y-1.5">
-              <li className="flex items-center gap-2 font-body-sm text-body-sm text-c57-secondary">
-                <Icon name="check_circle" size="sm" className="text-c57-primary-container" />
+              <li className="flex items-center gap-2 font-body-sm text-body-sm text-c57-on-surface-variant">
+                <Icon name="check_circle" size="sm" className="text-c57-secondary" />
                 {trip.mobilUtama || "Armada tour"}
               </li>
-              <li className="flex items-center gap-2 font-body-sm text-body-sm text-c57-secondary">
-                <Icon name="check_circle" size="sm" className="text-c57-primary-container" />
+              <li className="flex items-center gap-2 font-body-sm text-body-sm text-c57-on-surface-variant">
+                <Icon name="check_circle" size="sm" className="text-c57-secondary" />
                 {trip.destinasi}
               </li>
-              <li className="flex items-center gap-2 font-body-sm text-body-sm text-c57-secondary">
-                <Icon name="check_circle" size="sm" className="text-c57-primary-container" />
+              <li className="flex items-center gap-2 font-body-sm text-body-sm text-c57-on-surface-variant">
+                <Icon name="check_circle" size="sm" className="text-c57-secondary" />
                 Titik kumpul {trip.titikKumpul || "sesuai konfirmasi"}
               </li>
             </ul>
@@ -703,10 +722,10 @@ function OpenTripCard({ trip }) {
           <div className="space-y-1.5 pt-2">
             <div className="flex justify-between font-label-sm text-label-sm text-c57-secondary">
               <span>Keterisian Kuota</span>
-              <span className="font-semibold text-c57-primary-container">{trip.kuotaTerisi} / {trip.kapasitasMaks} Terisi</span>
+              <span className="font-semibold text-c57-on-surface">{trip.kuotaTerisi} / {trip.kapasitasMaks} Terisi</span>
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-c57-surface-container" role="progressbar">
-              <div className="h-full rounded-full bg-c57-primary-container" style={{ width: `${trip.persenTerisi}%` }} />
+              <div className="h-full rounded-full bg-c57-secondary" style={{ width: `${trip.persenTerisi}%` }} />
             </div>
           </div>
         </div>
@@ -715,7 +734,7 @@ function OpenTripCard({ trip }) {
           <div className="flex items-baseline justify-between">
             <span className="font-label-sm uppercase tracking-wider text-c57-secondary">Tarif per Orang</span>
             <div className="text-right">
-              <span className="font-headline-md text-headline-md font-semibold text-c57-primary-container">{formatRupiah(trip.hargaPerPax)}</span>
+              <span className="font-display text-[1.6rem] leading-none text-c57-on-surface">{formatRupiah(trip.hargaPerPax)}</span>
               <span className="-mt-1 block font-body-sm text-body-sm text-c57-secondary">/ pax all-in</span>
             </div>
           </div>
@@ -730,10 +749,10 @@ function OpenTripCard({ trip }) {
 
 function PaketCard({ paket }) {
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl bg-c57-surface-container-lowest shadow-c57-card transition-shadow duration-300 hover:shadow-c57-card-hover">
+    <article className="group flex flex-col overflow-hidden rounded-[1.4rem] border border-c57-surface-variant bg-c57-surface-container-lowest shadow-c57-card transition-all duration-500 hover:-translate-y-1 hover:shadow-c57-card-hover">
       <div className="relative h-56 overflow-hidden">
         {paket.imageUrl ? (
-          <img src={paket.imageUrl} alt={paket.judul} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <img src={paket.imageUrl} alt={paket.judul} loading="lazy" className="h-full w-full object-cover photo-warm transition-transform duration-700 group-hover:scale-105" />
         ) : (
           <div className="h-full w-full bg-c57-surface-container" aria-hidden="true" />
         )}
@@ -744,19 +763,19 @@ function PaketCard({ paket }) {
           </span>
         )}
         <div className="absolute bottom-4 left-4 right-4">
-          <span className="font-label-sm uppercase tracking-wider text-c57-tertiary-fixed-dim">{paket.destinasi}</span>
-          <p className="mt-0.5 font-headline-sm text-headline-sm leading-tight text-white drop-shadow-sm">{paket.judul}</p>
+          <span className="font-label-sm uppercase tracking-[0.2em] text-c57-accent-line">{paket.destinasi}</span>
+          <p className="mt-0.5 font-display text-[1.5rem] leading-tight text-white">{paket.judul}</p>
         </div>
       </div>
 
       <div className="flex flex-1 flex-col justify-between space-y-5 p-6">
-        {paket.description && <p className="font-body-sm leading-relaxed text-c57-secondary">{paket.description}</p>}
+        {paket.description && <p className="font-body-sm leading-relaxed text-c57-on-surface-variant">{paket.description}</p>}
 
         {paket.fasilitas.length > 0 && (
           <ul className="space-y-1.5">
             {paket.fasilitas.map((item) => (
-              <li key={item} className="flex items-center gap-2 font-body-sm text-body-sm text-c57-secondary">
-                <Icon name="check_circle" size="sm" className="text-c57-primary-container" />
+              <li key={item} className="flex items-center gap-2 font-body-sm text-body-sm text-c57-on-surface-variant">
+                <Icon name="check_circle" size="sm" className="text-c57-secondary" />
                 {item}
               </li>
             ))}
@@ -766,7 +785,7 @@ function PaketCard({ paket }) {
         <div className="space-y-3 pt-2">
           <div className="flex items-baseline justify-between">
             <span className="font-label-sm uppercase tracking-wider text-c57-secondary">Mulai Dari</span>
-            <span className="font-headline-md text-headline-md font-semibold text-c57-primary-container">{formatRupiah(paket.harga)}</span>
+            <span className="font-display text-[1.6rem] leading-none text-c57-on-surface">{formatRupiah(paket.harga)}</span>
           </div>
           <Button
             onClick={() => window.open(whatsappLink(buildConsultationMessage({ destination: paket.destinasi, armada: "" })), "_blank", "noopener")}
@@ -785,9 +804,9 @@ function PaketCard({ paket }) {
 function BespokeCard({ journey }) {
   const flipped = journey.id === "east-java-highland";
   return (
-    <article className="grid grid-cols-1 overflow-hidden rounded-3xl bg-c57-surface-container-lowest shadow-c57-card transition-shadow duration-500 hover:shadow-c57-card-hover lg:grid-cols-12">
+    <article className="group grid grid-cols-1 overflow-hidden rounded-[1.6rem] border border-c57-surface-variant bg-c57-surface-container-lowest shadow-c57-card transition-all duration-500 hover:shadow-c57-card-hover lg:grid-cols-12">
       <div className={`relative min-h-[20rem] overflow-hidden lg:col-span-6 lg:min-h-[26rem] ${flipped ? "lg:order-2" : ""}`}>
-        <img src={journey.image} alt={journey.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+        <img src={journey.image} alt={journey.title} loading="lazy" className="h-full w-full object-cover photo-warm transition-transform duration-1000 group-hover:scale-105" />
         <span className="absolute left-6 top-6 rounded-full bg-c57-surface-bright/95 px-4 py-1.5 font-label-sm uppercase tracking-widest text-c57-on-surface shadow-md backdrop-blur-md">
           {journey.badge}
         </span>
@@ -796,19 +815,19 @@ function BespokeCard({ journey }) {
       <div className={`flex flex-col justify-between space-y-8 p-8 lg:col-span-6 lg:p-12 ${flipped ? "lg:order-1" : ""}`}>
         <div className="space-y-6">
           <div className="space-y-2">
-            <span className="font-label-sm uppercase tracking-widest text-c57-on-secondary-container">{journey.region}</span>
-            <h3 className="font-headline-md text-headline-md leading-tight text-c57-on-surface">{journey.title}</h3>
-            <p className="font-body-md leading-relaxed text-c57-secondary">{journey.description}</p>
+            <span className="font-label-sm uppercase tracking-[0.22em] text-c57-secondary">{journey.region}</span>
+            <h3 className="font-display text-[clamp(1.8rem,3vw,2.5rem)] leading-[1.05] text-c57-on-surface">{journey.title}</h3>
+            <p className="font-body-md leading-relaxed text-c57-on-surface-variant">{journey.description}</p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
-            <div className="space-y-1 rounded-xl bg-c57-surface-container-low p-4">
+            <div className="space-y-1 rounded-[1rem] bg-c57-surface-container-low p-4">
               <span className="font-label-sm uppercase tracking-wider text-c57-secondary">Armada Pilihan</span>
-              <p className="flex items-center gap-1.5 font-body-md font-medium text-c57-on-surface"><Icon name="directions_car" size="md" className="text-c57-primary-container" />{journey.armada}</p>
+              <p className="flex items-center gap-1.5 font-body-md font-medium text-c57-on-surface"><Icon name="directions_car" size="md" className="text-c57-secondary" />{journey.armada}</p>
             </div>
-            <div className="space-y-1 rounded-xl bg-c57-surface-container-low p-4">
+            <div className="space-y-1 rounded-[1rem] bg-c57-surface-container-low p-4">
               <span className="font-label-sm uppercase tracking-wider text-c57-secondary">Kurasi Akomodasi</span>
-              <p className="flex items-center gap-1.5 font-body-md font-medium text-c57-on-surface"><Icon name="hotel" size="md" className="text-c57-primary-container" />{journey.akomodasi}</p>
+              <p className="flex items-center gap-1.5 font-body-md font-medium text-c57-on-surface"><Icon name="hotel" size="md" className="text-c57-secondary" />{journey.akomodasi}</p>
             </div>
           </div>
         </div>
@@ -817,7 +836,7 @@ function BespokeCard({ journey }) {
           <div>
             <span className="font-label-sm uppercase tracking-widest text-c57-secondary">Investasi Mulai</span>
             <div className="flex items-baseline gap-1">
-              <span className="font-headline-md text-headline-md font-semibold text-c57-primary-container">{formatRupiah(journey.hargaMulai)}</span>
+              <span className="font-display text-[1.6rem] leading-none text-c57-on-surface">{formatRupiah(journey.hargaMulai)}</span>
               <span className="font-body-sm text-body-sm text-c57-secondary">/ orang (min. {journey.minPax} pax)</span>
             </div>
           </div>
@@ -838,22 +857,22 @@ function PillarsSection() {
     <section className="w-full bg-c57-surface-container-low py-20">
       <div className="mx-auto max-w-7xl px-5 md:px-10">
         <div className="mx-auto mb-12 max-w-3xl space-y-3 text-center">
-          <p className="font-label-md uppercase tracking-[0.2em] font-semibold text-c57-primary-container">Komitmen Unggul</p>
-          <h2 className="font-headline-lg text-headline-lg-mobile tracking-tight text-c57-on-surface md:text-headline-lg">Standar Layanan &amp; Transparansi Mutlak</h2>
-          <p className="font-body-md leading-relaxed text-c57-secondary">Setiap jengkal perjalanan dikawal oleh kepastian standar kelas hospitality.</p>
+          <p className="font-label-md uppercase tracking-[0.2em] font-semibold text-c57-secondary">Komitmen Unggul</p>
+          <h2 className="font-display text-[clamp(2rem,3.8vw,3.1rem)] leading-[1.04] tracking-[-0.02em] text-c57-on-surface">Standar Layanan &amp; Transparansi Mutlak</h2>
+          <p className="font-body-md leading-relaxed text-c57-on-surface-variant">Setiap jengkal perjalanan dikawal oleh kepastian standar kelas hospitality.</p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {PILLARS.map((pillar) => (
-            <div key={pillar.title} className="flex flex-col justify-between space-y-4 rounded-2xl bg-c57-surface-container-lowest p-6 shadow-c57-card">
+            <div key={pillar.title} className="flex flex-col justify-between space-y-4 rounded-[1.4rem] border border-c57-surface-variant bg-c57-surface-container-lowest p-6 shadow-c57-card">
               <div className="space-y-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-c57-surface-container text-c57-primary-container">
+                <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-c57-surface-container text-c57-secondary">
                   <Icon name={pillar.icon} size="2xl" />
                 </div>
-                <h3 className="font-headline-sm text-headline-sm text-c57-on-surface">{pillar.title}</h3>
-                <p className="font-body-sm leading-relaxed text-c57-secondary">{pillar.body}</p>
+                <h3 className="font-display text-[1.35rem] leading-tight text-c57-on-surface">{pillar.title}</h3>
+                <p className="font-body-sm leading-relaxed text-c57-on-surface-variant">{pillar.body}</p>
               </div>
-              <span className="font-label-sm uppercase tracking-wider text-c57-primary-container">{pillar.tag}</span>
+              <span className="font-label-sm uppercase tracking-wider text-c57-secondary">{pillar.tag}</span>
             </div>
           ))}
         </div>
@@ -888,27 +907,27 @@ function ConsultationForm() {
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-20 md:px-10">
-      <div className="relative overflow-hidden rounded-3xl bg-c57-inverse-surface p-8 text-white shadow-c57-overlay lg:p-14">
+      <div className="relative overflow-hidden rounded-[1.6rem] bg-c57-scrim p-8 text-c57-on-scrim shadow-c57-overlay lg:p-14">
         <div className="relative z-10 grid grid-cols-1 gap-12 lg:grid-cols-12">
           <div className="space-y-6 lg:col-span-5">
-            <p className="inline-flex items-center gap-2 rounded-full bg-c57-surface-bright/10 px-3 py-1 font-label-sm uppercase tracking-widest text-c57-tertiary-fixed-dim">
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 font-label-sm uppercase tracking-widest text-c57-accent-line">
               Private Concierge Desk
             </p>
-            <h3 className="font-headline-lg text-headline-lg-mobile leading-tight md:text-headline-lg">Punya Rencana Perjalanan Impian Sendiri?</h3>
-            <p className="font-body-md font-light leading-relaxed text-c57-surface-container-high">
+            <h3 className="font-display text-[clamp(2rem,3.8vw,3rem)] leading-[1.05] tracking-[-0.02em]">Punya Rencana Perjalanan Impian Sendiri?</h3>
+            <p className="font-body-md font-light leading-relaxed text-c57-on-scrim/65">
               Ceritakan preferensi waktu, tempat, atau tema perjalanan Anda. Tim Concierge Cakra Lima Tujuh akan menyusun rute terpersonalisasi.
             </p>
             <div className="flex flex-col gap-3 pt-2">
               {CONCIERGE_PROMISES.map((promise) => (
-                <div key={promise} className="flex items-center gap-3 font-body-sm text-c57-surface-container-high">
-                  <Icon name="check_circle" size="lg" className="text-c57-primary-fixed-dim" />
+                <div key={promise} className="flex items-center gap-3 font-body-sm text-c57-on-scrim/65">
+                  <Icon name="check_circle" size="lg" className="text-c57-accent-line" />
                   <span>{promise}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col justify-between space-y-6 rounded-2xl bg-c57-surface-bright/5 p-6 backdrop-blur-md lg:col-span-7 lg:p-8">
+          <form onSubmit={handleSubmit} className="flex flex-col justify-between space-y-6 rounded-[1.2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-md lg:col-span-7 lg:p-8">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Field tone="dark" label="Destinasi Tujuan" error={error} required>
                 {(p) => <Input tone="dark" {...p} icon="location_on" error={error} value={form.destination} onChange={update("destination")} placeholder="Contoh: Bromo, Malang & Batu" />}
@@ -954,8 +973,8 @@ function RequestPrompt({ title, description, icon, action, onAction }) {
     <Card variant="scrim" className="relative overflow-hidden p-8">
       <div className="relative flex flex-col md:flex-row items-center justify-between gap-space-lg">
         <div className="text-center md:text-left max-w-xl">
-          <p className="text-label-md uppercase tracking-editorial text-c57-tertiary mb-space-sm">Buat Pengajuan Baru</p>
-          <h2 className="font-headline-sm text-headline-sm text-c57-on-scrim">{title}</h2>
+          <p className="text-label-md uppercase tracking-editorial text-c57-accent-line mb-space-sm">Buat Pengajuan Baru</p>
+          <h2 className="font-display text-[1.8rem] leading-tight text-c57-on-scrim">{title}</h2>
           {description && <p className="text-body-sm text-c57-on-scrim/70 mt-space-sm">{description}</p>}
         </div>
         <Button size="lg" icon={icon} iconPosition="right" className="shrink-0" onClick={onAction}>
@@ -972,7 +991,7 @@ function RequestForm({ formData, setFormData, submitting, onSubmit, onCancel }) 
       <div className="px-6 py-4 bg-c57-scrim flex items-center justify-between">
         <div>
           <p className="text-label-sm uppercase tracking-wider text-c57-on-scrim/60">Form Pengajuan</p>
-          <h3 className="font-headline-sm text-headline-sm text-c57-on-scrim">Detail perjalananmu</h3>
+          <h3 className="font-display text-[1.5rem] leading-tight text-c57-on-scrim">Detail perjalananmu</h3>
         </div>
         <button type="button" onClick={onCancel} className="p-2 rounded-full text-c57-on-scrim/70 hover:text-c57-on-scrim">
           <Icon name="close" size="md" />
@@ -1034,6 +1053,7 @@ function RequestForm({ formData, setFormData, submitting, onSubmit, onCancel }) 
 }
 
 function RequestCard({ req, expanded, revisions, onToggle, onQuoteAction }) {
+  const reduceMotion = useReducedMotion();
   const meta = STATUS_META[req.status] || { label: req.status, variant: "neutral" };
   return (
     <Card className="overflow-hidden">
@@ -1043,7 +1063,7 @@ function RequestCard({ req, expanded, revisions, onToggle, onQuoteAction }) {
             <Pill variant={meta.variant} icon={meta.icon}>{meta.label}</Pill>
             <Pill variant="outline">{(req.type === "open_trip" ? "Open Trip" : "Private Trip") + (req.tier ? ` · ${req.tier.toUpperCase()}` : "")}</Pill>
           </div>
-          <p className="font-headline-sm text-headline-sm text-c57-on-surface">{req.destination}</p>
+          <p className="font-display text-[1.5rem] leading-tight text-c57-on-surface">{req.destination}</p>
           <div className="flex flex-wrap gap-4 mt-2 text-body-sm text-c57-on-surface-variant">
             <span>📅 {formatDate(req.proposed_date, { day: "numeric", month: "short", year: "numeric" })}</span>
             <span>👥 {req.participant_count} peserta</span>
@@ -1053,32 +1073,47 @@ function RequestCard({ req, expanded, revisions, onToggle, onQuoteAction }) {
         <Icon name="expand_more" size="md" className={`text-c57-on-surface-variant shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} />
       </button>
 
-      {expanded && (
-        <div className="border-t border-c57-surface-variant p-6 space-y-4">
-          {req.status === "quoted" && req.quote && (
-            <div className="p-4 rounded-xl bg-c57-surface-container">
-              <p className="font-label-sm uppercase text-c57-primary mb-1">Penawaran Admin</p>
-              <p className="font-headline-md text-headline-md font-bold text-c57-on-surface">Rp {Number(req.quote.total).toLocaleString("id-ID")}</p>
-              <div className="flex gap-2 mt-4">
-                <Button size="sm" icon="task_alt" onClick={() => onQuoteAction("accept")}>Setuju &amp; Bayar DP</Button>
-                <Button size="sm" variant="secondary" icon="edit_note" onClick={() => onQuoteAction("revise")}>Revisi</Button>
-              </div>
-            </div>
-          )}
-
-          {revisions.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-label-sm uppercase text-c57-on-surface-variant">Riwayat Komunikasi</p>
-              {revisions.map((rv, i) => (
-                <div key={rv.id || i} className="p-3 rounded-lg bg-c57-surface-container-low">
-                  <p className="text-label-sm text-c57-primary">{rv.by === "admin" ? "Admin" : "Kamu"}</p>
-                  <p className="text-body-sm text-c57-on-surface">{rv.note}</p>
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key="request-details"
+            initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={
+              reduceMotion
+                ? { opacity: 0, transition: { duration: 0 } }
+                : { height: 0, opacity: 0, transition: { duration: 0.2, ease: EDITORIAL_EASE } }
+            }
+            transition={{ duration: reduceMotion ? 0.15 : 0.26, ease: EDITORIAL_EASE }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-c57-surface-variant p-6 space-y-4">
+              {req.status === "quoted" && req.quote && (
+                <div className="p-4 rounded-xl bg-c57-surface-container">
+                  <p className="font-label-sm uppercase text-c57-secondary mb-1">Penawaran Admin</p>
+                  <p className="font-display text-[1.7rem] leading-none text-c57-on-surface">Rp {Number(req.quote.total).toLocaleString("id-ID")}</p>
+                  <div className="flex gap-2 mt-4">
+                    <Button size="sm" icon="task_alt" onClick={() => onQuoteAction("accept")}>Setuju &amp; Bayar DP</Button>
+                    <Button size="sm" variant="secondary" icon="edit_note" onClick={() => onQuoteAction("revise")}>Revisi</Button>
+                  </div>
                 </div>
-              ))}
+              )}
+
+              {revisions.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-label-sm uppercase text-c57-on-surface-variant">Riwayat Komunikasi</p>
+                  {revisions.map((rv, i) => (
+                    <div key={rv.id || i} className="p-3 rounded-lg bg-c57-surface-container-low">
+                      <p className="text-label-sm text-c57-primary">{rv.by === "admin" ? "Admin" : "Kamu"}</p>
+                      <p className="text-body-sm text-c57-on-surface">{rv.note}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Card>
   );
 }
@@ -1087,7 +1122,7 @@ function GridSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-gutter md:grid-cols-2 xl:grid-cols-3">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-96 animate-pulse rounded-2xl bg-c57-surface-container" />
+        <div key={i} className="h-96 animate-pulse rounded-[1.4rem] bg-c57-surface-container" />
       ))}
     </div>
   );

@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { animate, useReducedMotion } from "framer-motion";
 import { onAuthStateChanged } from "firebase/auth";
 import { addDoc, collection, Timestamp } from "firebase/firestore";
 
 import { auth, db } from "../services/firebase";
+import { EDITORIAL_EASE } from "../motion/editorial";
 import { WHATSAPP_NUMBER } from "../data/tourCatalogue";
 import { useToast } from "../components/Toast";
 import Button from "../components/ui/Button";
@@ -24,6 +26,48 @@ import {
 } from "../data/tripPlanner";
 
 const rupiah = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
+
+/**
+ * Interruptible count-up. Framer writes straight to an empty DOM node so React
+ * never re-renders 30 times a second and never overwrites the in-flight number;
+ * `displayRef` holds the value actually on screen, so a new quote resumes from
+ * where the last one was instead of snapping back to zero. The effect runs in
+ * the layout phase, before paint, so the first frame is never the final price.
+ */
+function CountUp({ value }) {
+  const reduceMotion = useReducedMotion();
+  const ref = useRef(null);
+  const displayRef = useRef(0);
+
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return undefined;
+
+    if (reduceMotion) {
+      displayRef.current = value;
+      node.textContent = rupiah(value);
+      return undefined;
+    }
+
+    node.textContent = rupiah(displayRef.current);
+    const controls = animate(displayRef.current, value, {
+      duration: 0.45,
+      ease: EDITORIAL_EASE,
+      onUpdate: (latest) => {
+        const next = Math.round(latest);
+        displayRef.current = next;
+        node.textContent = rupiah(next);
+      },
+      onComplete: () => {
+        displayRef.current = value;
+        node.textContent = rupiah(value);
+      },
+    });
+    return () => controls.stop();
+  }, [value, reduceMotion]);
+
+  return <span ref={ref} aria-live="off" />;
+}
 
 /**
  * ISO date arithmetic done locally (getFullYear/getMonth/getDate), never via
@@ -241,12 +285,12 @@ const consultHref = () => {
         <div className="max-w-[1360px] mx-auto px-margin-mobile md:px-margin-tablet lg:px-margin">
           <nav className="flex items-center gap-space-xs text-label-sm font-label-sm text-c57-secondary uppercase tracking-widest pt-space-sm mb-space-md">
             {TRIP_PLANNER.breadcrumb.map((crumb) => (
-              <span key={crumb} className="hover:text-c57-primary transition-colors cursor-pointer">
+              <span key={crumb} className="hover:text-c57-secondary transition-colors cursor-pointer">
                 {crumb}
               </span>
             ))}
             <span>/</span>
-            <span className="text-c57-primary font-bold">{TRIP_PLANNER.current}</span>
+            <span className="text-c57-secondary font-bold">{TRIP_PLANNER.current}</span>
           </nav>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-end">
@@ -257,20 +301,20 @@ const consultHref = () => {
                   {TRIP_PLANNER.badge}
                 </span>
               </div>
-              <h1 className="font-headline-xl text-headline-xl-mobile md:text-headline-xl text-c57-on-surface font-semibold tracking-tight">
+              <h1 className="font-display text-[clamp(2.6rem,5.4vw,4.4rem)] font-normal leading-[0.98] tracking-[-0.03em] text-c57-on-surface">
                 {TRIP_PLANNER.titleLead}{" "}
-                <span className="text-c57-primary italic">{TRIP_PLANNER.titleAccent}</span>
+                <span className="text-c57-secondary italic">{TRIP_PLANNER.titleAccent}</span>
               </h1>
               <p className="font-body-lg text-body-md md:text-body-lg text-c57-secondary max-w-2xl leading-relaxed">
                 {TRIP_PLANNER.description.split("wajib DP 50%")[0]}
-                <span className="font-bold text-c57-primary">wajib DP 50%</span>.
+                <span className="font-bold text-c57-secondary">wajib DP 50%</span>.
               </p>
             </div>
 
             <div className="lg:col-span-4 flex lg:justify-end">
               <div className="bg-c57-surface-container-lowest p-space-md rounded-c57-xl shadow-c57-card flex items-center gap-space-md w-full sm:w-auto">
-                <span className="w-12 h-12 rounded-full bg-c57-primary-fixed flex items-center justify-center shrink-0">
-                  <Icon name="verified" size="2xl" className="text-c57-primary" />
+                <span className="w-12 h-12 rounded-full bg-c57-secondary-container flex items-center justify-center shrink-0">
+                  <Icon name="verified" size="2xl" className="text-c57-secondary" />
                 </span>
                 <div className="flex flex-col">
                   <span className="font-label-md text-label-md text-c57-on-surface font-bold">
@@ -315,14 +359,14 @@ const consultHref = () => {
                           className={[
                             "cursor-pointer p-space-md rounded-c57-md transition-all duration-200 flex items-start gap-space-sm relative group text-left",
                             active
-                              ? "bg-c57-surface-container border-2 border-c57-primary"
+                              ? "bg-c57-surface-container border-2 border-c57-secondary"
                               : "bg-c57-surface-container-low hover:bg-c57-surface-container border-2 border-transparent",
                           ].join(" ")}
                         >
                           <Icon
                             name={o.icon}
                             size="2xl"
-                            className={active ? "text-c57-primary" : "text-c57-secondary group-hover:text-c57-primary"}
+                            className={active ? "text-c57-secondary" : "text-c57-on-surface-variant group-hover:text-c57-secondary"}
                           />
                           <span className="flex flex-col">
                             <span className="font-label-md text-label-md text-c57-on-surface font-bold">
@@ -336,7 +380,7 @@ const consultHref = () => {
                             name="check_circle"
                             size="md"
                             className={[
-                              "absolute top-3 right-3 text-c57-primary",
+                              "absolute top-3 right-3 text-c57-secondary",
                               active ? "" : "hidden",
                             ].join(" ")}
                           />
@@ -389,7 +433,7 @@ const consultHref = () => {
                       >
                         <Icon name="remove" size="md" />
                       </button>
-                      <span className="font-label-md text-label-md font-bold text-c57-primary">
+                      <span className="font-label-md text-label-md font-bold text-c57-secondary">
                         {days} Hari / {quote.nights} Malam
                       </span>
                       <button
@@ -485,7 +529,7 @@ const consultHref = () => {
                         className={[
                           "cursor-pointer p-space-md rounded-c57-lg transition-all duration-200 relative group flex flex-col gap-space-sm text-left",
                           active
-                            ? "bg-c57-surface-container border-2 border-c57-primary"
+                            ? "bg-c57-surface-container border-2 border-c57-secondary"
                             : "bg-c57-surface-container-low border-2 border-transparent hover:bg-c57-surface-container",
                         ].join(" ")}
                       >
@@ -494,12 +538,12 @@ const consultHref = () => {
                             <span
                               className={[
                                 "font-label-sm text-label-sm uppercase tracking-wider font-bold",
-                                active ? "text-c57-primary" : "text-c57-secondary",
+                                active ? "text-c57-secondary" : "text-c57-on-surface-variant",
                               ].join(" ")}
                             >
                               {f.badge}
                             </span>
-                            <span className="font-headline-sm text-headline-sm text-c57-on-surface font-bold">
+                            <span className="font-display text-[1.45rem] leading-tight text-c57-on-surface font-bold">
                               {f.title}
                             </span>
                             <span className="font-body-sm text-body-sm text-c57-secondary">
@@ -510,7 +554,7 @@ const consultHref = () => {
                             name="check_circle"
                             size="2xl"
                             className={[
-                              "shrink-0 text-c57-primary",
+                              "shrink-0 text-c57-secondary",
                               active ? "" : "hidden",
                             ].join(" ")}
                           />
@@ -533,7 +577,7 @@ const consultHref = () => {
                             <span className="font-label-sm text-label-sm text-c57-secondary">
                               Tarif Harian (All-in)
                             </span>
-                            <span className="font-headline-sm text-headline-sm text-c57-on-surface font-bold">
+                            <span className="font-display text-[1.45rem] leading-tight text-c57-on-surface font-bold">
                               {rupiah(f.rate)}{" "}
                               <span className="font-body-sm text-body-sm text-c57-secondary font-normal">/hari</span>
                             </span>
@@ -542,7 +586,7 @@ const consultHref = () => {
                             className={[
                               "font-label-sm text-label-sm px-space-sm py-1 rounded whitespace-nowrap",
                               active && f.driverTone === "accent"
-                                ? "bg-c57-primary-fixed text-c57-primary font-bold"
+                                ? "bg-c57-secondary-container text-c57-secondary font-bold"
                                 : "bg-c57-surface-container-high text-c57-on-surface",
                             ].join(" ")}
                           >
@@ -592,7 +636,7 @@ const consultHref = () => {
                           <span
                             className={[
                               "font-label-md text-label-md font-bold",
-                              on ? "text-c57-primary" : "text-c57-on-surface",
+                              on ? "text-c57-secondary" : "text-c57-on-surface",
                             ].join(" ")}
                           >
                             +{rupiah(a.perDay ? a.amount * days : a.amount * ADDON_SNACK_PAX)}
@@ -609,7 +653,7 @@ const consultHref = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-space-sm bg-c57-surface-container-low p-space-md rounded-c57-md">
                   {TRIP_PLANNER.guarantee.map((g) => (
                     <div key={g.title} className="flex items-center gap-space-sm">
-                      <Icon name={g.icon} size="3xl" className="text-c57-primary" />
+                      <Icon name={g.icon} size="3xl" className="text-c57-secondary" />
                       <div className="flex flex-col">
                         <span className="font-label-md text-label-md text-c57-on-surface font-bold">
                           {g.title}
@@ -649,11 +693,11 @@ const consultHref = () => {
                     <span className="font-label-sm text-label-sm text-c57-secondary uppercase tracking-widest font-bold">
                       Kalkulasi Otomatis
                     </span>
-                    <h3 className="font-headline-sm text-headline-sm text-c57-on-surface font-bold">
+                    <h3 className="font-display text-[1.45rem] leading-tight text-c57-on-surface font-bold">
                       Ringkasan Rute & Biaya
                     </h3>
                   </div>
-                  <span className="w-8 h-8 rounded-full bg-c57-surface-container flex items-center justify-center text-c57-primary">
+                  <span className="w-8 h-8 rounded-full bg-c57-surface-container flex items-center justify-center text-c57-secondary">
                     <Icon name="calculate" size="md" />
                   </span>
                 </div>
@@ -693,7 +737,7 @@ const consultHref = () => {
                     </span>
                     <span>
                       Durasi:{" "}
-                      <strong className="text-c57-primary">
+                      <strong className="text-c57-secondary">
                         {days} Hari Penuh
                       </strong>
                     </span>
@@ -702,7 +746,7 @@ const consultHref = () => {
 
                 {/* Fleet summary */}
                 <div className="flex items-center gap-space-sm p-space-sm rounded-c57-md bg-c57-surface-container">
-                  <Icon name="directions_car" size="2xl" className="text-c57-primary" />
+                  <Icon name="directions_car" size="2xl" className="text-c57-secondary" />
                   <div className="flex flex-col">
                     <span className="font-label-sm text-label-sm text-c57-secondary">
                       Armada Terpilih:
@@ -736,8 +780,8 @@ const consultHref = () => {
                     <span className="font-label-md text-label-md text-c57-on-surface font-bold">
                       Total Estimasi Bersih
                     </span>
-                    <span className="font-headline-sm text-headline-sm text-c57-on-surface font-bold tabular-nums">
-                      {rupiah(quote.total)}
+                    <span className="font-display text-[1.45rem] leading-tight text-c57-on-surface font-bold tabular-nums">
+                      <CountUp value={quote.total} />
                     </span>
                   </div>
                 </div>
@@ -760,7 +804,7 @@ const consultHref = () => {
                       <span className="font-label-sm text-label-sm text-c57-primary-fixed font-medium">
                         Nominal Wajib Bayar (DP 50%):
                       </span>
-                      <span className="font-headline-md text-headline-md text-c57-on-primary font-bold tracking-tight tabular-nums">
+                      <span className="font-display text-[1.8rem] leading-none text-c57-on-primary font-bold tracking-tight tabular-nums">
                         {rupiah(quote.dp)}
                       </span>
                     </span>
@@ -822,7 +866,7 @@ function StepHeader({ step, title, subtitle, right, rightTone = "default" }) {
           {step}
         </span>
         <div className="flex flex-col">
-          <h2 className="font-headline-sm text-headline-sm text-c57-on-surface">
+          <h2 className="font-display text-[1.4rem] leading-tight text-c57-on-surface">
             {title}
           </h2>
           {subtitle && (
@@ -835,7 +879,7 @@ function StepHeader({ step, title, subtitle, right, rightTone = "default" }) {
       <span
         className={[
           "font-label-sm text-label-sm uppercase tracking-wider whitespace-nowrap",
-          rightTone === "primary" ? "text-c57-primary font-bold" : "text-c57-secondary",
+          rightTone === "primary" ? "text-c57-secondary font-bold" : "text-c57-secondary",
         ].join(" ")}
       >
         {right}

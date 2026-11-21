@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { auth, db } from "../services/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, updateDoc } from "firebase/firestore";
 import { Icon } from "../components/ui";
+import { EDITORIAL_EASE } from "../motion/editorial";
 import logo from "../assets/logo.png";
 
 /* Nav items. `icon` is a Material Symbols name resolved through src/icon-codepoints.json. */
@@ -31,49 +33,78 @@ const DRIVER_MENU = [
 ];
 
 /**
- * Client sections. `Layanan` is a section rather than a leaf — its three real
- * destinations live in `LAYANAN_ITEMS` below and are rendered inside its
- * dropdown on desktop and inside the drawer on mobile. `section` items render a
- * group heading in the drawer instead of a single link.
- */
-const CLIENT_MENU = [
-  { name: "Layanan",       path: "/home",            icon: "directions_car", section: true },
-  { name: "Discovery",     path: "/discovery",       icon: "explore" },
-  { name: "Open Trip",     path: "/open-trip",       icon: "map" },
-  { name: "Testimoni",     path: "/testimoni",       icon: "rate_review" },
-  { name: "Company",       path: "/company-profile", icon: "group" },
-  { name: "Paket Wisata",  path: "/tour-packages",   icon: "luggage" },
-];
-
-/**
- * The three things under "Layanan", defined once and rendered by both the
- * desktop dropdown and the mobile drawer. Previously the desktop dropdown
- * hardcoded these three blocks inline, so adding Trip Planner meant editing
+ * The destinations under "Layanan", defined once and rendered by both the
+ * desktop dropdown and the mobile Layanan group. Previously the desktop
+ * dropdown hardcoded these blocks inline, so adding Trip Planner meant editing
  * markup rather than a list — and the mobile side had no way to reach any of
  * them. `tone` is the icon-chip pair, kept beside the item so neither renderer
  * invents its own colour.
  */
 const LAYANAN_ITEMS = [
   {
-    name: "Sewa Lepas Kunci",
-    path: "/home?type=lepas",
-    icon: "vpn_key",
-    tone: "bg-c57-primary-container text-c57-on-primary",
-    blurb: "Explore mandiri tanpa sopir",
-  },
-  {
-    name: "Dengan Driver",
-    path: "/home?type=driver",
-    icon: "local_taxi",
-    tone: "bg-c57-scrim text-c57-accent-line",
-    blurb: "Layanan sopir profesional",
-  },
-  {
     name: "Trip Planner",
     path: "/trip-planner",
     icon: "route",
     tone: "bg-c57-tertiary-container text-c57-on-tertiary-container",
-    blurb: "Rancang rute & kalkulasi biaya instan",
+    blurb: "Rancang perjalanan sesuai kebutuhan",
+  },
+  {
+    name: "Rental Mobil",
+    path: "/home",
+    icon: "directions_car",
+    tone: "bg-c57-primary-container text-c57-on-primary",
+    blurb: "Lepas kunci atau dengan driver",
+  },
+];
+
+/**
+ * Shared motion contract for the desktop dropdowns. The entrance mirrors the
+ * old `dropdownIn` keyframe; the exit is deliberately faster (0.14s) and
+ * retreats upward so the panel appears to fold back into its trigger. The
+ * mobile rail panel intentionally stays a plain conditional — its close is
+ * expected to remove the panel from the DOM synchronously.
+ */
+function dropdownMotion(reduceMotion) {
+  return {
+    initial: reduceMotion ? false : { opacity: 0, y: -8, scale: 0.97 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    exit: reduceMotion
+      ? { opacity: 0, transition: { duration: 0.1 } }
+      : { opacity: 0, y: -6, scale: 0.97, transition: { duration: 0.14, ease: EDITORIAL_EASE } },
+    transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+  };
+}
+
+/**
+ * Mobile clients get three grouped sections that fit one row at 320px. Each
+ * section owns its own panel; the label stays short so the rail never needs
+ * horizontal scrolling.
+ */
+const MOBILE_NAV_GROUPS = [
+  {
+    id: "jelajah",
+    name: "Jelajah",
+    blurb: "Temukan destinasi dan paket yang cocok.",
+    items: [
+      { name: "Paket Wisata", path: "/tour-packages", icon: "luggage", blurb: "Bandingkan pilihan open trip dan private trip" },
+      { name: "Open Trip", path: "/open-trip", icon: "map", blurb: "Ikut jadwal trip yang sudah tersedia" },
+      { name: "Discovery", path: "/discovery", icon: "explore", blurb: "Cari inspirasi destinasi sebelum memilih paket" },
+    ],
+  },
+  {
+    id: "layanan",
+    name: "Layanan",
+    blurb: "Pilih cara Anda memulai perjalanan.",
+    items: LAYANAN_ITEMS,
+  },
+  {
+    id: "tentang",
+    name: "Tentang",
+    blurb: "Kenali kami dan cerita pelanggan.",
+    items: [
+      { name: "Testimoni", path: "/testimoni", icon: "rate_review", blurb: "Cerita dan ulasan pelanggan" },
+      { name: "Company", path: "/company-profile", icon: "group", blurb: "Kenali Cakra Lima Tujuh" },
+    ],
   },
 ];
 
@@ -92,25 +123,33 @@ const ACCOUNT_ITEMS = [
 ];
 
 export default function Navbar() {
+  const reduceMotion = useReducedMotion();
   const [user, setUser]                     = useState(null);
   const [role, setRole]                     = useState(null);
   const [notifications, setNotifications]   = useState([]);
   const [unreadCount, setUnreadCount]       = useState(0);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [profileOpen, setProfileOpen]       = useState(false);   // mobile profile dropdown
   const [desktopProfileOpen, setDesktopProfileOpen] = useState(false); // desktop account dropdown
   const [layananDropdownOpen, setLayananDropdownOpen] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);   // mobile nav drawer (< xl)
+  const [mobileNavGroup, setMobileNavGroup] = useState(null);
+  const [accountSheetOpen, setAccountSheetOpen] = useState(false); // mobile account sheet (< xl)
   const [scrolled, setScrolled]             = useState(false);
   const [loadingNotif, setLoadingNotif]     = useState(false);
 
-  const profileRef        = useRef(null);
   const desktopProfileRef = useRef(null);
   const notifRef          = useRef(null);
   const layananRef        = useRef(null);
-  const drawerRef        = useRef(null);
+  const railRef           = useRef(null);
+  const accountSheetRef   = useRef(null);
+  const mobileNavPanelRef = useRef(null);
+  const mobileNavTriggerRef = useRef(null);
   const navigate          = useNavigate();
   const location          = useLocation();
+  const mobileNavOpen     = mobileNavGroup !== null;
+  /* The landing page runs the hero under the header, so its chrome has to be
+     transparent until the first scroll. Every other route keeps the solid
+     paper bar from the first pixel. */
+  const isLanding         = location.pathname === "/";
 
   // ── Scroll listener ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -122,16 +161,12 @@ export default function Navbar() {
   // ── Click-outside listeners ───────────────────────────────────────────────
   useEffect(() => {
     const handle = (e) => {
-      if (profileRef.current && !profileRef.current.contains(e.target))
-        setProfileOpen(false);
       if (desktopProfileRef.current && !desktopProfileRef.current.contains(e.target))
         setDesktopProfileOpen(false);
       if (notifRef.current && !notifRef.current.contains(e.target))
         setNotificationOpen(false);
       if (layananRef.current && !layananRef.current.contains(e.target))
         setLayananDropdownOpen(false);
-      if (drawerRef.current && !drawerRef.current.contains(e.target))
-        setDrawerOpen(false);
     };
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
@@ -141,11 +176,11 @@ export default function Navbar() {
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === "Escape") {
-        setProfileOpen(false);
         setDesktopProfileOpen(false);
         setNotificationOpen(false);
         setLayananDropdownOpen(false);
-        setDrawerOpen(false);
+        setMobileNavGroup(null);
+        setAccountSheetOpen(false);
       }
     };
     document.addEventListener("keydown", handleKey);
@@ -154,22 +189,78 @@ export default function Navbar() {
 
   // ── Close dropdowns on route change ──────────────────────────────────────
   useEffect(() => {
-    setProfileOpen(false);
     setDesktopProfileOpen(false);
     setNotificationOpen(false);
     setLayananDropdownOpen(false);
-    setDrawerOpen(false);
+    setMobileNavGroup(null);
+    setAccountSheetOpen(false);
   }, [location.pathname]);
 
-  /* The drawer is a full-height overlay, so it locks the page behind it the way
-     `Modal` does. Restored to its prior value rather than blindly cleared —
-     a nested surface may already be holding a lock. */
+  /* The account sheet is a full-width overlay, so it locks the page behind it
+     the way `Modal` does. Restored to its prior value rather than blindly
+     cleared — a nested surface may already be holding a lock. */
   useEffect(() => {
-    if (!drawerOpen) return;
+    if (!user) setAccountSheetOpen(false);
+  }, [user]);
+
+  useEffect(() => {
+    if (!accountSheetOpen || !user) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = previous; };
-  }, [drawerOpen]);
+  }, [accountSheetOpen, user]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [mobileNavOpen]);
+
+  /* If the viewport grows into the desktop layout while the sheet is open, drop
+     it — otherwise the page would stay scroll-locked behind an invisible panel. */
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1280px)");
+    const handleChange = () => {
+      if (!desktop.matches) return;
+      setAccountSheetOpen(false);
+      setMobileNavGroup(null);
+    };
+    desktop.addEventListener("change", handleChange);
+    return () => desktop.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (role !== "admin" && role !== "driver") return;
+    setMobileNavGroup(null);
+  }, [role]);
+
+  /* Move focus into the sheet, trap Tab, and hand focus back to the avatar on
+     close — the same contract as `Modal`, without pulling the page overlay in. */
+  useEffect(() => {
+    if (!accountSheetOpen || !user) return;
+    const trigger = document.activeElement;
+    const frame = requestAnimationFrame(() => {
+      const sheet = accountSheetRef.current;
+      if (!sheet) return;
+      (sheet.querySelector("button, a[href]") || sheet).focus();
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      if (trigger instanceof HTMLElement) trigger.focus();
+    };
+  }, [accountSheetOpen, user]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const frame = requestAnimationFrame(() => {
+      mobileNavPanelRef.current?.querySelector("a[href]")?.focus();
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      mobileNavTriggerRef.current?.focus();
+    };
+  }, [mobileNavOpen]);
 
   // ── Auth state ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -241,9 +332,9 @@ export default function Navbar() {
   };
 
   const handleLogout = useCallback(async () => {
-    await signOut(auth);
-    setProfileOpen(false);
+    setAccountSheetOpen(false);
     setDesktopProfileOpen(false);
+    await signOut(auth);
     navigate("/login");
   }, [navigate]);
 
@@ -280,11 +371,14 @@ export default function Navbar() {
   const layananActive =
     activeLink("/home") || LAYANAN_ITEMS.some((i) => activeLink(i.path));
 
-  /* Navigation for the current role, shared by the drawer and the guest view.
-     Clients and signed-out visitors both get CLIENT_MENU — every entry on it is
-     a public route. */
-  const drawerMenu =
-    role === "admin" ? ADMIN_MENU : role === "driver" ? DRIVER_MENU : CLIENT_MENU;
+  /* Staff keep the scrolling rail — eleven admin destinations cannot fit one
+     row. Clients get three grouped sections instead. */
+  const staffMenu =
+    role === "admin" ? ADMIN_MENU : role === "driver" ? DRIVER_MENU : null;
+  const mobileNavGroupData =
+    MOBILE_NAV_GROUPS.find((group) => group.id === mobileNavGroup) || null;
+  const groupHasActiveRoute = (group) =>
+    group.items.some((item) => activeLink(item.path));
 
   /* Account-scoped links, filtered to what the route guards in App.js actually
      allow. `/profil` and `/history-pesanan` are both `ProtectedRoute role="client"`
@@ -296,18 +390,31 @@ export default function Navbar() {
       ? ACCOUNT_ITEMS
       : [];
 
+  /* Bring the current route into view in the horizontally-scrolling rail. Without
+     this an admin landing on "Keuangan" would see the rail start at Dashboard
+     and assume the page is not in the menu. */
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const active = rail.querySelector('[aria-current="page"]');
+    if (!active) return;
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    active.scrollIntoView({ block: "nearest", inline: "center", behavior: smooth ? "smooth" : "auto" });
+  }, [location.pathname, role]);
+
   /* The three role menus share one active/inactive treatment, so the class
      computation lives once rather than being repeated in four places. */
   /* `override` lets a caller supply the active state instead of deriving it from
      `path` — used by the "Layanan" toggle, which stays lit while any of its
-     three children is the current route, not only when `/home` is. */
+     children is the current route, not only when `/home` is. */
   const navItemClass = (path, override) =>
     [
-      "px-space-md py-space-xs rounded-full font-label-md text-label-md uppercase",
-      "tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5",
+      "relative px-1 py-2 font-label-md text-label-md uppercase",
+      "tracking-[0.16em] transition-all whitespace-nowrap flex items-center gap-1.5",
+      "after:absolute after:-bottom-1 after:left-0 after:h-px after:bg-c57-accent-line after:transition-all after:duration-300",
       (override === undefined ? activeLink(path) : override)
-        ? "bg-c57-surface-container text-c57-primary font-semibold"
-        : "text-c57-on-surface-variant hover:text-c57-on-surface hover:bg-c57-surface-container-high",
+        ? "text-c57-on-surface font-semibold after:right-0"
+        : "text-c57-on-surface-variant hover:text-c57-on-surface after:right-full hover:after:right-0",
     ].join(" ");
 
   /* Compact variant for admin — shorter padding so 11 items fit without scrolling. */
@@ -330,89 +437,103 @@ export default function Navbar() {
         : "text-c57-on-surface-variant hover:bg-c57-primary/10 hover:text-c57-primary",
     ].join(" ");
 
-  /* Driver surfaces use the semantic available-* pair rather than introducing a
-     second green. */
-  const driverLinkClass = (path) =>
+  /* Pills in the staff mobile rail. The active route is a filled ink pill; the
+     rest stay quiet so the rail reads as navigation, not a toolbar of actions. */
+  const mobileRailItemClass = (path) =>
     [
-      "w-full flex items-center gap-space-sm px-4 py-3 rounded-c57-md transition-all",
-      "font-label-md text-label-md uppercase tracking-wider",
+      "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5",
+      "font-label-sm text-label-sm uppercase tracking-[0.14em] transition-colors",
       activeLink(path)
-        ? "bg-c57-available-bg text-c57-available-text"
-        : "text-c57-on-surface-variant hover:bg-c57-available-bg hover:text-c57-available-text",
+        ? "border-c57-primary-container bg-c57-primary-container text-c57-on-primary"
+        : "border-c57-on-surface/10 bg-c57-surface-container-lowest/60 text-c57-on-surface-variant hover:border-c57-on-surface/25 hover:text-c57-on-surface",
     ].join(" ");
 
-  /* One drawer, three roles — drivers keep their available-* treatment rather
-     than being flattened onto the client's primary-tinted rows. */
-  const drawerLinkClass = (path) =>
-    role === "driver" ? driverLinkClass(path) : menuLinkClass(path);
+  const trapAccountSheetFocus = (e) => {
+    if (e.key !== "Tab" || !accountSheetRef.current) return;
+    const items = Array.from(
+      accountSheetRef.current.querySelectorAll("a[href], button:not([disabled])")
+    ).filter((el) => el.offsetParent !== null);
+    if (items.length === 0) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   return (
     <>
       {/* ════ MAIN NAV WRAPPER (scrollable top bar + nav bar) ════ */}
       <div
         className={`fixed top-0 left-0 right-0 z-[80] transition-all duration-500 ${
-          scrolled ? "translate-y-[-40px]" : "translate-y-0"
+          !isLanding && scrolled ? "xl:-translate-y-10" : "translate-y-0"
         }`}
       >
-        {/* ── TOP UTILITY BAR ── */}
-        <div className="w-full bg-c57-scrim text-c57-on-scrim h-10 px-margin-mobile sm:px-margin-tablet lg:px-margin flex items-center justify-between">
+        {/* ── TOP UTILITY BAR — desktop only; suppressed on the landing page ── */}
+        {!isLanding && (
+        <div className="hidden xl:flex w-full bg-c57-surface-container text-c57-on-surface-variant h-10 px-margin-mobile sm:px-margin-tablet lg:px-margin items-center justify-between border-b border-c57-outline-variant/50">
           <div className="flex items-center gap-space-md overflow-hidden whitespace-nowrap">
             <div className="flex items-center gap-space-xs">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-c57-available-text opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-c57-available-text" />
               </span>
-              <span className="text-c57-on-scrim tracking-wider">Layanan 24 Jam</span>
+              <span className="tracking-wider">Layanan 24 Jam</span>
             </div>
-            <span className="hidden md:inline-block text-c57-on-secondary-fixed">•</span>
-            <span className="hidden md:inline-flex items-center gap-space-xs text-c57-secondary-fixed-dim">
+            <span className="hidden md:inline-block text-c57-outline">•</span>
+            <span className="hidden md:inline-flex items-center gap-space-xs text-c57-on-surface-variant">
               <Icon name="attach_money" size="sm" />
               Tarif Transparan &amp; Kompetitif
             </span>
-            <span className="hidden lg:inline-block text-c57-on-secondary-fixed">•</span>
-            <span className="hidden lg:inline text-c57-secondary-fixed-dim">
-              Surabaya/Sidoarjo Hub Juanda
+            <span className="hidden lg:inline-block text-c57-outline">•</span>
+            <span className="hidden lg:inline text-c57-on-surface-variant">
+              Surabaya / Sidoarjo · Hub Juanda
             </span>
           </div>
           <div className="flex items-center gap-space-sm shrink-0">
-            <span className="text-c57-secondary-fixed-dim hidden sm:inline">Hotline Resmi:</span>
+            <span className="text-c57-on-surface-variant hidden sm:inline">Hotline Resmi</span>
             <a
               href="tel:+6281257570057"
-              className="text-c57-surface-bright font-semibold hover:text-c57-secondary-fixed transition-colors"
+              className="text-c57-on-surface font-semibold hover:text-c57-accent-line transition-colors"
             >
               +62 812-5757-0057
             </a>
           </div>
         </div>
+        )}
 
         {/* ── MAIN NAVIGATION BAR ── */}
         <nav
-          className={`h-20 flex items-center transition-all duration-500 px-margin-mobile sm:px-margin-tablet lg:px-margin ${
-            scrolled
-              ? "bg-c57-surface-container-lowest shadow-c57-overlay"
-              : "bg-c57-surface-container-lowest/95 backdrop-blur-md shadow-c57-card"
+          className={`h-16 xl:h-20 flex items-center transition-all duration-500 px-margin-mobile sm:px-margin-tablet lg:px-margin xl:border-b ${
+            isLanding && !scrolled
+              ? "bg-transparent border-transparent"
+              : "bg-c57-surface/90 backdrop-blur-xl border-c57-outline-variant/60"
           }`}
         >
           <div className="flex items-center justify-between w-full">
 
             {/* ── LOGO ── */}
-            <Link to="/" className="flex items-center gap-space-sm group shrink-0">
-              <div className="w-11 h-11 rounded-full bg-c57-primary-container flex items-center justify-center overflow-hidden shadow-c57-card transition-transform group-hover:scale-105">
+            <Link to="/" className="flex min-w-0 items-center gap-space-sm group shrink-0">
+              <div className="w-9 h-9 xl:w-11 xl:h-11 rounded-full bg-c57-primary-container flex items-center justify-center overflow-hidden ring-1 ring-c57-on-surface/10 transition-transform group-hover:scale-105 shrink-0">
                 <img src={logo} alt="Cakra Lima Tujuh" className="w-full h-full object-contain" />
               </div>
-              <div className="flex flex-col">
-                <span className="font-headline-sm text-headline-sm text-c57-on-surface tracking-tight uppercase leading-none font-semibold">
+              <div className="flex min-w-0 flex-col">
+                <span className="hidden min-[360px]:block whitespace-nowrap font-display text-[17px] xl:text-[20px] text-c57-on-surface tracking-[-0.01em] leading-none">
                   Cakra Lima Tujuh
                 </span>
-                <span className="font-label-sm text-label-sm text-c57-primary tracking-[0.22em] uppercase font-semibold mt-1">
-                  Premium Travel Agen
+                <span className="hidden xl:block font-label-sm text-label-sm text-c57-on-surface-variant tracking-[0.24em] uppercase mt-1.5">
+                  Tour &amp; Travel · Rental
                 </span>
               </div>
             </Link>
 
-            {/* ── DESKTOP CENTER NAV (pill) — all roles, xl+ only ── */}
+            {/* ── DESKTOP CENTER NAV — all roles, xl+ only ── */}
             <div className="hidden xl:flex min-w-0 flex-1 justify-center px-4">
-            <div className={`flex items-center gap-0.5 bg-c57-surface-container-low p-1.5 rounded-full ${
+            <div className={`flex items-center gap-7 ${
               role === "admin" ? "overflow-x-auto max-w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : ""
             }`}>
               {role === "driver" ? (
@@ -431,6 +552,15 @@ export default function Navbar() {
                 ))
               ) : (
                 <>
+                  <Link to="/tour-packages" className={navItemClass("/tour-packages")}>
+                    Paket Wisata
+                  </Link>
+                  <Link to="/open-trip" className={navItemClass("/open-trip")}>
+                    Open Trip
+                  </Link>
+                  <Link to="/discovery" className={navItemClass("/discovery")}>
+                    Discovery
+                  </Link>
                   {/* Layanan with sub-dropdown */}
                   <div className="relative" ref={layananRef}>
                     <button
@@ -446,8 +576,9 @@ export default function Navbar() {
                         className={layananDropdownOpen ? "rotate-180 transition-transform" : "transition-transform"}
                       />
                     </button>
-                    {layananDropdownOpen && (
-                      <div className="absolute top-[calc(100%+12px)] left-0 w-80 bg-c57-surface-container-lowest border border-c57-surface-variant shadow-c57-overlay rounded-c57-lg p-4 animate-dropdownIn z-[100]">
+                    <AnimatePresence>
+                      {layananDropdownOpen && (
+                        <motion.div {...dropdownMotion(reduceMotion)} className="absolute top-[calc(100%+12px)] left-0 w-80 bg-c57-surface-container-lowest border border-c57-surface-variant shadow-c57-overlay rounded-c57-lg p-4 z-[100]">
                         {LAYANAN_ITEMS.map((item, idx) => {
                           const isActive = activeLink(item.path);
                           return (
@@ -480,26 +611,16 @@ export default function Navbar() {
                             </Link>
                           );
                         })}
-                      </div>
-                    )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
-                  <Link to="/discovery" className={navItemClass("/discovery")}>
-                    <Icon name="explore" size="sm" />
-                    Discovery
-                  </Link>
-                  <Link to="/open-trip" className={navItemClass("/open-trip")}>
-                    Open Trip
-                  </Link>
                   <Link to="/testimoni" className={navItemClass("/testimoni")}>
-                    <Icon name="rate_review" size="sm" />
                     Testimoni
                   </Link>
                   <Link to="/company-profile" className={navItemClass("/company-profile")}>
                     Company
-                  </Link>
-                  <Link to="/tour-packages" className={navItemClass("/tour-packages")}>
-                    Paket Wisata
                   </Link>
                 </>
               )}
@@ -519,7 +640,8 @@ export default function Navbar() {
                     onClick={() => {
                       setNotificationOpen((v) => !v);
                       setDesktopProfileOpen(false);
-                      setProfileOpen(false);
+                      setAccountSheetOpen(false);
+                      setMobileNavGroup(null);
                     }}
                     className="flex items-center justify-center min-w-[44px] min-h-[44px] p-2.5 sm:p-3 rounded-full bg-c57-surface-container-low text-c57-on-surface-variant hover:bg-c57-primary/10 hover:text-c57-primary transition-all relative"
                   >
@@ -533,8 +655,9 @@ export default function Navbar() {
                     )}
                   </button>
 
-                  {notificationOpen && (
-                    <div className="absolute top-[calc(100%+12px)] right-0 w-[min(400px,calc(100vw-2rem))] bg-c57-surface-container-lowest border border-c57-surface-variant shadow-c57-overlay rounded-c57-lg p-6 animate-dropdownIn z-[110]">
+                    <AnimatePresence>
+                      {notificationOpen && (
+                        <motion.div {...dropdownMotion(reduceMotion)} className="absolute top-[calc(100%+12px)] right-0 w-[min(400px,calc(100vw-2rem))] max-xl:fixed max-xl:inset-x-4 max-xl:top-[7.5rem] max-xl:w-auto max-xl:max-h-[calc(100svh-8.5rem)] max-xl:overflow-y-auto bg-c57-surface-container-lowest border border-c57-surface-variant shadow-c57-overlay rounded-c57-lg p-6 z-[110]">
                       <div className="flex items-center justify-between mb-6 border-b border-c57-surface-variant pb-4">
                         <h4 className="font-label-md text-label-md text-c57-on-surface uppercase tracking-widest">
                           Notifikasi
@@ -610,9 +733,10 @@ export default function Navbar() {
                           ))
                         )}
                       </div>
-                    </div>
-                  )}
-                </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
               )}
 
               {/* ── DESKTOP ACCOUNT (xl+) ── */}
@@ -650,11 +774,13 @@ export default function Navbar() {
                     />
                   </button>
 
-                  {desktopProfileOpen && (
-                    <div
-                      role="menu"
-                      className="absolute top-[calc(100%+12px)] right-0 w-72 bg-c57-surface-container-lowest border border-c57-surface-variant shadow-c57-overlay rounded-c57-lg p-3 animate-dropdownIn z-[90]"
-                    >
+                    <AnimatePresence>
+                      {desktopProfileOpen && (
+                        <motion.div
+                          {...dropdownMotion(reduceMotion)}
+                          role="menu"
+                          className="absolute top-[calc(100%+12px)] right-0 w-72 bg-c57-surface-container-lowest border border-c57-surface-variant shadow-c57-overlay rounded-c57-lg p-3 z-[90]"
+                        >
                       <div className="px-4 py-3 mb-2 border-b border-c57-surface-variant">
                         <p className="font-label-sm text-label-sm text-c57-outline uppercase">Active Account</p>
                         <p className="font-body-sm text-body-sm text-c57-on-surface truncate">{user.email}</p>
@@ -721,9 +847,10 @@ export default function Navbar() {
                       >
                         <Icon name="logout" size="lg" /> Logout System
                       </button>
-                    </div>
-                  )}
-                </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
               ) : (
                 <div className="hidden xl:flex items-center gap-space-sm">
                   <Link
@@ -746,203 +873,331 @@ export default function Navbar() {
                 </div>
               )}
 
-              {/* ── MOBILE: hamburger only (visible below xl) ── */}
-              <div className="xl:hidden flex items-center">
-                <button
-                  id="mobile-nav-btn"
-                  type="button"
-                  aria-label="Buka menu navigasi"
-                  aria-haspopup="dialog"
-                  aria-expanded={drawerOpen}
-                  onClick={() => {
-                    setDrawerOpen(true);
-                    setNotificationOpen(false);
-                  }}
-                  className="relative flex items-center justify-center p-2 rounded-full border border-c57-surface-variant bg-c57-surface-container-low text-c57-on-surface-variant transition-all min-w-[44px] min-h-[44px] hover:bg-c57-primary/10 hover:text-c57-primary hover:border-c57-primary/30"
-                >
-                  {user ? (
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-c57-primary-container font-label-md text-label-md text-c57-on-primary">
+              {/* ── MOBILE: account + auth (below xl) ── */}
+              <div className="flex items-center gap-1.5 xl:hidden">
+                {user ? (
+                  <button
+                    id="mobile-account-btn"
+                    type="button"
+                    aria-label="Buka menu akun"
+                    aria-haspopup="dialog"
+                    aria-controls="account-sheet"
+                    aria-expanded={accountSheetOpen}
+                    onClick={() => {
+                      setAccountSheetOpen(true);
+                      setNotificationOpen(false);
+                      setDesktopProfileOpen(false);
+                      setMobileNavGroup(null);
+                    }}
+                    className="flex min-h-[44px] items-center gap-1 rounded-full border border-c57-surface-variant bg-c57-surface-container-low p-1 pr-1.5 text-c57-on-surface-variant transition-all hover:border-c57-primary/30 hover:bg-c57-primary/10 hover:text-c57-primary"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-c57-primary-container font-label-md text-label-md text-c57-on-primary">
                       {user.email?.charAt(0).toUpperCase()}
                     </span>
-                  ) : (
-                    <Icon name="menu" size="xl" />
-                  )}
-                </button>
+                    <Icon
+                      name="expand_more"
+                      size="xs"
+                      className={`hidden min-[380px]:block transition-transform ${accountSheetOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                ) : (
+                  <div className="inline-flex h-10 items-center rounded-full border border-c57-on-surface/10 bg-c57-surface-bright/75 p-0.5 shadow-c57-card backdrop-blur-md">
+                    <Link
+                      to="/login"
+                      id="login-btn-mobile"
+                      className="inline-flex h-9 items-center rounded-full px-3 font-label-sm text-label-sm uppercase tracking-[0.12em] text-c57-on-surface transition-colors hover:bg-c57-on-surface/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c57-primary"
+                    >
+                      Masuk
+                    </Link>
+                    <Link
+                      to="/signup"
+                      id="signup-btn-mobile"
+                      className="inline-flex h-9 items-center justify-center rounded-full bg-c57-primary-container px-3.5 font-label-sm text-label-sm uppercase tracking-[0.12em] text-c57-on-primary transition-all hover:bg-c57-primary active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c57-primary"
+                    >
+                      Daftar
+                    </Link>
+                  </div>
+                )}
               </div>
-
 
 
             </div>
           </div>
         </nav>
+
+        {/* ── MOBILE PRIMARY NAV (< xl) — staff rail or three client groups ── */}
+        <div
+          className="xl:hidden relative overflow-hidden border-b border-c57-outline-variant/60 bg-c57-surface/90 backdrop-blur-xl"
+        >
+          {staffMenu ? (
+            <>
+              <nav
+                ref={railRef}
+                aria-label="Navigasi utama"
+                className="flex items-center gap-2 overflow-x-auto pl-margin-mobile pr-10 py-2 sm:pl-margin-tablet lg:pl-margin [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                {staffMenu.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    aria-current={activeLink(item.path) ? "page" : undefined}
+                    onClick={() => setMobileNavGroup(null)}
+                    className={mobileRailItemClass(item.path)}
+                  >
+                    <Icon name={item.icon} size="xs" />
+                    {item.name}
+                  </Link>
+                ))}
+              </nav>
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-c57-surface to-transparent" aria-hidden="true" />
+            </>
+          ) : (
+            <nav
+              aria-label="Navigasi utama"
+              className="px-margin-mobile py-1.5 sm:px-margin-tablet lg:px-margin"
+            >
+              <div className="mx-auto grid w-full max-w-md grid-cols-3 gap-0.5 rounded-full bg-c57-surface-container-lowest/70 p-0.5 ring-1 ring-inset ring-c57-on-surface/10">
+                {MOBILE_NAV_GROUPS.map((group) => {
+                  const isActive = groupHasActiveRoute(group);
+                  const isOpen = mobileNavGroup === group.id;
+                  return (
+                    <button
+                      key={group.id}
+                      id={`mobile-nav-btn-${group.id}`}
+                      type="button"
+                      aria-expanded={isOpen}
+                      aria-controls="mobile-nav-menu"
+                      aria-current={isActive ? "page" : undefined}
+                      onClick={(event) => {
+                        mobileNavTriggerRef.current = event.currentTarget;
+                        setNotificationOpen(false);
+                        setDesktopProfileOpen(false);
+                        setMobileNavGroup((current) =>
+                          current === group.id ? null : group.id
+                        );
+                      }}
+                      className={`flex h-10 min-w-0 cursor-pointer items-center justify-center gap-1 rounded-full px-1.5 font-label-sm text-label-sm uppercase transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-c57-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-c57-surface ${
+                        isActive
+                          ? "bg-c57-primary-container text-c57-on-primary"
+                          : isOpen
+                            ? "bg-c57-primary/10 text-c57-primary"
+                            : "text-c57-on-surface-variant hover:bg-c57-primary/10 hover:text-c57-primary"
+                      }`}
+                    >
+                      <span className="truncate">{group.name}</span>
+                      <Icon
+                        name="expand_more"
+                        size="xs"
+                        className={`shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+          )}
+        </div>
+
+        {mobileNavGroupData && (
+          <div className="absolute inset-x-0 top-full z-[90] px-margin-mobile pt-2 sm:px-margin-tablet lg:px-margin xl:hidden">
+            <nav
+              ref={mobileNavPanelRef}
+              id="mobile-nav-menu"
+              aria-label={mobileNavGroupData.name}
+              className="mx-auto max-h-[calc(100svh-9.5rem)] w-full max-w-2xl overflow-y-auto rounded-c57-lg border border-c57-surface-variant bg-c57-surface-container-lowest p-3 shadow-c57-overlay animate-dropdownIn motion-reduce:animate-none"
+            >
+              <div className="flex items-start justify-between gap-3 px-1.5 pb-2.5 pt-1">
+                <div className="min-w-0">
+                  <p className="font-label-sm text-label-sm uppercase tracking-[0.2em] text-c57-on-surface-variant">
+                    {mobileNavGroupData.name}
+                  </p>
+                  <p className="mt-1 font-body-sm text-body-sm leading-snug text-c57-outline">
+                    {mobileNavGroupData.blurb}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label={`Tutup menu ${mobileNavGroupData.name}`}
+                  onClick={() => setMobileNavGroup(null)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-c57-on-surface-variant transition-colors hover:bg-c57-primary/10 hover:text-c57-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-c57-primary/40"
+                >
+                  <Icon name="close" size="sm" />
+                </button>
+              </div>
+
+              <div
+                className={`grid gap-2 ${
+                  mobileNavGroupData.items.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"
+                }`}
+              >
+                {mobileNavGroupData.items.map((item) => {
+                  const isActive = activeLink(item.path);
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setMobileNavGroup(null)}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`group flex items-center gap-3 rounded-c57-md border p-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-c57-primary focus-visible:ring-offset-2 focus-visible:ring-offset-c57-surface-container-lowest ${
+                        isActive
+                          ? "border-c57-primary/35 bg-c57-primary/5"
+                          : "border-c57-outline-variant/60 bg-c57-surface-container-low hover:border-c57-primary/25 hover:bg-c57-primary/5"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-c57-sm ${
+                          isActive
+                            ? "bg-c57-primary-container text-c57-on-primary"
+                            : "bg-c57-surface-container-lowest text-c57-primary shadow-c57-card"
+                        }`}
+                      >
+                        <Icon name={item.icon} size="sm" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-label-md text-label-md uppercase tracking-wider text-c57-on-surface">
+                          {item.name}
+                        </span>
+                        <span className="mt-0.5 block font-body-sm text-body-sm leading-snug text-c57-on-surface-variant">
+                          {item.blurb}
+                        </span>
+                      </span>
+                      {isActive ? (
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-c57-primary/10 text-c57-primary">
+                          <Icon name="check" size="xs" />
+                        </span>
+                      ) : (
+                        <Icon
+                          name="chevron_right"
+                          size="sm"
+                          className="shrink-0 text-c57-outline-variant transition-all group-hover:translate-x-0.5 group-hover:text-c57-primary"
+                        />
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </nav>
+          </div>
+        )}
       </div>
 
-      {/* ════ MOBILE DRAWER — rendered via Portal to escape transform context ════ */}
-      {drawerOpen && createPortal(
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 z-[75] bg-c57-scrim/30 backdrop-blur-[2px] animate-fadeIn xl:hidden"
+          aria-hidden="true"
+          onClick={() => setMobileNavGroup(null)}
+        />
+      )}
+
+      {/* ════ MOBILE ACCOUNT SHEET — portal to escape the header transform ════ */}
+      {createPortal(
         <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-[115] bg-black/60 backdrop-blur-sm"
-            aria-hidden="true"
-            onClick={() => setDrawerOpen(false)}
-          />
-          {/* Drawer panel */}
-          <div
-            ref={drawerRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Menu navigasi"
-            className="fixed inset-y-0 right-0 z-[120] flex h-full w-[min(320px,88vw)] flex-col border-l border-c57-surface-variant bg-c57-surface-container-lowest shadow-2xl animate-slideInRight overflow-hidden"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3.5 border-b border-c57-surface-variant shrink-0 bg-c57-surface-container-lowest">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-c57-primary-container flex items-center justify-center shadow-c57-card">
-                  <Icon name="explore" size="sm" className="text-c57-on-primary" />
+          <AnimatePresence>
+            {accountSheetOpen && user && (
+              <motion.div
+                key="account-sheet-backdrop"
+                className="fixed inset-0 z-[115] bg-c57-on-surface/40 backdrop-blur-sm"
+                aria-hidden="true"
+                onClick={() => setAccountSheetOpen(false)}
+                initial={reduceMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: reduceMotion ? 0.1 : 0.2, ease: EDITORIAL_EASE }}
+              />
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {accountSheetOpen && user && (
+              <motion.div
+                key="account-sheet"
+                ref={accountSheetRef}
+                id="account-sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Menu akun"
+                tabIndex={-1}
+                onKeyDown={trapAccountSheetFocus}
+                className="fixed inset-x-0 bottom-0 z-[120] max-h-[85svh] overflow-y-auto rounded-t-[1.75rem] border-t border-c57-surface-variant bg-c57-surface-container-lowest shadow-c57-overlay pb-[calc(1rem+env(safe-area-inset-bottom))]"
+                initial={reduceMotion ? false : { opacity: 0, y: 28 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={
+                  reduceMotion
+                    ? { opacity: 0, transition: { duration: 0.1 } }
+                    : { opacity: 0, y: 20, transition: { duration: 0.18, ease: EDITORIAL_EASE } }
+                }
+                transition={{ duration: reduceMotion ? 0.15 : 0.28, ease: EDITORIAL_EASE }}
+              >
+            <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-c57-outline-variant" aria-hidden="true" />
+
+            <div className="flex items-start justify-between gap-3 px-5 pt-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-c57-primary-container font-display text-xl text-c57-on-primary shadow-c57-card">
+                  {user.email?.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <p className="font-label-sm text-label-sm uppercase tracking-widest text-c57-on-surface font-semibold leading-none">Cakra 57</p>
-                  <p className="font-label-sm text-label-sm uppercase tracking-widest text-c57-primary leading-none mt-0.5">Menu</p>
+                <div className="min-w-0">
+                  <p className="truncate font-display text-lg leading-tight text-c57-on-surface">
+                    {user.email?.split("@")[0]}
+                  </p>
+                  <p className="truncate font-body-sm text-body-sm text-c57-on-surface-variant">
+                    {user.email}
+                  </p>
+                  <span className="mt-1.5 inline-flex rounded-full bg-c57-primary/10 px-2 py-0.5 font-label-sm text-label-sm uppercase tracking-wider text-c57-primary">
+                    {role || "Member"}
+                  </span>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setDrawerOpen(false)}
-                aria-label="Tutup menu"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-c57-on-surface-variant hover:bg-c57-surface-container-high hover:text-c57-primary transition-colors"
+                onClick={() => setAccountSheetOpen(false)}
+                aria-label="Tutup menu akun"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-c57-surface-container text-c57-on-surface-variant transition-colors hover:bg-c57-surface-container-high hover:text-c57-primary"
               >
                 <Icon name="close" size="lg" />
               </button>
             </div>
 
-            {/* User Card */}
-            {user && (
-              <div className="shrink-0 mx-3 mt-3 rounded-c57-lg bg-c57-primary/5 border border-c57-primary/15 p-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-c57-primary-container text-c57-on-primary flex items-center justify-center font-label-lg text-label-lg shrink-0 shadow-c57-card">
-                  {user.email?.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-label-sm text-label-sm uppercase tracking-wider text-c57-on-surface leading-none font-semibold">{user.email?.split("@")[0]}</p>
-                  <p className="font-label-sm text-label-sm uppercase tracking-wider text-c57-primary mt-0.5">{role || "Member"}</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  aria-label="Logout"
-                  title="Logout"
-                  className="p-2 rounded-full text-c57-on-surface-variant hover:text-c57-primary hover:bg-c57-primary/10 transition-all"
-                >
-                  <Icon name="logout" size="md" />
-                </button>
-              </div>
-            )}
-
-            {/* Scrollable body */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
-
-              {/* Navigasi */}
-              <div className="p-3 space-y-0.5">
-                <p className="px-3 pt-2 pb-1.5 font-label-sm text-label-sm uppercase tracking-widest text-c57-on-surface-variant">Navigasi</p>
-                {drawerMenu.map((m) =>
-                  m.section ? (
-                    <div key={m.path}>
-                      <p className="px-3 py-1.5 flex items-center gap-1.5 font-label-sm uppercase tracking-widest text-c57-primary font-semibold">
-                        <Icon name="directions_car" size="sm" />
-                        {m.name}
-                      </p>
-                      <div className="space-y-0.5 pl-1">
-                        {LAYANAN_ITEMS.map((sub) => (
-                          <Link
-                            key={sub.path}
-                            to={sub.path}
-                            role="menuitem"
-                            onClick={() => setDrawerOpen(false)}
-                            className={drawerLinkClass(sub.path)}
-                          >
-                            <div className={[
-                              "rounded-c57-sm p-1.5 shadow-c57-card shrink-0",
-                              activeLink(sub.path)
-                                ? "bg-c57-primary text-c57-on-primary"
-                                : "bg-c57-surface-container-low text-c57-primary",
-                            ].join(" ")}>
-                              <Icon name={sub.icon} size="lg" />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-label-sm uppercase tracking-wider leading-none">{sub.name}</span>
-                              <span className="text-xs text-c57-on-surface-variant mt-0.5 leading-snug normal-case tracking-normal">{sub.blurb}</span>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                      <div className="my-2 h-px bg-c57-surface-variant mx-3" />
-                    </div>
-                  ) : (
-                    <Link
-                      key={m.path}
-                      to={m.path}
-                      role="menuitem"
-                      onClick={() => setDrawerOpen(false)}
-                      className={drawerLinkClass(m.path)}
-                    >
-                      <div className="rounded-c57-sm bg-c57-surface-container-low p-1.5 text-c57-primary shadow-c57-card shrink-0">
-                        <Icon name={m.icon} size="lg" />
-                      </div>
-                      <span className="truncate">{m.name}</span>
-                    </Link>
-                  )
-                )}
-              </div>
-
-              {/* Akun (client only) */}
-              {(role === "client" || !role) && accountItems.length > 0 && user && (
-                <div className="px-3 pb-3">
-                  <div className="h-px bg-c57-surface-variant mb-2" />
-                  <p className="px-3 pb-1.5 font-label-sm text-label-sm uppercase tracking-widest text-c57-on-surface-variant">Akun</p>
-                  <div className="space-y-0.5">
+            <div className="px-5 pt-5">
+              {accountItems.length > 0 ? (
+                <>
+                  <p className="pb-2 font-label-sm text-label-sm uppercase tracking-widest text-c57-outline">Akun</p>
+                  <div className="space-y-1">
                     {accountItems.map((m) => (
                       <Link
                         key={m.path}
                         to={m.path}
-                        role="menuitem"
-                        onClick={() => setDrawerOpen(false)}
+                        onClick={() => setAccountSheetOpen(false)}
                         className={menuLinkClass(m.path)}
                       >
                         <div className="rounded-c57-sm bg-c57-surface-container-low p-1.5 text-c57-primary shadow-c57-card shrink-0">
                           <Icon name={m.icon} size="lg" />
                         </div>
                         <span className="truncate">{m.name}</span>
+                        <Icon name="chevron_right" size="sm" className="ml-auto text-c57-outline-variant" />
                       </Link>
                     ))}
                   </div>
-                </div>
+                </>
+              ) : (
+                <p className="rounded-c57-md bg-c57-surface-container-low px-4 py-3 font-body-sm text-body-sm text-c57-on-surface-variant">
+                  Semua menu {role === "driver" ? "driver" : "admin"} tersedia di bilah navigasi di atas.
+                </p>
               )}
 
-            </div>{/* /scrollable body */}
-
-            {/* Footer: guest auth buttons */}
-            {!user && (
-              <div className="shrink-0 border-t border-c57-surface-variant p-4 bg-c57-surface-container-lowest">
-                <div className="space-y-2.5">
-                  <Link
-                    to="/login"
-                    role="menuitem"
-                    onClick={() => setDrawerOpen(false)}
-                    className="flex items-center justify-center gap-2.5 rounded-c57-lg bg-c57-primary-container px-4 py-3.5 font-label-md text-label-md uppercase tracking-wider text-c57-on-primary shadow-c57-card transition-all hover:bg-c57-primary active:scale-[0.98]"
-                  >
-                    <Icon name="login" size="md" /> Masuk
-                  </Link>
-                  <Link
-                    to="/signup"
-                    role="menuitem"
-                    onClick={() => setDrawerOpen(false)}
-                    className="flex items-center justify-center gap-2.5 rounded-c57-lg border-2 border-c57-surface-variant px-4 py-3.5 font-label-md text-label-md uppercase tracking-wider text-c57-on-surface bg-c57-surface-container-low transition-all hover:border-c57-primary/50 hover:text-c57-primary hover:bg-c57-primary/5 active:scale-[0.98]"
-                  >
-                    <Icon name="person_add" size="md" /> Daftar
-                  </Link>
+              <div className="my-3 h-px bg-c57-surface-variant" />
+              <button
+                type="button"
+                onClick={() => { setAccountSheetOpen(false); handleLogout(); }}
+                className="flex w-full items-center gap-3 rounded-c57-md px-4 py-3.5 font-label-md text-label-md uppercase tracking-wider text-c57-primary transition-colors hover:bg-c57-primary/10"
+              >
+                <div className="rounded-c57-sm bg-c57-primary/10 p-1.5 text-c57-primary">
+                  <Icon name="logout" size="lg" />
                 </div>
-              </div>
+                Logout
+              </button>
+            </div>
+              </motion.div>
             )}
-
-          </div>
+          </AnimatePresence>
         </>,
         document.body
       )}

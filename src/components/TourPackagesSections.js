@@ -53,26 +53,44 @@ export function TourHero() {
         className="pointer-events-none absolute -top-40 -right-32 h-96 w-96 rounded-full bg-c57-primary/10 blur-3xl"
       />
 
-      <div className="relative max-w-4xl">
-        <p className="flex items-center gap-space-sm font-label-sm uppercase tracking-[0.28em] text-c57-primary">
-          <span className="accent-line" aria-hidden="true" />
-          {HERO.overline}
-        </p>
+      <div className="relative grid items-center gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+        <div className="max-w-3xl">
+          <p className="flex items-center gap-space-sm font-label-sm uppercase tracking-[0.28em] text-c57-secondary">
+            <span className="accent-line" aria-hidden="true" />
+            {HERO.overline}
+          </p>
 
-        <h1 className="mt-space-md font-display text-headline-xl-mobile leading-[1.08] text-c57-on-surface md:text-headline-xl">
-          {HERO.headline}
-        </h1>
+          <h1 className="mt-space-md font-display text-[clamp(2.7rem,4.7vw,4.3rem)] leading-[1.02] tracking-[-0.03em] text-c57-on-surface">
+            {HERO.headline}
+          </h1>
 
-        <p className="mt-space-md max-w-2xl text-body-lg font-light leading-relaxed text-c57-on-surface-variant">
-          {HERO.lead}
-        </p>
+          <p className="mt-space-md max-w-2xl text-body-lg font-light leading-relaxed text-c57-on-surface-variant">
+            {HERO.lead}
+          </p>
+        </div>
+
+        <figure className="relative hidden lg:block">
+          <div className="aspect-[4/5] overflow-hidden rounded-[1.8rem] bg-c57-surface-container">
+            <img
+              src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80"
+              alt="Danau dan pura di pegunungan Bali"
+              loading="eager"
+              className="h-full w-full object-cover photo-warm"
+            />
+          </div>
+          <figcaption className="mt-4 flex items-center justify-between gap-4 font-label-sm uppercase tracking-[0.2em] text-c57-secondary">
+            <span>Bali &amp; Nusa Tenggara</span>
+            <span className="h-px flex-1 bg-c57-outline-variant" aria-hidden="true" />
+            <span>Kurasi 2026</span>
+          </figcaption>
+        </figure>
       </div>
 
       <ul className="relative mt-space-xl grid grid-cols-2 gap-gutter-mobile lg:grid-cols-4 sm:gap-gutter">
         {HERO.badges.map((badge) => (
           <li key={badge.title}>
             <Card variant="inset" className="h-full p-space-md">
-              <Icon name={badge.icon} size="lg" className="text-c57-primary" />
+              <Icon name={badge.icon} size="lg" className="text-c57-secondary" />
               <p className="mt-space-sm font-label-md uppercase tracking-wider text-c57-on-surface">
                 {badge.title}
               </p>
@@ -147,7 +165,7 @@ export function TourFilterBar({ category, onCategoryChange, filters, onApply }) 
               className={[
                 "rounded-full px-space-lg py-2.5 font-label-sm uppercase tracking-wider transition-colors duration-300",
                 active
-                  ? "bg-c57-primary-container text-c57-on-primary"
+                  ? "bg-c57-primary text-c57-on-primary"
                   : "bg-c57-surface-container text-c57-on-surface-variant hover:bg-c57-surface-container-high hover:text-c57-on-surface",
               ].join(" ")}
             >
@@ -199,13 +217,13 @@ function FilterSelect({ control, value, onChange, options }) {
         <span className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
           {control.caption}
         </span>
-        <Icon name={control.icon} className="text-c57-primary" />
+        <Icon name={control.icon} className="text-c57-secondary" />
       </div>
       <Select
         aria-label={control.caption}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="!border-0 !bg-transparent !px-0 !py-1 font-headline-sm text-headline-sm font-semibold !text-c57-on-surface focus:!shadow-none"
+        className="!border-0 !bg-transparent !px-0 !py-1 font-display text-[1.15rem] !text-c57-on-surface focus:!shadow-none"
       >
         {options.map((option) => (
           <option key={option.key} value={option.key}>
@@ -238,14 +256,14 @@ export function OpenTripCard({ trip, index = 0 }) {
           src={trip.image}
           alt={trip.title}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-700 ease-editorial group-hover:scale-105"
+          className="h-full w-full object-cover photo-warm transition-transform duration-700 ease-editorial group-hover:scale-105"
         />
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-gradient-to-t from-c57-scrim/80 via-transparent to-c57-scrim/20"
         />
         <div className="absolute left-space-md top-space-md">
-          <span className="rounded-full bg-c57-surface-container-lowest px-space-sm py-1 font-label-sm uppercase tracking-wider text-c57-on-surface shadow-c57-card backdrop-blur-md">
+          <span className="rounded-full bg-c57-surface-container-lowest/90 px-space-sm py-1 font-label-sm uppercase tracking-wider text-c57-on-surface shadow-c57-card backdrop-blur-md">
             {trip.durationBadge}
           </span>
         </div>
@@ -253,10 +271,10 @@ export function OpenTripCard({ trip, index = 0 }) {
           <Pill variant="signature">{trip.seatsLeftLabel}</Pill>
         </div>
         <div className="absolute inset-x-space-md bottom-space-md text-c57-on-scrim">
-          <span className="font-label-sm uppercase tracking-wider text-c57-tertiary-fixed-dim">
+          <span className="font-label-sm uppercase tracking-[0.2em] text-c57-accent-line">
             {trip.schedule}
           </span>
-          <p className="mt-space-xs font-headline-sm text-headline-sm leading-tight drop-shadow-sm">
+          <p className="mt-space-xs font-display text-[1.5rem] leading-tight">
             {trip.title}
           </p>
         </div>
@@ -274,7 +292,7 @@ export function OpenTripCard({ trip, index = 0 }) {
                   <Icon
                     name={copy.checkIcon}
                     size="sm"
-                    className="shrink-0 text-c57-primary"
+                    className="shrink-0 text-c57-secondary"
                   />
                   {highlight}
                 </li>
@@ -285,7 +303,7 @@ export function OpenTripCard({ trip, index = 0 }) {
           <div className="space-y-space-sm pt-space-sm">
             <div className="flex justify-between font-label-sm text-c57-secondary">
               <span>{copy.availabilityLabel}</span>
-              <span className="font-semibold text-c57-primary">
+              <span className="font-semibold text-c57-on-surface">
                 {copy.availabilityFormat
                   .replace("{filled}", String(trip.seatsFilled))
                   .replace("{total}", String(trip.seatsTotal))}
@@ -297,10 +315,10 @@ export function OpenTripCard({ trip, index = 0 }) {
               aria-valuenow={filled}
               aria-valuemin={0}
               aria-valuemax={100}
-              className="w-full overflow-hidden rounded-full bg-c57-surface-container"
+              className="h-1.5 w-full overflow-hidden rounded-full bg-c57-surface-container"
             >
               <div
-                className="h-full rounded-full bg-c57-primary-container"
+                className="h-full rounded-full bg-c57-secondary"
                 style={{ width: `${filled}%` }}
               />
             </div>
@@ -313,7 +331,7 @@ export function OpenTripCard({ trip, index = 0 }) {
               {copy.priceCaption}
             </span>
             <div className="text-right">
-              <span className="font-headline-md text-headline-md font-semibold text-c57-primary">
+              <span className="font-display text-[1.6rem] leading-none text-c57-on-surface">
                 {formatRupiah(trip.pricePerPax)}
               </span>
               <span className="-mt-space-xs block text-body-sm text-c57-on-surface-variant">
@@ -360,14 +378,14 @@ export function PrivateJourneyCard({ journey, index = 0 }) {
           src={journey.image}
           alt={journey.title}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-700 ease-editorial group-hover:scale-105"
+          className="h-full w-full object-cover photo-warm transition-transform duration-700 ease-editorial group-hover:scale-105"
         />
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-gradient-to-t from-c57-scrim/75 via-transparent to-transparent"
         />
         <div className="absolute left-space-md top-space-md">
-          <span className="rounded-full bg-c57-surface-container-lowest px-space-sm py-1 font-label-sm uppercase tracking-wider text-c57-on-surface shadow-c57-card backdrop-blur-md">
+          <span className="rounded-full bg-c57-surface-container-lowest/90 px-space-sm py-1 font-label-sm uppercase tracking-wider text-c57-on-surface shadow-c57-card backdrop-blur-md">
             {journey.durationBadge}
           </span>
         </div>
@@ -375,10 +393,10 @@ export function PrivateJourneyCard({ journey, index = 0 }) {
 
       <div className="flex flex-1 flex-col gap-space-md p-space-lg">
         <div>
-          <p className="font-label-sm uppercase tracking-widest text-c57-primary">
+          <p className="font-label-sm uppercase tracking-[0.22em] text-c57-secondary">
             {journey.eyebrow}
           </p>
-          <h3 className="mt-space-sm font-headline-sm text-headline-sm leading-tight text-c57-on-surface">
+          <h3 className="mt-space-sm font-display text-[1.5rem] leading-tight text-c57-on-surface">
             {journey.title}
           </h3>
           <p className="mt-space-sm text-body-sm leading-relaxed text-c57-on-surface-variant">
@@ -409,7 +427,7 @@ export function PrivateJourneyCard({ journey, index = 0 }) {
                 <Icon
                   name={UI_COPY.openTrip.checkIcon}
                   size="sm"
-                  className="shrink-0 text-c57-primary"
+                  className="shrink-0 text-c57-secondary"
                 />
                 {highlight}
               </li>
@@ -423,7 +441,7 @@ export function PrivateJourneyCard({ journey, index = 0 }) {
               {copy.priceLabel}
             </span>
             <div className="text-right">
-              <span className="font-headline-md text-headline-md font-semibold text-c57-primary">
+              <span className="font-display text-[1.6rem] leading-none text-c57-on-surface">
                 {formatRupiah(journey.priceFrom)}
               </span>
               <span className="-mt-space-xs block text-body-sm text-c57-on-surface-variant">
@@ -451,7 +469,7 @@ export function PrivateJourneyCard({ journey, index = 0 }) {
 function SpecRow({ icon, label, value }) {
   return (
     <div className="flex items-start gap-space-sm">
-      <Icon name={icon} className="mt-space-xs shrink-0 text-c57-primary" />
+      <Icon name={icon} className="mt-space-xs shrink-0 text-c57-secondary" />
       <div className="min-w-0">
         <dt className="font-label-sm uppercase tracking-widest text-c57-on-surface-variant">
           {label}
@@ -468,6 +486,7 @@ export function ServicePillars() {
   return (
     <section className="mt-space-2xl md:mt-space-3xl">
       <SectionHeading
+        editorial
         eyebrow={PILLARS_SECTION.eyebrow}
         title={PILLARS_SECTION.title}
         description={PILLARS_SECTION.lead}
@@ -477,8 +496,8 @@ export function ServicePillars() {
         {SERVICE_PILLARS.map((pillar) => (
           <li key={pillar.title}>
             <Card variant="inset" className="h-full p-space-lg">
-              <Icon name={pillar.icon} size="2xl" className="text-c57-primary" />
-              <h3 className="mt-space-md font-headline-sm text-headline-sm text-c57-on-surface">
+              <Icon name={pillar.icon} size="2xl" className="text-c57-secondary" />
+              <h3 className="mt-space-md font-display text-[1.35rem] leading-tight text-c57-on-surface">
                 {pillar.title}
               </h3>
               <p className="mt-space-sm text-body-sm leading-relaxed text-c57-on-surface-variant">
@@ -522,6 +541,7 @@ export function ConciergeDesk() {
       <div className="grid gap-gutter lg:grid-cols-2">
         <div>
           <SectionHeading
+            editorial
             eyebrow={CONCIERGE_DESK.eyebrow}
             title={CONCIERGE_DESK.title}
             description={CONCIERGE_DESK.lead}
@@ -532,7 +552,7 @@ export function ConciergeDesk() {
                 <Icon
                   name={UI_COPY.openTrip.checkIcon}
                   size="sm"
-                  className="shrink-0 text-c57-primary"
+                  className="shrink-0 text-c57-secondary"
                 />
                 <span className="text-body-sm text-c57-on-surface-variant">
                   {promise}

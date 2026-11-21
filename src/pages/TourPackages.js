@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { collection, orderBy, onSnapshot, query } from "firebase/firestore";
 
 import { db } from "../services/firebase";
@@ -54,7 +55,17 @@ export default function TourPackages() {
 
   // Category tabs apply immediately; the select panel is staged and applied on
   // submit, matching the design's "Tampilkan Jadwal" control.
-  const [category, setCategory] = useState(SEMUA);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryKeys = ["all", "open-trip", "private", "custom"];
+  const categoryIndex = categoryKeys.indexOf(searchParams.get("category"));
+  const category = CATEGORIES[categoryIndex < 0 ? 0 : categoryIndex];
+  const setCategory = (nextCategory) => {
+    const next = new URLSearchParams(searchParams);
+    const key = categoryKeys[CATEGORIES.indexOf(nextCategory)];
+    if (!key || key === "all") next.delete("category");
+    else next.set("category", key);
+    setSearchParams(next, { preventScrollReset: true });
+  };
   const [filters, setFilters] = useState({
     region: "all",
     period: "all",
@@ -103,8 +114,8 @@ export default function TourPackages() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-c57-surface-container-low px-gutter-mobile pb-16 pt-30 sm:px-gutter">
-        <div className="mx-auto max-w-7xl">
+      <div className="min-h-screen bg-c57-surface pb-24 pt-32">
+        <div className="editorial-shell">
           <PageHeaderSkeleton />
           <div className="mt-space-xl grid grid-cols-1 gap-gutter md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
@@ -117,8 +128,8 @@ export default function TourPackages() {
   }
 
   return (
-    <div className="min-h-screen bg-c57-surface-container-low px-gutter-mobile pb-16 pt-30 sm:px-gutter">
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen bg-c57-surface pb-24 pt-32">
+      <div className="editorial-shell">
         <TourHero />
 
         <TourFilterBar
@@ -131,6 +142,7 @@ export default function TourPackages() {
         {showOpenTrips && (
           <section className="mt-space-2xl md:mt-space-3xl" aria-label={OPEN_TRIP_SECTION.title}>
             <SectionHeading
+              editorial
               eyebrow={OPEN_TRIP_SECTION.eyebrow}
               title={OPEN_TRIP_SECTION.title}
               description={OPEN_TRIP_SECTION.lead}
@@ -153,6 +165,7 @@ export default function TourPackages() {
         {showPrivate && (
           <section className="mt-space-2xl md:mt-space-3xl" aria-label={PRIVATE_SECTION.title}>
             <SectionHeading
+              editorial
               eyebrow={PRIVATE_SECTION.eyebrow}
               title={PRIVATE_SECTION.title}
               description={PRIVATE_SECTION.lead}
@@ -226,6 +239,7 @@ function CmsCatalogue({ packages, onDetail, onBook }) {
           `outline` pill under a bare heading, reading as a leftover filter chip.
           It is a statement about pricing, so it belongs in the description. */}
       <SectionHeading
+        editorial
         title="Katalog Paket Wisata"
         description="Harga sudah termasuk driver profesional."
       />
@@ -285,7 +299,7 @@ function PackageCard({ pkg, index, onDetail, onBook }) {
       role="button"
       tabIndex={0}
       aria-label={`Lihat detail ${pkg.judul}`}
-      className="group flex flex-col overflow-hidden animate-fadeInUp focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c57-primary"
+      className="group flex flex-col overflow-hidden animate-fadeInUp focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c57-secondary"
       style={{ animationDelay: `${index * 70}ms` }}
     >
       <div className="relative h-56 md:h-64 overflow-hidden">
@@ -293,7 +307,7 @@ function PackageCard({ pkg, index, onDetail, onBook }) {
           src={pkg.imageUrl}
           alt={pkg.judul}
           loading="lazy"
-          className="w-full h-full object-cover transition-transform duration-700 ease-editorial group-hover:scale-105"
+          className="w-full h-full object-cover photo-warm transition-transform duration-700 ease-editorial group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-c57-scrim/80 via-transparent to-transparent" />
         <div className="absolute top-space-md left-space-md">
@@ -316,7 +330,7 @@ function PackageCard({ pkg, index, onDetail, onBook }) {
           </span>
         </div>
 
-        <h2 className="font-headline-sm text-headline-sm text-c57-on-surface group-hover:text-c57-primary transition-colors duration-300">
+        <h2 className="font-display text-[1.55rem] leading-tight text-c57-on-surface transition-colors duration-300 group-hover:text-c57-secondary">
           {pkg.judul}
         </h2>
 
@@ -324,17 +338,17 @@ function PackageCard({ pkg, index, onDetail, onBook }) {
           <span className="text-label-sm uppercase tracking-wider text-c57-on-surface-variant">
             Mulai Dari
           </span>
-          <p className="font-headline-sm text-headline-sm text-c57-on-surface">
+          <p className="font-display text-[1.55rem] leading-none text-c57-on-surface">
             Rp {pkg.harga?.toLocaleString("id-ID")}
           </p>
         </div>
 
-        <div className="flex gap-space-sm mt-auto pt-space-md">
+        <div className="flex gap-space-sm mt-auto pt-space-md" onClick={(event) => event.stopPropagation()}>
           <Button variant="secondary" size="md" onClick={onDetail} className="grow">
             Detail
           </Button>
           <Button variant="primary" size="md" onClick={onBook} className="grow" icon="send">
-            Tanya Detail
+            Konsultasi Paket
           </Button>
         </div>
       </div>
@@ -370,23 +384,23 @@ function PackageModal({ pkg, onClose, onBook }) {
             <p className="text-label-sm uppercase tracking-wider text-c57-on-surface-variant">
               Harga Mulai Dari
             </p>
-            <p className="font-headline-sm text-headline-sm text-c57-on-surface">
+            <p className="font-display text-[1.5rem] leading-none text-c57-on-surface">
               Rp {pkg?.harga?.toLocaleString("id-ID")}
             </p>
           </div>
           <Button variant="primary" size="md" onClick={onBook} icon="send">
-            Tanya Detail
+            Konsultasi Paket
           </Button>
         </div>
       }
     >
       {pkg && (
         <div>
-          <div className="relative h-48 w-full rounded-c57-md overflow-hidden mb-space-lg">
+          <div className="relative h-48 w-full rounded-[1.1rem] overflow-hidden mb-space-lg">
             <img
               src={pkg.imageUrl}
               alt={pkg.judul}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover photo-warm"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-c57-scrim/70 via-transparent to-transparent" />
             <div className="absolute bottom-space-sm left-space-sm">
@@ -395,6 +409,17 @@ function PackageModal({ pkg, onClose, onBook }) {
               </Pill>
             </div>
           </div>
+
+          <dl className="mb-space-lg grid grid-cols-2 gap-space-md text-body-sm">
+            <div>
+              <dt className="text-c57-on-surface-variant">Destinasi</dt>
+              <dd className="mt-space-xs text-c57-on-surface">{pkg.destinasi || "Konsultasikan dengan tim kami"}</dd>
+            </div>
+            <div>
+              <dt className="text-c57-on-surface-variant">Durasi</dt>
+              <dd className="mt-space-xs text-c57-on-surface">{pkg.durasi || "Menyesuaikan perjalanan"}</dd>
+            </div>
+          </dl>
 
           {pkg.description && (
             <section>
@@ -410,7 +435,7 @@ function PackageModal({ pkg, onClose, onBook }) {
                     <Icon
                       name="check"
                       size="sm"
-                      className="mt-space-xs text-c57-primary shrink-0"
+                      className="mt-space-xs text-c57-secondary shrink-0"
                     />
                     <span>{item}</span>
                   </li>
@@ -418,6 +443,10 @@ function PackageModal({ pkg, onClose, onBook }) {
               </ul>
             </section>
           )}
+          <p className="mt-space-lg text-body-sm leading-relaxed text-c57-on-surface-variant">
+            Tanyakan jadwal, itinerary, fasilitas, dan ketentuan perjalanan melalui
+            WhatsApp sebelum memesan. Konsultasi ini belum membuat reservasi.
+          </p>
         </div>
       )}
     </Modal>

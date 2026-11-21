@@ -48,6 +48,12 @@ import aseanGuides from "./asean";
  * real pricing drops in later, and a validator asserts it is `null` so a
  * stray number cannot ship by accident.
  *
+ * Optional editorial fields
+ * -------------------------
+ * excerpt: short Discovery preview; funFacts: [{ title, body }];
+ * sources: [{ title, url }]; reviewedOn: ISO date of source review.
+ * panorama.image can use a distinct, local photograph.
+ *
  * Facts about the copy
  * --------------------
  * Season windows, difficulty labels and the timings in `light.timeline` are

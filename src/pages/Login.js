@@ -160,7 +160,7 @@ export default function Login() {
                   <img src={logo} alt="Logo Cakra Lima Tujuh" className="w-full h-full object-contain" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-label-md text-label-md tracking-widest uppercase text-c57-primary font-bold">
+                  <span className="font-label-md text-label-md tracking-widest uppercase text-c57-secondary font-bold">
                     Cakra Lima Tujuh
                   </span>
                   <span className="font-label-sm text-label-sm text-c57-secondary tracking-wider uppercase">
@@ -174,7 +174,7 @@ export default function Login() {
                 Kenyamanan Eksklusif Setiap Destinasi
               </Pill>
 
-              <h1 className="font-headline-lg text-headline-lg text-c57-on-surface mb-6 leading-tight">
+              <h1 className="font-display text-[clamp(2rem,3.6vw,2.9rem)] font-normal leading-[1.06] tracking-[-0.02em] text-c57-on-surface mb-6">
                 Selamat Datang Kembali ke Pengalaman Mobilitas Terbaik.
               </h1>
               <p className="font-body-md text-body-md text-c57-on-surface-variant mb-10 leading-relaxed">
@@ -189,7 +189,7 @@ export default function Login() {
                     key={f.title}
                     className="flex items-start gap-space-md p-3.5 rounded-c57-md bg-c57-surface/70 shadow-c57-card backdrop-blur-sm"
                   >
-                    <span className="w-8 h-8 rounded-full bg-c57-primary/10 flex items-center justify-center text-c57-primary flex-shrink-0 mt-0.5">
+                    <span className="w-8 h-8 rounded-full bg-c57-secondary/10 flex items-center justify-center text-c57-secondary flex-shrink-0 mt-0.5">
                       <Icon name={f.icon} size="md" />
                     </span>
                     <div>
@@ -219,7 +219,7 @@ export default function Login() {
               </div>
 
               <div className="mb-8">
-                <h2 className="font-headline-md text-headline-md text-c57-on-surface mb-space-sm">
+                <h2 className="font-display text-[1.8rem] leading-tight text-c57-on-surface mb-space-sm">
                   Masuk ke Akun Anda
                 </h2>
                 <p className="font-body-md text-body-md text-c57-on-surface-variant">
@@ -261,7 +261,7 @@ export default function Login() {
                   labelAction={
                     <a
                       href="#forgot"
-                      className="font-label-sm text-c57-primary hover:text-c57-primary-container transition-colors"
+                      className="font-label-sm text-c57-secondary hover:text-c57-on-surface transition-colors"
                     >
                       Lupa Kata Sandi?
                     </a>
@@ -334,7 +334,7 @@ export default function Login() {
                 </span>
                 <Link
                   to="/signup"
-                  className="font-label-md text-label-md text-c57-primary font-bold hover:underline ml-1"
+                  className="font-label-md text-label-md text-c57-secondary font-bold hover:underline ml-1"
                 >
                   Daftar Sekarang →
                 </Link>
@@ -353,7 +353,7 @@ export default function Login() {
                   href="https://wa.me/6281234567890"
                   rel="noopener noreferrer"
                   target="_blank"
-                  className="flex items-center gap-1.5 text-c57-primary hover:underline font-semibold"
+                  className="flex items-center gap-1.5 text-c57-secondary hover:underline font-semibold"
                 >
                   <Icon name="headset_mic" size="sm" />
                   Bantuan Concierge 24 Jam

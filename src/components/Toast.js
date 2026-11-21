@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, createContext, useContext, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Icon from "./ui/Icon";
+import { EDITORIAL_EASE } from "../motion/editorial";
 
 /**
  * Toast surface.
@@ -23,6 +25,11 @@ import Icon from "./ui/Icon";
  * Firestore subscriptions each time a notification fired. `addToast` is
  * already stable, so memoising on it alone makes the whole surface stable for
  * the provider's lifetime.
+ *
+ * Motion: entering cards pop in, leaving cards slide out through
+ * AnimatePresence, and `layout` keeps the rest of the stack from jumping when
+ * one card is dismissed mid-stack. Hovering pauses both the auto-dismiss
+ * timer and the progress bar, so a toast can be read at leisure.
  */
 
 const VARIANTS = {
@@ -32,35 +39,52 @@ const VARIANTS = {
   info:    { icon: "info",         tone: "text-c57-on-scrim", bar: "bg-c57-accent-line" },
 };
 
+const AUTO_DISMISS_MS = 3500;
+
 /* ─── Individual Toast ─── */
 function ToastItem({ id, type, title, message, onRemove }) {
-  const [removing, setRemoving] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const remainingRef = useRef(AUTO_DISMISS_MS);
+  const startedAtRef = useRef(0);
+  const reduceMotion = useReducedMotion();
 
   const handleRemove = useCallback(() => {
-    setRemoving(true);
-    setTimeout(() => onRemove(id), 300);
+    onRemove(id);
   }, [id, onRemove]);
 
-  // Auto-dismiss after 3.5 seconds
+  // Auto-dismiss, pausable. While paused the remaining time is frozen; the
+  // progress bar below pauses with the same state.
   useEffect(() => {
-    const timer = setTimeout(handleRemove, 3500);
-    return () => clearTimeout(timer);
-  }, [handleRemove]);
+    if (paused) return undefined;
+    startedAtRef.current = Date.now();
+    const timer = setTimeout(handleRemove, remainingRef.current);
+    return () => {
+      clearTimeout(timer);
+      remainingRef.current = Math.max(0, remainingRef.current - (Date.now() - startedAtRef.current));
+    };
+  }, [paused, handleRemove]);
 
   const v = VARIANTS[type] || VARIANTS.info;
   // Errors interrupt; everything else waits its turn in the queue.
   const isUrgent = type === "error";
 
   return (
-    <div
+    <motion.div
       role={isUrgent ? "alert" : "status"}
-      className={[
-        "relative overflow-hidden rounded-c57-lg border",
-        "bg-c57-scrim border-white/10",
-        "shadow-c57-overlay",
-        "transition-all duration-300 ease-editorial",
-        removing ? "opacity-0 translate-x-10 scale-95" : "opacity-100 animate-popIn",
-      ].join(" ")}
+      layout
+      initial={reduceMotion ? false : { opacity: 0, y: 16, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={
+        reduceMotion
+          ? { opacity: 0, transition: { duration: 0.12 } }
+          : { opacity: 0, x: 48, scale: 0.95, transition: { duration: 0.22, ease: EDITORIAL_EASE } }
+      }
+      transition={{ duration: 0.32, ease: EDITORIAL_EASE }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+      className="relative overflow-hidden rounded-c57-lg border bg-c57-scrim border-white/10 shadow-c57-overlay"
     >
       <div className="flex items-start gap-space-sm p-space-md pr-space-xl">
         <span className={`mt-0.5 shrink-0 ${v.tone}`}>
@@ -87,9 +111,10 @@ function ToastItem({ id, type, title, message, onRemove }) {
 
       <div
         className={`h-0.5 ${v.bar} absolute bottom-0 left-0 animate-progressBar`}
+        style={{ animationPlayState: paused ? "paused" : "running" }}
         aria-hidden="true"
       />
-    </div>
+    </motion.div>
   );
 }
 
@@ -124,9 +149,11 @@ export function ToastProvider({ children }) {
       {children}
       {createPortal(
         <div id="toast-container" aria-live="polite" aria-atomic="false">
-          {toasts.map(t => (
-            <ToastItem key={t.id} {...t} onRemove={removeToast} />
-          ))}
+          <AnimatePresence>
+            {toasts.map(t => (
+              <ToastItem key={t.id} {...t} onRemove={removeToast} />
+            ))}
+          </AnimatePresence>
         </div>,
         document.body
       )}

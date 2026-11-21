@@ -12,6 +12,7 @@ export default function SectionHeading({
   italic,
   description,
   align = "left",
+  editorial = false,
   className = "",
   children,
 }) {
@@ -29,7 +30,8 @@ export default function SectionHeading({
       {eyebrow && (
         <p
           className={[
-            "flex items-center gap-space-sm font-label-sm uppercase tracking-[0.28em] text-c57-primary",
+            "flex items-center gap-space-sm font-label-sm uppercase tracking-[0.28em]",
+            editorial ? "text-c57-secondary" : "text-c57-primary",
             align === "center" && "justify-center",
             align === "right" && "justify-end",
           ]
@@ -41,13 +43,25 @@ export default function SectionHeading({
         </p>
       )}
 
-      <h2 className="font-headline-lg text-headline-lg text-c57-on-surface mt-3 leading-[1.15]">
-        {title}
-        {italic && <em className="font-normal italic">{italic}</em>}
-      </h2>
+      {editorial ? (
+        <h2 className="mt-3 font-display text-[clamp(2rem,3.8vw,3.1rem)] font-normal leading-[1.04] tracking-[-0.02em] text-c57-on-surface">
+          {title}
+          {italic && <em className="font-normal italic">{italic}</em>}
+        </h2>
+      ) : (
+        <h2 className="font-headline-lg text-headline-lg text-c57-on-surface mt-3 leading-[1.15]">
+          {title}
+          {italic && <em className="font-normal italic">{italic}</em>}
+        </h2>
+      )}
 
       {description && (
-        <p className="text-body-lg text-c57-on-surface-variant mt-4 leading-relaxed font-light">
+        <p
+          className={[
+            "mt-4 max-w-2xl font-light leading-relaxed text-c57-on-surface-variant",
+            editorial ? "text-[0.95rem]" : "text-body-lg",
+          ].join(" ")}
+        >
           {description}
         </p>
       )}

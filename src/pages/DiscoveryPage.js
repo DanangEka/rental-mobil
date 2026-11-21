@@ -1,3 +1,5 @@
+import destinationPhotos from "../data/destinationPhotos.json";
+import DestinationPhotoCredit from "../components/DestinationPhotoCredit";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -14,8 +16,8 @@ import Input from "../components/ui/Input";
  * hero. The copy is constant on purpose: the archive framing is the identity
  * of the page, while the region is expressed by the filter rail underneath.
  */
-const COLLECTION_LABEL = "Curated Overland & Archipelago Journeys";
-const COLLECTION_VOLUME = "An Editorial Discovery Collection • Volume IV";
+const COLLECTION_LABEL = "Koleksi Perjalanan Terkurasi";
+const COLLECTION_VOLUME = "Koleksi Editorial • Volume IV";
 const COLLECTION_INTRO =
   "Kurasi visual lanskap tersembunyi, puncak vulkanik sakral, dan ekspedisi bahari kepulauan. Inspirasi perjalanan privat dirancang khusus dengan kehangatan concierge bintang lima.";
 
@@ -142,11 +144,11 @@ export default function DiscoveryPage() {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-label-sm uppercase tracking-[0.25em] text-c57-primary">
-                Archive N° 01 — Inspirasi Musim Ini
+                Arsip N° 01 — Inspirasi Musim Ini
               </span>
               <span className="h-px w-12 bg-c57-outline-variant" />
             </div>
-            <h2 className="mt-1 font-headline-lg text-headline-lg-mobile text-c57-on-surface md:text-headline-lg">
+            <h2 className="mt-3 font-display text-[clamp(2rem,3.6vw,2.9rem)] font-normal leading-[1.02] tracking-[-0.02em] text-c57-on-surface">
               Eksplorasi Destinasi Terpilih
             </h2>
             <p className="mt-2 font-body-sm text-body-sm text-c57-on-surface-variant">
@@ -195,7 +197,21 @@ export default function DiscoveryPage() {
         )}
       </section>
 
-      <ConciergeCta planTo="/open-trip" planLabel="Rancang Custom Itinerary" />
+      <section className="editorial-shell pb-12" aria-label="Kredit foto destinasi">
+        <details className="border-t border-c57-outline-variant pt-5">
+          <summary className="cursor-pointer py-2 font-label-md text-c57-secondary">Sumber dan lisensi foto destinasi</summary>
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
+            {destinationSpots.filter((spot) => spot.photoCredit).map((spot) => (
+              <div key={spot.slug}>
+                <h2 className="mb-2 font-display text-[1.25rem] text-c57-on-surface">{spot.name}</h2>
+                <DestinationPhotoCredit credit={spot.photoCredit} />
+              </div>
+            ))}
+          </div>
+        </details>
+      </section>
+
+      <ConciergeCta planTo="/trip-planner" planLabel="Rancang Custom Itinerary" />
     </div>
   );
 }
@@ -204,57 +220,52 @@ export default function DiscoveryPage() {
 
 function Hero({ region, onRegion, query, onQuery, total, visible }) {
   return (
-    <section className="relative w-full overflow-hidden bg-c57-inverse-surface py-20 text-c57-inverse-on-surface lg:py-28">
-      <div
-        className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-c57-primary/20 blur-[120px]"
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute -bottom-10 right-10 h-[30rem] w-[30rem] rounded-full bg-c57-tertiary-container/30 blur-[140px]"
-        aria-hidden="true"
-      />
+    <section className="relative w-full overflow-hidden border-b border-c57-outline-variant/60 pt-16 pb-14 lg:pt-24 lg:pb-20">
+      <div className="absolute inset-0" aria-hidden="true">
+        <img
+          src={destinationPhotos["raja-ampat"].src}
+          alt=""
+          className="h-full w-full object-cover object-center photo-warm"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-c57-surface/95 via-c57-surface/85 to-c57-surface" />
+      </div>
 
-      <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-5 text-center md:px-10">
-        <p className="mb-6 inline-flex items-center gap-2.5 rounded-full bg-c57-surface-container-lowest/10 px-4 py-1.5 font-label-sm uppercase tracking-[0.2em] text-c57-primary-fixed backdrop-blur-md">
-          {/* Was `bg-c57-on-primary-container`, which is not in the c57 palette.
-              Tailwind drops it silently, so the live pulse dot rendered
-              invisible inside the pill. Match the label's own colour. */}
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-c57-primary-fixed" />
+      <div className="editorial-shell relative flex flex-col items-center text-center">
+        <p className="inline-flex items-center gap-2.5 rounded-full border border-c57-outline/40 bg-c57-surface-container-lowest/80 px-4 py-1.5 font-label-sm uppercase tracking-[0.24em] text-c57-secondary backdrop-blur-md">
+          <span className="h-1.5 w-1.5 rounded-full bg-c57-secondary" />
           {COLLECTION_LABEL}
         </p>
 
-        <h1 className="max-w-4xl font-headline-xl text-headline-xl-mobile leading-tight tracking-tight text-c57-surface-bright md:text-headline-xl">
-          Discover Nusantara{" "}
-          <em className="font-normal italic text-c57-primary-fixed-dim">
-            &amp; Southeast Asia
-          </em>
+        <h1 className="mt-7 max-w-5xl font-display text-[clamp(2.6rem,6vw,4.9rem)] font-normal leading-[0.98] tracking-[-0.03em] text-c57-on-surface">
+          Jelajah Nusantara{" "}
+          <em className="font-normal italic text-c57-secondary">&amp; Asia Tenggara</em>
         </h1>
-        <p className="mt-2 font-label-md uppercase tracking-[0.28em] text-c57-tertiary-fixed-dim">
+        <p className="mt-4 font-label-sm uppercase tracking-[0.3em] text-c57-secondary">
           {COLLECTION_VOLUME}
         </p>
-        <p className="mt-6 max-w-2xl font-body-lg leading-relaxed text-c57-surface-container-high">
+        <p className="mt-6 max-w-2xl text-[0.98rem] leading-relaxed text-c57-on-surface-variant">
           {COLLECTION_INTRO}
         </p>
 
         {/* Search and the macro region rail share one field of view, so a
             filter change reads as one decision rather than two. */}
-        <div className="mt-12 w-full max-w-4xl space-y-5">
-          <div className="flex items-center justify-between gap-2 rounded-full bg-c57-surface-container-lowest/10 p-2 pl-6 shadow-2xl backdrop-blur-md">
+        <div className="mt-10 w-full max-w-3xl space-y-5">
+          <div className="flex items-center justify-between gap-2 rounded-full border border-c57-outline/40 bg-c57-surface-container-lowest/90 p-2 pl-6 shadow-c57-card backdrop-blur-md">
             <div className="flex min-w-0 flex-1 items-center gap-3.5">
               <Icon
                 name="explore"
                 size="xl"
-                className="shrink-0 text-c57-tertiary-fixed"
+                className="shrink-0 text-c57-secondary"
               />
               <Input
                 value={query}
                 onChange={(e) => onQuery(e.target.value)}
                 placeholder="Cari destinasi, lanskap vulkanik, laguna bahari, atau rute privat..."
                 aria-label="Cari destinasi"
-                className="border-0 bg-transparent px-0 py-1 text-c57-surface-bright placeholder:text-c57-surface-variant/60 focus:border-0 focus:bg-transparent"
+                className="border-0 bg-transparent px-0 py-1 text-c57-on-surface placeholder:text-c57-on-surface-variant/60 focus:border-0 focus:bg-transparent"
               />
             </div>
-            <span className="hidden shrink-0 items-center gap-2 rounded-full bg-c57-primary-container px-6 py-3 font-label-md uppercase tracking-wider text-c57-on-primary md:inline-flex">
+            <span className="hidden shrink-0 items-center gap-2 rounded-full bg-c57-primary px-6 py-3 font-label-md uppercase tracking-wider text-c57-on-primary md:inline-flex">
               Eksplorasi
               <Icon name="arrow_forward" size="sm" />
             </span>
@@ -270,8 +281,8 @@ function Hero({ region, onRegion, query, onQuery, total, visible }) {
                   aria-pressed={active}
                   className={`rounded-full px-4 py-1.5 font-label-sm uppercase tracking-wider transition-transform active:scale-95 ${
                     active
-                      ? "bg-c57-primary-container text-c57-on-primary shadow-sm"
-                      : "bg-c57-surface-container-lowest/10 text-c57-surface-bright hover:bg-c57-surface-container-lowest/20"
+                      ? "bg-c57-primary text-c57-on-primary shadow-sm"
+                      : "border border-c57-outline/35 bg-c57-surface-container-lowest/70 text-c57-on-surface-variant hover:border-c57-outline hover:text-c57-on-surface"
                   }`}
                 >
                   {category.label}
@@ -282,9 +293,10 @@ function Hero({ region, onRegion, query, onQuery, total, visible }) {
           </div>
         </div>
 
-        <p className="mt-4 font-label-sm uppercase tracking-widest text-c57-outline">
+        <p className="mt-5 font-label-sm uppercase tracking-widest text-c57-secondary">
           {visible} dari {total} destinasi terkurasi
         </p>
+        <DestinationPhotoCredit credit={destinationPhotos["raja-ampat"]} compact className="mt-5" />
       </div>
     </section>
   );
@@ -296,7 +308,7 @@ function MasonryGallery({ spots, showFeaturette }) {
   return (
     <div className="columns-1 gap-6 md:columns-2 lg:columns-3">
       <AnimatePresence>
-        {spots.map((spot, index) => (
+        {spots.map((spot) => (
           <motion.div
             key={spot.slug}
             layout
@@ -305,7 +317,7 @@ function MasonryGallery({ spots, showFeaturette }) {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
-            <DestinationTile spot={spot} index={index} />
+            <DestinationTile spot={spot} />
           </motion.div>
         ))}
         {showFeaturette && (
@@ -329,7 +341,7 @@ function UniformGrid({ spots }) {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       <AnimatePresence>
-        {spots.map((spot, index) => (
+        {spots.map((spot) => (
           <motion.div
             key={spot.slug}
             layout
@@ -338,7 +350,7 @@ function UniformGrid({ spots }) {
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
-            <DestinationTile spot={spot} index={index} />
+            <DestinationTile spot={spot} />
           </motion.div>
         ))}
       </AnimatePresence>
@@ -362,7 +374,7 @@ function FeaturetteCard() {
             <Icon name="auto_awesome" size="sm" />
             Editorial Featurette
           </p>
-          <h3 className="font-headline-md text-headline-md text-c57-surface-bright">
+          <h3 className="font-display text-[1.6rem] leading-tight text-c57-surface-bright">
             Rancang Rute Privat Sesuai Impianmu
           </h3>
           <p className="mt-2 font-body-sm text-body-sm text-c57-surface-variant">

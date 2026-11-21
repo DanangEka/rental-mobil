@@ -1,3 +1,5 @@
+import { destinationSpots } from "../data/destinationSpots";
+
 /**
  * Per-route SEO metadata for the SPA.
  *
@@ -128,8 +130,34 @@ export function resolveSeo(pathname) {
       title: exact.title,
       description: exact.description || DEFAULT_DESCRIPTION,
       canonical: `${SITE_URL}${path === "/" ? "/" : path}`,
+      robots: path === "/login" || path === "/signup" ? "noindex, follow" : "index, follow",
+    };
+  }
+
+  const regionMatch = path.match(/^\/(destinasi|discovery)\/(jawa|bali|indonesia|asean)$/);
+  if (regionMatch) {
+    const [, section, region] = regionMatch;
+    const label = { jawa: "Jawa", bali: "Bali", indonesia: "Indonesia", asean: "Asia Tenggara" }[region];
+    return {
+      title: `${section === "discovery" ? "Inspirasi" : "Destinasi"} Wisata ${label} | Cakra Lima Tujuh`,
+      description: `Jelajahi pilihan destinasi wisata ${label} dan temukan inspirasi perjalanan bersama Cakra Lima Tujuh.`,
+      canonical: `${SITE_URL}${path}`,
       robots: "index, follow",
     };
+  }
+
+  const destinationMatch = path.match(/^\/destinasi\/([^/]+)\/([^/]+)$/);
+  if (destinationMatch) {
+    const [, region, slug] = destinationMatch;
+    const spot = destinationSpots.find((item) => item.region === region && item.slug === slug);
+    if (spot) {
+      return {
+        title: `${spot.name}, ${spot.city} | Panduan Wisata Cakra Lima Tujuh`,
+        description: `Kenali ${spot.name} di ${spot.city}. Temukan inspirasi dan panduan perjalanan bersama Cakra Lima Tujuh.`,
+        canonical: `${SITE_URL}${path}`,
+        robots: "index, follow",
+      };
+    }
   }
 
   // Prefix match for dynamic routes: /destinasi/bali, /discovery/jawa, …

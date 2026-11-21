@@ -102,6 +102,10 @@ const FIXTURE_GUIDE = {
 };
 
 describe("DestinationDetailPage — lean layout (no authored guide)", () => {
+  const leanSlugs = ["tegalalang", "candi-borobudur", "angkor-wat"];
+  const originals = Object.fromEntries(leanSlugs.map((slug) => [slug, destinationGuides[slug]]));
+  beforeEach(() => leanSlugs.forEach((slug) => { delete destinationGuides[slug]; }));
+  afterEach(() => Object.assign(destinationGuides, originals));
   it("renders a complete page for a destination that has no guide yet", () => {
     renderAt("bali", "tegalalang");
 
@@ -114,7 +118,7 @@ describe("DestinationDetailPage — lean layout (no authored guide)", () => {
   });
 
   it("says the guide is being written rather than implying it exists", () => {
-    renderAt("jawa", "gunung-bromo");
+    renderAt("jawa", "candi-borobudur");
     expect(screen.getByText(/sedang disiapkan/i)).toBeInTheDocument();
   });
 
@@ -155,13 +159,15 @@ describe("DestinationDetailPage — lean layout (no authored guide)", () => {
   });
 });
 
+const authoredBromoGuide = destinationGuides["gunung-bromo"];
+
 describe("DestinationDetailPage — full guide layout", () => {
   beforeEach(() => {
     destinationGuides["gunung-bromo"] = FIXTURE_GUIDE;
   });
 
   afterEach(() => {
-    delete destinationGuides["gunung-bromo"];
+    destinationGuides["gunung-bromo"] = authoredBromoGuide;
   });
 
   it("renders the subtitle as an italic continuation of the H1", () => {
@@ -255,7 +261,7 @@ describe("every destination renders", () => {
   });
 
   describe.each(destinationSpots)("$region/$slug", (spot) => {
-    it("renders a lean page with its own name, city and timezone", () => {
+    it("renders its own article, name and timezone", () => {
       renderAt(spot.region, spot.slug);
 
       const h1 = screen.getByRole("heading", { level: 1 });
@@ -280,5 +286,20 @@ describe("every destination renders", () => {
         screen.getByRole("link", { name: /Konsultasi via WhatsApp/i })
       ).toHaveAttribute("href", expect.stringContaining("wa.me/6281257570057"));
     });
+  });
+});
+
+
+describe("published Bromo article", () => {
+  it("provides working section links, fun facts and official sources", () => {
+    renderAt("jawa", "gunung-bromo");
+    expect(screen.queryByText(/sedang disiapkan/i)).not.toBeInTheDocument();
+    const toc = screen.getByRole("navigation", { name: "Daftar isi panduan" });
+    for (const anchor of toc.querySelectorAll("a")) {
+      expect(document.getElementById(anchor.hash.slice(1))).not.toBeNull();
+    }
+    expect(screen.getByRole("heading", { name: "Fakta menarik sebelum berkunjung" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Mengenal Yadnya Kasada/ })).toHaveAttribute("href", expect.stringContaining("indonesia.travel"));
+    expect(screen.getByRole("link", { name: "Private Trip" })).toHaveAttribute("href", "/tour-packages?category=private");
   });
 });

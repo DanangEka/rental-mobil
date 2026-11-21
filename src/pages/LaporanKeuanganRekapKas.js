@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
 import { collection, onSnapshot, updateDoc, doc } from "firebase/firestore";
 import { Bar } from "react-chartjs-2";
 import {
@@ -226,14 +227,17 @@ export default function LaporanKeuanganRekapKas() {
    * the bundled fare. There is no standalone expense ledger in Firestore, so
    * this stands in for the "Biaya Ops & Fee Driver" line of the report.
    */
-  const expenseOf = (order) => {
-    if (order.rentalType !== "Dengan Driver" && !order.driverId) return 0;
-    const mobil = mobilMap[order.mobilId];
-    const feePerDay = Number(mobil?.driver_fee_per_day) || 0;
-    const days = order.durasiHari || 1;
-    if (feePerDay > 0) return feePerDay * days;
-    return Math.round(revenueOf(order) * DRIVER_FEE_RATIO);
-  };
+  const expenseOf = useCallback(
+    (order) => {
+      if (order.rentalType !== "Dengan Driver" && !order.driverId) return 0;
+      const mobil = mobilMap[order.mobilId];
+      const feePerDay = Number(mobil?.driver_fee_per_day) || 0;
+      const days = order.durasiHari || 1;
+      if (feePerDay > 0) return feePerDay * days;
+      return Math.round(revenueOf(order) * DRIVER_FEE_RATIO);
+    },
+    [mobilMap]
+  );
 
   /**
    * The single source of truth for figures. `orders`, `verifications`,
@@ -310,7 +314,7 @@ export default function LaporanKeuanganRekapKas() {
           ? Math.round(((opsExpense - prevExpense.value) / prevExpense.value) * 1000) / 10
           : null,
     };
-  }, [orders, verifications, start, end, prevStart, prevEnd, mobilMap]);
+  }, [orders, verifications, start, end, prevStart, prevEnd, expenseOf]);
 
   /* ── Ledger rows ───────────────────────────────────────────────────────── */
   const ledgerRows = useMemo(() => {
@@ -388,7 +392,7 @@ export default function LaporanKeuanganRekapKas() {
     });
 
     return rows.sort((a, b) => b.date - a.date);
-  }, [orders, verifications, usersMap, mobilMap, start, end]);
+  }, [orders, verifications, usersMap, start, end, expenseOf]);
 
   /* ── Cashier recap rows grouped per day ────────────────────────────────── */
   const cashierRows = useMemo(() => {
@@ -508,7 +512,7 @@ export default function LaporanKeuanganRekapKas() {
       }
     });
     return { labels, revenue, expense };
-  }, [orders, mobilMap]);
+  }, [orders, expenseOf]);
 
   const distribution = useMemo(() => {
     const buckets = {
@@ -1204,32 +1208,46 @@ function DistributionCard({ segments }) {
 }
 
 function TabBar({ tabs, counts, active, pendingCount, onSelect }) {
+  const reduceMotion = useReducedMotion();
   return (
     <div className="flex items-center gap-2 overflow-x-auto pb-2" role="tablist">
       {tabs.map((tab) => {
         const isActive = active === tab.id;
         const isCash = tab.id === "driver-cash";
         return (
-          <button
+          <motion.button
             key={tab.id}
             type="button"
             role="tab"
             aria-selected={isActive}
             onClick={() => onSelect(tab.id)}
             className={[
-              "px-4 py-2 rounded-full font-label-md text-label-md shadow-sm whitespace-nowrap transition-colors",
+              "relative px-4 py-2 rounded-full font-label-md text-label-md shadow-sm whitespace-nowrap transition-colors",
               isActive
-                ? "bg-c57-primary-container text-c57-on-primary"
+                ? "text-c57-on-primary"
                 : "bg-c57-surface-container-lowest hover:bg-c57-surface-container text-c57-on-surface-variant",
             ].join(" ")}
           >
-            {tab.label} ({counts[tab.id] ?? 0})
-            {isCash && pendingCount > 0 && (
-              <span className="ml-1.5 bg-c57-primary text-c57-on-primary text-label-sm font-bold px-1.5 py-0.5 rounded-full">
-                {pendingCount} Pending
-              </span>
+            {isActive && (
+              <motion.span
+                layoutId={reduceMotion ? undefined : "ledger-tab-pill"}
+                className="absolute inset-0 rounded-full bg-c57-primary-container"
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : { type: "spring", stiffness: 520, damping: 42 }
+                }
+              />
             )}
-          </button>
+            <span className="relative z-10">
+              {tab.label} ({counts[tab.id] ?? 0})
+              {isCash && pendingCount > 0 && (
+                <span className="ml-1.5 bg-c57-primary text-c57-on-primary text-label-sm font-bold px-1.5 py-0.5 rounded-full">
+                  {pendingCount} Pending
+                </span>
+              )}
+            </span>
+          </motion.button>
         );
       })}
     </div>

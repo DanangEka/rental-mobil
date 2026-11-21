@@ -1,3 +1,4 @@
+import DestinationPhotoCredit from "./DestinationPhotoCredit";
 import Button from "./ui/Button";
 import Card from "./ui/Card";
 import Icon from "./ui/Icon";
@@ -38,9 +39,9 @@ function enquiryHref(spot) {
  */
 export function PartLabel({ children }) {
   return (
-    <p className="flex items-center gap-2 font-label-sm uppercase tracking-[0.28em] text-c57-primary">
+    <p className="flex items-center gap-2 font-label-sm uppercase tracking-[0.28em] text-c57-secondary">
       <span
-        className="h-0.5 w-6 shrink-0 bg-c57-primary"
+        className="h-0.5 w-6 shrink-0 bg-c57-accent-line"
         aria-hidden="true"
       />
       {children}
@@ -52,17 +53,17 @@ export function PartLabel({ children }) {
 
 export function GuideFacts({ facts, timezone }) {
   return (
-    <dl className="mt-space-md grid grid-cols-2 gap-gutter-mobile rounded-c57-lg bg-c57-surface-container-low px-space-md py-space-md md:grid-cols-4">
+    <dl className={`mt-space-md grid grid-cols-2 gap-gutter-mobile rounded-c57-lg bg-c57-surface-container-low px-space-md py-space-md ${timezone ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
       {facts.map((fact) => (
         <div key={fact.label} className="flex flex-col gap-1">
           <dt className="font-label-sm uppercase tracking-wider text-c57-secondary">
             {fact.label}
           </dt>
-          <dd className="flex items-start gap-1.5 font-label-lg text-label-lg font-semibold text-c57-on-surface">
+          <dd className="flex items-start gap-1.5 font-display text-[1.05rem] leading-snug text-c57-on-surface">
             <Icon
               name={fact.icon}
               size="lg"
-              className="mt-0.5 shrink-0 text-c57-primary"
+              className="mt-0.5 shrink-0 text-c57-secondary"
             />
             <span>{fact.value}</span>
           </dd>
@@ -76,11 +77,11 @@ export function GuideFacts({ facts, timezone }) {
           <dt className="font-label-sm uppercase tracking-wider text-c57-secondary">
             Zona Waktu
           </dt>
-          <dd className="flex items-start gap-1.5 font-label-lg text-label-lg font-semibold text-c57-on-surface">
+          <dd className="flex items-start gap-1.5 font-display text-[1.05rem] leading-snug text-c57-on-surface">
             <Icon
               name="schedule"
               size="lg"
-              className="mt-0.5 shrink-0 text-c57-primary"
+              className="mt-0.5 shrink-0 text-c57-secondary"
             />
             <span>{timezone}</span>
           </dd>
@@ -92,9 +93,10 @@ export function GuideFacts({ facts, timezone }) {
 
 /* ── Panorama photograph frame with the curator quote ─────────────────── */
 
-export function GuidePanorama({ image, name, panorama }) {
+export function GuidePanorama({ image, name, panorama, photoCredit }) {
   return (
-    <figure className="relative h-[65vh] min-h-[420px] max-h-[720px] w-full overflow-hidden rounded-c57-2xl shadow-xl">
+    <div>
+    <figure className="relative h-[65vh] min-h-[420px] max-h-[720px] w-full overflow-hidden rounded-[1.6rem] shadow-c57-overlay">
       <img
         src={image}
         alt={name}
@@ -107,16 +109,18 @@ export function GuidePanorama({ image, name, panorama }) {
             <span className="font-label-sm uppercase tracking-widest text-c57-secondary-fixed">
               {panorama.label}
             </span>
-            <p className="mt-1 font-headline-sm text-headline-sm italic text-c57-surface-container-lowest">
+            <p className="mt-1 font-display text-[1.55rem] italic leading-snug text-c57-surface-container-lowest">
               &ldquo;{panorama.quote}&rdquo;
             </p>
           </div>
-          <span className="shrink-0 font-label-sm text-label-sm text-c57-surface-variant">
-            Kurasi Fotografi: Cakra Discovery Journal
-          </span>
+          {!photoCredit && <span className="shrink-0 font-label-sm text-label-sm text-c57-surface-variant">
+            Dokumentasi perjalanan Cakra57
+          </span>}
         </figcaption>
       </div>
     </figure>
+    <DestinationPhotoCredit credit={photoCredit} className="mt-4" />
+    </div>
   );
 }
 
@@ -124,9 +128,9 @@ export function GuidePanorama({ image, name, panorama }) {
 
 function NarrativeSection({ narrative }) {
   return (
-    <section className="flex flex-col gap-space-md">
+    <section id="cerita" className="scroll-mt-40 flex flex-col gap-space-md">
       <PartLabel>Bagian 01 — Narasi Destinasi</PartLabel>
-      <h2 className="font-headline-lg text-headline-lg text-c57-on-surface">
+      <h2 className="font-display text-[clamp(1.9rem,3.4vw,2.8rem)] leading-[1.06] tracking-[-0.02em] text-c57-on-surface">
         {narrative.title}
       </h2>
       {narrative.body.map((paragraph, i) => (
@@ -139,9 +143,9 @@ function NarrativeSection({ narrative }) {
       ))}
 
       <Card variant="inset" className="mt-space-sm flex items-start gap-space-md p-space-lg">
-        <Icon name="format_quote" size="2xl" className="shrink-0 text-c57-primary" />
+        <Icon name="format_quote" size="2xl" className="shrink-0 text-c57-secondary" />
         <div className="flex flex-col gap-1">
-          <p className="font-headline-sm text-headline-sm italic text-c57-on-surface">
+          <p className="font-display text-[1.4rem] italic leading-snug text-c57-on-surface">
             &ldquo;{narrative.quote}&rdquo;
           </p>
           <span className="font-label-sm uppercase tracking-wider text-c57-secondary">
@@ -157,9 +161,9 @@ function NarrativeSection({ narrative }) {
 
 function LightSection({ light }) {
   return (
-    <section className="flex flex-col gap-space-md">
+    <section id="pengalaman" className="scroll-mt-40 flex flex-col gap-space-md">
       <PartLabel>Bagian 02 — Waktu &amp; Cahaya</PartLabel>
-      <h2 className="font-headline-lg text-headline-lg text-c57-on-surface">
+      <h2 className="font-display text-[clamp(1.9rem,3.4vw,2.8rem)] leading-[1.06] tracking-[-0.02em] text-c57-on-surface">
         {light.title}
       </h2>
       <p className="text-body-md leading-relaxed text-c57-on-surface-variant">
@@ -177,14 +181,14 @@ function LightSection({ light }) {
               className={[
                 "flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-label-lg text-label-lg",
                 stop.active
-                  ? "bg-c57-primary-container font-bold text-c57-on-primary"
-                  : "bg-c57-surface-container font-bold text-c57-primary",
+                  ? "bg-c57-primary font-semibold text-c57-on-primary"
+                  : "bg-c57-surface-container font-semibold text-c57-secondary",
               ].join(" ")}
             >
               {stop.time}
             </span>
             <div className="flex flex-col">
-              <span className="font-label-lg text-label-lg font-semibold text-c57-on-surface">
+              <span className="font-display text-[1.05rem] leading-snug text-c57-on-surface">
                 {stop.title}
               </span>
               <p className="text-body-sm text-c57-secondary">{stop.body}</p>
@@ -200,10 +204,10 @@ function LightSection({ light }) {
 
 function GearSection({ gear }) {
   return (
-    <section className="flex flex-col gap-space-md">
+    <section id="persiapan" className="scroll-mt-40 flex flex-col gap-space-md">
       <PartLabel>Bagian 03 — Perlengkapan &amp; Keselamatan</PartLabel>
-      <h2 className="font-headline-lg text-headline-lg text-c57-on-surface">
-        Kurasi Gear Wajib
+      <h2 className="font-display text-[clamp(1.9rem,3.4vw,2.8rem)] leading-[1.06] tracking-[-0.02em] text-c57-on-surface">
+        Perlengkapan sebelum berangkat
       </h2>
       {/* No invented intro paragraph here on purpose. The mockup's Bagian 03
           lead-in is specific to one destination's hazards, and the guide
@@ -217,7 +221,7 @@ function GearSection({ gear }) {
             variant="inset"
             className="flex items-start gap-space-sm p-space-md"
           >
-            <Icon name={item.icon} size="xl" className="shrink-0 text-c57-primary" />
+            <Icon name={item.icon} size="xl" className="shrink-0 text-c57-secondary" />
             <div>
               <h3 className="font-label-lg text-label-lg font-bold text-c57-on-surface">
                 {item.title}
@@ -235,16 +239,16 @@ function GearSection({ gear }) {
 
 function RouteSection({ route }) {
   return (
-    <section className="flex flex-col gap-space-md">
+    <section id="akses" className="scroll-mt-40 flex flex-col gap-space-md">
       <PartLabel>Bagian 04 — Rute &amp; Akses</PartLabel>
-      <h2 className="font-headline-lg text-headline-lg text-c57-on-surface">
+      <h2 className="font-display text-[clamp(1.9rem,3.4vw,2.8rem)] leading-[1.06] tracking-[-0.02em] text-c57-on-surface">
         {route.title}
       </h2>
       <p className="text-body-md leading-relaxed text-c57-on-surface-variant">
         {route.body}
       </p>
       <Card variant="inset" className="flex items-start gap-space-sm p-space-md">
-        <Icon name="info" size="lg" className="shrink-0 text-c57-primary" />
+        <Icon name="info" size="lg" className="shrink-0 text-c57-secondary" />
         <p className="text-body-sm leading-relaxed text-c57-secondary">
           {route.note}
         </p>
@@ -257,10 +261,47 @@ function RouteSection({ route }) {
 export function GuideArticle({ guide }) {
   return (
     <article className="flex flex-col gap-space-xl lg:col-span-7">
+      <nav aria-label="Daftar isi panduan" className="border-y border-c57-outline-variant py-6">
+        <h2 className="font-label-md text-c57-on-surface">Dalam panduan ini</h2>
+        <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-3 text-body-sm text-c57-secondary">
+          {[
+            ["cerita", "Cerita destinasi"],
+            ...(guide.funFacts?.length ? [["fakta-menarik", "Fakta menarik"]] : []),
+            ["pengalaman", "Pengalaman"],
+            ["persiapan", "Persiapan"],
+            ["akses", "Rute & akses"],
+            ...(guide.sources?.length ? [["sumber", "Sumber bacaan"]] : []),
+          ].map(([id, label]) => (
+            <li key={id}><a href={`#${id}`} className="inline-block py-1 underline underline-offset-4 transition-colors hover:text-c57-primary">{label}</a></li>
+          ))}
+        </ul>
+      </nav>
       <NarrativeSection narrative={guide.narrative} />
+      {guide.funFacts?.length > 0 && (
+        <section id="fakta-menarik" className="scroll-mt-40">
+          <h2 className="font-display text-[clamp(1.9rem,3.4vw,2.8rem)] leading-tight text-c57-on-surface">Fakta menarik sebelum berkunjung</h2>
+          <dl className="mt-6 divide-y divide-c57-outline-variant">
+            {guide.funFacts.map((fact) => (
+              <div key={fact.title} className="py-5 first:pt-0">
+                <dt className="font-display text-[1.35rem] text-c57-on-surface">{fact.title}</dt>
+                <dd className="mt-2 text-body-md leading-relaxed text-c57-on-surface-variant">{fact.body}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
       <LightSection light={guide.light} />
       <GearSection gear={guide.gear} />
       <RouteSection route={guide.route} />
+      {guide.sources?.length > 0 && (
+        <section id="sumber" className="scroll-mt-40 border-t border-c57-outline-variant pt-6">
+          <h2 className="font-display text-[1.6rem] text-c57-on-surface">Sumber bacaan</h2>
+          {guide.reviewedOn && <p className="mt-2 text-body-sm text-c57-on-surface-variant">Ditinjau <time dateTime={guide.reviewedOn}>{new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${guide.reviewedOn}T00:00:00Z`))}</time>. Periksa informasi operasional terbaru melalui pengelola.</p>}
+          <ul className="mt-4 space-y-3 text-body-sm text-c57-secondary">
+            {guide.sources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 transition-colors hover:text-c57-primary">{source.title}</a></li>)}
+          </ul>
+        </section>
+      )}
     </article>
   );
 }
@@ -283,10 +324,10 @@ export function ConciergeEnquiryCard({ spot, hasCulinaryNote = false }) {
   return (
     <Card className="flex flex-col gap-space-md p-space-lg shadow-xl">
       <div className="flex flex-col gap-1">
-        <span className="font-label-sm font-bold uppercase tracking-widest text-c57-primary">
+        <span className="font-label-sm font-bold uppercase tracking-widest text-c57-secondary">
           Curasi Cakra 57
         </span>
-        <h3 className="font-headline-sm text-headline-sm text-c57-on-surface">
+        <h3 className="font-display text-[1.45rem] leading-tight text-c57-on-surface">
           Rancang Perjalanan ke {spot.name}
         </h3>
       </div>
@@ -303,7 +344,7 @@ export function ConciergeEnquiryCard({ spot, hasCulinaryNote = false }) {
           ["support_agent", "Pendampingan concierge 24/7"],
         ].map(([icon, label]) => (
           <div key={label} className="flex items-center gap-1.5">
-            <Icon name={icon} size="lg" className="shrink-0 text-c57-primary" />
+            <Icon name={icon} size="lg" className="shrink-0 text-c57-secondary" />
             <span className="text-body-sm font-medium text-c57-on-surface-variant">
               {label}
             </span>
@@ -337,14 +378,14 @@ export function CulinaryCard({ culinary }) {
       variant="inset"
       className="flex items-center gap-space-md p-space-md"
     >
-      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-c57-surface-variant font-headline-sm text-headline-sm font-bold text-c57-primary">
+      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-c57-surface-variant font-display text-[1.3rem] font-bold text-c57-secondary">
         57
       </span>
       <div className="flex flex-col">
         <span className="font-label-sm uppercase tracking-wider text-c57-secondary">
           Rekomendasi Kuliner Singgah
         </span>
-        <h4 className="font-headline-sm text-headline-sm text-c57-on-surface">
+        <h4 className="font-display text-[1.45rem] leading-tight text-c57-on-surface">
           {culinary.name}
         </h4>
         <p className="text-body-sm text-c57-secondary">{culinary.description}</p>
@@ -367,17 +408,17 @@ export function GuideAside({ spot, guide }) {
 export function GuideOverline({ category, region, city, readingMinutes }) {
   return (
     <div className="flex flex-wrap items-center gap-space-sm">
-      <Pill variant="signature">Definitive Guide</Pill>
+      <Pill variant="signature">Panduan Destinasi</Pill>
       <Pill variant="neutral">
         {city} &mdash; {region}
       </Pill>
       {category && (
-        <span className="hidden font-label-sm text-label-sm text-c57-secondary md:inline-block">
+        <span className="hidden font-label-sm text-label-sm text-c57-on-scrim/85 md:inline-block">
           {category.toUpperCase()}
         </span>
       )}
       {readingMinutes ? (
-        <span className="font-label-sm text-label-sm text-c57-secondary">
+        <span className="font-label-sm text-label-sm text-c57-on-scrim/85">
           Waktu baca: {readingMinutes} menit
         </span>
       ) : null}

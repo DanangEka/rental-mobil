@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { destinationSpots } from "../data/destinationSpots";
 import { getDestinationGuide, getDestinationTimezone } from "../data/destinationGuides";
 import DestinationTile from "../components/DestinationTile";
+import { useEditorialReveal } from "../motion/editorial";
 import {
   ConciergeEnquiryCard,
   GuideArticle,
@@ -56,6 +58,8 @@ function estimateReadingMinutes(guide) {
     guide.route?.body,
     guide.route?.note,
     guide.culinary?.description,
+    ...(guide.funFacts || []).flatMap((fact) => [fact.title, fact.body]),
+    ...(guide.gear || []).flatMap((item) => [item.title, item.description]),
   ]
     .filter(Boolean)
     .join(" ")
@@ -99,7 +103,7 @@ function Hero({ spot, region, guide }) {
   return (
     <section className="relative flex min-h-[70vh] items-end overflow-hidden pt-32 md:min-h-[80vh] md:pt-40">
       <img
-        src={spot.image}
+        src={guide?.heroImage || spot.image}
         alt={spot.name}
         className="heroKenBurns absolute inset-0 h-full w-full object-cover"
       />
@@ -122,7 +126,7 @@ function Hero({ spot, region, guide }) {
           />
         </div>
 
-        <h1 className="max-w-4xl font-headline-xl text-headline-xl-mobile leading-[0.95] text-c57-on-scrim md:text-headline-xl">
+        <h1 className="max-w-4xl font-display text-[clamp(3rem,7vw,5.6rem)] font-normal leading-[0.95] tracking-[-0.02em] text-c57-on-scrim">
           {spot.name}
           {guide?.subtitle && (
             <em className="font-normal italic text-c57-surface-variant">
@@ -170,10 +174,10 @@ function LeanAbout({ spot, region, timezone }) {
     <section className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-24">
       <div className="grid items-start gap-10 md:grid-cols-12 md:gap-16">
         <div className="md:col-span-7">
-          <p className="mb-3 font-label-sm uppercase tracking-[0.3em] text-c57-primary">
+          <p className="mb-3 font-label-sm uppercase tracking-[0.3em] text-c57-secondary">
             Tentang Destinasi
           </p>
-          <h2 className="font-headline-md text-headline-md text-c57-on-surface">
+          <h2 className="font-display text-[clamp(2rem,3.8vw,3.1rem)] leading-[1.04] tracking-[-0.02em] text-c57-on-surface">
             {spot.name}
           </h2>
           <p className="mt-6 max-w-2xl text-body-lg font-light leading-relaxed text-c57-on-surface-variant">
@@ -188,7 +192,7 @@ function LeanAbout({ spot, region, timezone }) {
                 <dt className="font-label-sm uppercase tracking-widest text-c57-outline">
                   {label}
                 </dt>
-                <dd className="mt-1 font-headline-sm text-body-lg text-c57-on-surface">
+                <dd className="mt-1 font-display text-[1.35rem] leading-tight text-c57-on-surface">
                   {value}
                 </dd>
               </Card>
@@ -210,7 +214,8 @@ function LeanAbout({ spot, region, timezone }) {
 
 /* ── Related destinations ─────────────────────────────────────────────── */
 
-function Related({ spot }) {
+ function Related({ spot }) {
+  const reveal = useEditorialReveal();
   const related = useMemo(() => {
     if (!spot) return [];
     return destinationSpots
@@ -231,16 +236,16 @@ function Related({ spot }) {
     <section className="mx-auto max-w-7xl px-5 pb-24 md:px-10">
       <div className="mb-8 flex items-end justify-between gap-space-md md:mb-12">
         <div>
-          <p className="mb-2 font-label-sm uppercase tracking-[0.3em] text-c57-primary">
+          <p className="mb-2 font-label-sm uppercase tracking-[0.3em] text-c57-secondary">
             Explore Lebih Jauh
           </p>
-          <h2 className="font-headline-lg text-headline-lg-mobile text-c57-on-surface md:text-headline-lg">
+          <h2 className="font-display text-[clamp(2rem,4vw,3.3rem)] leading-[1.04] tracking-[-0.02em] text-c57-on-surface">
             Tempat lain yang mungkin kamu suka
           </h2>
         </div>
         <Link
           to="/discovery"
-          className="hidden shrink-0 items-center gap-space-sm font-label-sm uppercase tracking-[0.2em] text-c57-primary transition-colors hover:text-c57-primary-container md:inline-flex"
+          className="hidden shrink-0 items-center gap-space-sm font-label-sm uppercase tracking-[0.2em] text-c57-secondary transition-colors hover:text-c57-on-surface md:inline-flex"
         >
           Lihat Semua
           <Icon name="north_east" size="sm" />
@@ -249,7 +254,9 @@ function Related({ spot }) {
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {related.map((r, idx) => (
-          <DestinationTile key={r.slug} spot={r} index={idx} />
+          <motion.div key={r.slug} {...reveal(Math.min(idx, 5) * 0.06)}>
+            <DestinationTile spot={r} />
+          </motion.div>
         ))}
       </div>
     </section>
@@ -263,12 +270,12 @@ function FooterCta({ spot }) {
     <section className="mx-auto max-w-7xl px-5 pb-24 md:px-10">
       <Card variant="scrim" className="p-10 text-center md:p-16">
         <Icon name="auto_awesome" size="lg" className="mx-auto text-c57-accent-line" />
-        <h2 className="mt-space-md font-headline-lg text-headline-lg-mobile text-c57-on-scrim md:text-headline-lg">
+        <h2 className="mt-space-md font-display text-[clamp(2rem,4vw,3.3rem)] leading-[1.04] tracking-[-0.02em] text-c57-on-scrim">
           Siap menjelajah {spot.city}?
         </h2>
         <p className="mx-auto mt-space-md max-w-xl text-body-lg font-light text-c57-on-scrim/60">
-          Rencanakan Open Trip atau Private Trip ke {spot.name} bersama Cakra
-          Lima Tujuh.
+          Konsultasikan rencana perjalanan ke {spot.name}. Tim Cakra Lima Tujuh
+          membantu menyesuaikan pilihan dengan kebutuhan dan akses kunjungan.
         </p>
         <div className="mt-space-lg flex flex-wrap justify-center gap-space-md">
           <Button as={Link} to="/open-trip" size="lg">
@@ -276,7 +283,7 @@ function FooterCta({ spot }) {
           </Button>
           <Button
             as={Link}
-            to="/home?type=driver"
+            to="/tour-packages?category=private"
             variant="secondary"
             size="lg"
             className="border-c57-on-scrim/40 text-c57-on-scrim hover:border-c57-on-scrim hover:bg-c57-on-scrim hover:text-c57-scrim"
@@ -329,7 +336,7 @@ export default function DestinationDetailPage() {
           </section>
 
           <section className="mx-auto max-w-7xl px-5 pb-space-xl md:px-10">
-            <GuidePanorama image={spot.image} name={spot.name} panorama={guide.panorama} />
+            <GuidePanorama image={guide.panorama.image || spot.image} name={spot.name} panorama={guide.panorama} photoCredit={guide.photoCredit} />
           </section>
 
           <section className="mx-auto max-w-7xl px-5 pb-16 md:px-10 md:pb-24">

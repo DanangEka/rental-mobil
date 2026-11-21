@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback } from "react";
 import Icon from "./Icon";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { EDITORIAL_EASE } from "../../motion/editorial";
 
 /**
  * Replaces the eight hand-rolled modal implementations scattered across
@@ -17,6 +19,11 @@ import { createPortal } from "react-dom";
  *   - focus moves into the dialog on open and returns to the trigger on close
  *   - Tab is trapped within the dialog
  *   - `role="dialog"` + `aria-modal` + labelled by its own heading
+ *   - entrance and exit are both animated; exit is faster than entrance
+ *
+ * The dialog lives in its own component so AnimatePresence can keep it
+ * mounted while the exit runs — that way the scroll lock and the focus
+ * restore only happen once the panel is actually gone from the screen.
  */
 
 const FOCUSABLE = [
@@ -46,13 +53,35 @@ export default function Modal({
   footer,
   children,
 }) {
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <ModalDialog
+          key="modal"
+          onClose={onClose}
+          title={title}
+          subtitle={subtitle}
+          size={size}
+          closeOnBackdrop={closeOnBackdrop}
+          footer={footer}
+        >
+          {children}
+        </ModalDialog>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+}
+
+function ModalDialog({ onClose, title, subtitle, size, closeOnBackdrop, footer, children }) {
   const panelRef = useRef(null);
   const triggerRef = useRef(null);
+  const reduceMotion = useReducedMotion();
 
   const handleKeyDown = useCallback(
     (e) => {
-      if (!open) return;
-
       if (e.key === "Escape") {
         e.stopPropagation();
         onClose?.();
@@ -81,14 +110,15 @@ export default function Modal({
         first.focus();
       }
     },
-    [open, onClose]
+    [onClose]
   );
 
-  // Scroll lock + focus transfer. Restores the body's prior overflow rather
-  // than assuming it was unset — several pages already set it themselves.
+  // Scroll lock + focus transfer. Runs for the whole mounted life of the
+  // dialog — including the exit animation — so the body stays locked and the
+  // trigger only regains focus once the panel is off screen. Restores the
+  // body's prior overflow rather than assuming it was unset; several pages
+  // already set it themselves.
   useEffect(() => {
-    if (!open) return;
-
     triggerRef.current = document.activeElement;
     const prevOverflow = document.body.style.overflow;
     const prevPadding = document.body.style.paddingRight;
@@ -113,33 +143,37 @@ export default function Modal({
         triggerRef.current.focus();
       }
     };
-  }, [open]);
+  }, []);
 
-  if (!open) return null;
-  if (typeof document === "undefined") return null;
-
-  return createPortal(
+  return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-space-md sm:p-space-lg"
       onKeyDown={handleKeyDown}
     >
-      <div
+      <motion.div
         className="absolute inset-0 bg-c57-scrim/60 backdrop-blur-[12px]"
         onClick={closeOnBackdrop ? onClose : undefined}
         aria-hidden="true"
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0, transition: { duration: 0.18 } }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
       />
 
-      <div
+      <motion.div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={typeof title === "string" ? title : undefined}
         tabIndex={-1}
+        initial={reduceMotion ? false : { opacity: 0, y: 26, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 14, scale: 0.99, transition: { duration: 0.16, ease: "easeIn" } }}
+        transition={{ duration: 0.3, ease: EDITORIAL_EASE }}
         className={[
           "relative w-full flex flex-col max-h-[92vh]",
           "bg-c57-surface-container-lowest",
           "rounded-c57-xl shadow-c57-overlay border border-c57-surface-variant",
-          "animate-fadeInUp",
           SIZES[size],
         ].join(" ")}
       >
@@ -175,9 +209,8 @@ export default function Modal({
             {footer}
           </footer>
         )}
-      </div>
-    </div>,
-    document.body
+      </motion.div>
+    </div>
   );
 }
 

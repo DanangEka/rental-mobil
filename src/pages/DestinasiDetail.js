@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { getSpotsByRegion } from "../data/destinationSpots";
 import DestinationTile from "../components/DestinationTile";
+import { useEditorialReveal } from "../motion/editorial";
 import EmptyState from "../components/ui/EmptyState";
 import Icon from "../components/ui/Icon";
 import Pill from "../components/ui/Pill";
@@ -33,9 +35,9 @@ function OrnamentDivider({ className = "" }) {
   return (
     <div className={`flex items-center justify-center gap-2 md:gap-3 ${className}`}>
       <span className="h-px w-10 bg-gradient-to-r from-transparent via-c57-accent-line/40 to-c57-accent-line/60 md:w-16" />
-      <span className="h-1.5 w-1.5 rotate-45 bg-c57-primary-container" />
+      <span className="h-1.5 w-1.5 rotate-45 bg-c57-secondary" />
       <span className="h-2.5 w-2.5 rotate-45 border border-c57-accent-line/50" />
-      <span className="h-1.5 w-1.5 rotate-45 bg-c57-primary-container" />
+      <span className="h-1.5 w-1.5 rotate-45 bg-c57-secondary" />
       <span className="h-px w-10 bg-gradient-to-l from-transparent via-c57-accent-line/40 to-c57-accent-line/60 md:w-16" />
     </div>
   );
@@ -43,6 +45,7 @@ function OrnamentDivider({ className = "" }) {
 
 export default function DestinasiDetail() {
   const { region } = useParams();
+  const reveal = useEditorialReveal();
   const [spots, setSpots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [heroLoaded, setHeroLoaded] = useState(false);
@@ -76,7 +79,7 @@ export default function DestinasiDetail() {
         {/* Visible until the photograph decodes, so the banner never flashes
             empty on a slow connection. */}
         <div
-          className="absolute inset-0 bg-gradient-to-br from-c57-scrim via-c57-scrim to-c57-primary"
+          className="absolute inset-0 bg-gradient-to-br from-c57-scrim via-c57-scrim to-c57-secondary/40"
           aria-hidden="true"
         />
 
@@ -134,7 +137,7 @@ export default function DestinasiDetail() {
             <span className="accent-line" aria-hidden="true" />
             Destinasi Cakra Lima Tujuh
           </p>
-          <h1 className="animate-fadeInUp font-headline-lg text-headline-lg-mobile text-c57-on-scrim [text-shadow:0_2px_30px_rgba(0,0,0,0.6)] delay-100 md:text-headline-xl">
+          <h1 className="animate-fadeInUp font-display text-[clamp(3rem,7vw,5.6rem)] font-normal leading-[0.95] tracking-[-0.02em] text-c57-on-scrim [text-shadow:0_2px_30px_rgba(0,0,0,0.6)] delay-100">
             {regionLabel[region]}
           </h1>
           <p className="mt-3 max-w-xl animate-fadeInUp font-display text-body-lg italic leading-relaxed text-c57-on-scrim/90 delay-200 md:mt-4">
@@ -150,7 +153,7 @@ export default function DestinasiDetail() {
       </div>
 
       {/* ── Body ──────────────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-7xl px-5 pb-20 md:px-10 md:pb-24">
+      <div className="editorial-shell pb-20 md:pb-24">
         <div
           className={`mb-8 mt-6 flex flex-col items-center text-center md:mb-12 md:mt-8 ${
             loading ? "opacity-0" : "opacity-100 transition-opacity delay-400 duration-700"
@@ -192,7 +195,9 @@ export default function DestinasiDetail() {
                 Link would nest two anchors, which is invalid HTML and breaks
                 keyboard traversal. */}
             {spots.map((spot, idx) => (
-              <DestinationTile key={spot.id || spot.slug} spot={spot} index={idx} />
+              <motion.div key={spot.id || spot.slug} {...reveal(Math.min(idx, 5) * 0.06)}>
+                <DestinationTile spot={spot} />
+              </motion.div>
             ))}
           </div>
         )}

@@ -10,6 +10,14 @@ import {
   PRIVATE_JOURNEYS,
 } from "../data/tourCatalogue";
 
+let mockCategorySearch = "";
+jest.mock("react-router-dom", () => ({
+  useSearchParams: () => {
+    const [params, setParams] = require("react").useState(() => new URLSearchParams(mockCategorySearch));
+    return [params, setParams];
+  },
+}), { virtual: true });
+
 jest.mock("firebase/firestore", () => ({
   collection: jest.fn((...a) => ({ __collection: a })),
   query: jest.fn((...a) => ({ __query: a })),
@@ -36,6 +44,7 @@ function renderPage() {
 }
 
 beforeEach(() => {
+  mockCategorySearch = "";
   onSnapshot.mockReset();
   window.open = jest.fn();
   withPackages([]);
@@ -86,6 +95,23 @@ describe("curated catalogue", () => {
 });
 
 describe("filtering", () => {
+  it("opens the private category directly from a homepage link", async () => {
+    mockCategorySearch = "category=private";
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("tab", { name: CATEGORIES[2] })).toHaveAttribute("aria-selected", "true"));
+    expect(screen.getByText(PRIVATE_JOURNEYS[0].title)).toBeInTheDocument();
+    expect(screen.queryByText(OPEN_TRIPS[0].title)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: CATEGORIES[0] }));
+    expect(screen.getByText(OPEN_TRIPS[0].title)).toBeInTheDocument();
+  });
+
+  it("falls back to all packages for an unknown category", async () => {
+    mockCategorySearch = "category=unknown";
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("tab", { name: CATEGORIES[0] })).toHaveAttribute("aria-selected", "true"));
+    expect(screen.getByText(OPEN_TRIPS[0].title)).toBeInTheDocument();
+  });
+
   it("narrows the grid to the selected region once the schedule is applied", async () => {
     const baliTrip = OPEN_TRIPS.find((t) => t.region === "bali-penida");
     expect(baliTrip).toBeDefined();
@@ -185,6 +211,19 @@ describe("admin-managed CMS catalogue", () => {
     expect(screen.getByText("Rp 925.000")).toBeDefined();
   });
 
+
+  it("opens WhatsApp without also opening the package detail modal", async () => {
+    withPackages([{ judul: "Wisata keluarga", destinasi: "Bromo", durasi: "2D1N", harga: 925000 }]);
+    renderPage();
+    const consult = await screen.findByRole("button", { name: "Konsultasi Paket" });
+    fireEvent.click(consult);
+    expect(window.open).toHaveBeenCalledTimes(1);
+    expect(decodeURIComponent(window.open.mock.calls[0][0])).toContain("Wisata keluarga");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Detail" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText(/Konsultasi ini belum membuat reservasi/)).toBeInTheDocument();
+  });
 
   it("shows the empty state when the CMS has no rows", async () => {
     renderPage();

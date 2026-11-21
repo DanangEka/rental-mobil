@@ -1,0 +1,372 @@
+{
+  "raja-ampat": {
+    "subtitle": "Kepulauan karst dan kehidupan laut",
+    "lead": "Raja Ampat mengajak kita melihat hubungan antara bentuk pulau, laut, dan kehidupan masyarakat pesisir.",
+    "focus": "Kepulauan karst dan kehidupan laut",
+    "caption": "Kepulauan karst dan kehidupan laut",
+    "title": "Mengenal Raja Ampat",
+    "body": [
+      "Raja Ampat dikenal sebagai geopark kepulauan dengan bentang karst. Pulau-pulau berbatu yang muncul di laut merupakan bagian dari warisan geologi, bukan hanya latar perjalanan dengan kapal.",
+      "Jangan menyusun rute hanya dari kedekatan titik di peta. Pilih beberapa lokasi bersama penyedia perjalanan dan beri waktu untuk mengenal tempat singgah serta aturan konservasinya."
+    ],
+    "reflection": "Pilih lebih sedikit titik singgah agar punya waktu mengenal tiap pulau.",
+    "funFacts": [
+      {
+        "title": "Karst juga dapat berupa kepulauan",
+        "body": "Pengelola geopark menyebut bentang karst kepulauan sebagai salah satu ciri geologi Raja Ampat."
+      },
+      {
+        "title": "Geopark menghubungkan banyak warisan",
+        "body": "Penjelasan geopark mencakup geologi, kehidupan, dan budaya, bukan hanya daftar titik snorkeling."
+      }
+    ],
+    "experienceTitle": "Cara menikmati Raja Ampat",
+    "experience": "Pilih aktivitas yang sesuai dengan minat dan kondisi rombongan. Urutan berikut merupakan saran menyusun kunjungan, bukan jadwal tur atau kepastian akses.",
+    "highlight": "Kepulauan karst dan kehidupan laut",
+    "highlightBody": "Pilih lebih sedikit titik singgah agar punya waktu mengenal tiap pulau.",
+    "accessTitle": "Merencanakan akses ke Raja Ampat",
+    "access": "Koordinasikan perjalanan menuju Raja Ampat dan transportasi lanjutan dengan penginapan atau penyedia lokal. Periksa cuaca serta izin untuk lokasi yang ingin dikunjungi.",
+    "pause": "Sisihkan waktu untuk makan dan beristirahat di area yang diperbolehkan. Tanyakan pilihan tempat singgah kepada pendamping atau pengelola setempat.",
+    "sources": [
+      {
+        "title": "UNESCO — Raja Ampat Global Geopark",
+        "url": "https://www.unesco.org/en/iggp/geoparks/raja-ampat"
+      },
+      {
+        "title": "Raja Ampat Geopark — Warisan geologi",
+        "url": "https://rajaampatgeopark.com/our-heritage/geoheritage/"
+      }
+    ]
+  },
+  "komodo": {
+    "subtitle": "Berkunjung ke habitat, bukan kebun binatang",
+    "lead": "Pulau Komodo memperkenalkan hubungan antara satwa, daratan kering, dan ekosistem laut dalam kawasan konservasi.",
+    "focus": "Berkunjung ke habitat, bukan kebun binatang",
+    "caption": "Berkunjung ke habitat, bukan kebun binatang",
+    "title": "Mengenal Pulau Komodo",
+    "body": [
+      "Pulau Komodo adalah bagian dari Taman Nasional Komodo. UNESCO menjelaskan pentingnya kawasan ini melalui habitat komodo dan lingkungan darat serta laut yang saling berhubungan.",
+      "Kunjungan sebaiknya mengikuti penjelasan petugas dan pendamping kawasan. Kesempatan melihat satwa tidak boleh berubah menjadi upaya mendekati, memancing respons, atau menentukan jalur sendiri."
+    ],
+    "reflection": "Biarkan pendamping menentukan jarak dan jalur saat mengamati satwa.",
+    "funFacts": [
+      {
+        "title": "Taman nasional meliputi darat dan laut",
+        "body": "Nilai kawasan tidak berhenti pada komodo; ekosistem di sekitar pulau juga menjadi bagian pentingnya."
+      },
+      {
+        "title": "Komodo punya habitat alami",
+        "body": "Perjumpaan satwa di kawasan harus dipahami sebagai kunjungan ke habitat, bukan tontonan yang dapat diatur sesuka pengunjung."
+      }
+    ],
+    "experienceTitle": "Cara menikmati Pulau Komodo",
+    "experience": "Pilih aktivitas yang sesuai dengan minat dan kondisi rombongan. Urutan berikut merupakan saran menyusun kunjungan, bukan jadwal tur atau kepastian akses.",
+    "highlight": "Berkunjung ke habitat, bukan kebun binatang",
+    "highlightBody": "Biarkan pendamping menentukan jarak dan jalur saat mengamati satwa.",
+    "accessTitle": "Merencanakan akses ke Pulau Komodo",
+    "access": "Rencanakan perjalanan laut dari titik keberangkatan yang disepakati dengan penyedia. Konfirmasi izin, pendamping kawasan, dan rute yang sedang diizinkan.",
+    "pause": "Sisihkan waktu untuk makan dan beristirahat di area yang diperbolehkan. Tanyakan pilihan tempat singgah kepada pendamping atau pengelola setempat.",
+    "sources": [
+      {
+        "title": "UNESCO — Komodo National Park",
+        "url": "https://whc.unesco.org/en/list/609/"
+      }
+    ]
+  },
+  "danau-toba": {
+    "subtitle": "Danau yang menyimpan cerita kaldera",
+    "lead": "Danau Toba menawarkan kesempatan membaca jejak geologi sambil menikmati ruang perairan dan kehidupan di tepinya.",
+    "focus": "Danau yang menyimpan cerita kaldera",
+    "caption": "Danau yang menyimpan cerita kaldera",
+    "title": "Mengenal Danau Toba",
+    "body": [
+      "Kaldera Toba terbentuk melalui peristiwa vulkanik besar dan menjadi bagian dari UNESCO Global Geopark. Bentang danau membantu mengenalkan bahwa lanskap yang tampak tenang juga memiliki sejarah bumi yang panjang.",
+      "Pilih satu kawasan tepi danau untuk dinikmati lebih lama. Membatasi jumlah perpindahan memberi kesempatan berhenti, berbincang, dan melihat perubahan suasana tanpa menghabiskan perjalanan di kendaraan."
+    ],
+    "reflection": "Pilih satu tepian untuk dikenali, bukan sekadar satu putaran untuk diselesaikan.",
+    "funFacts": [
+      {
+        "title": "Danau punya konteks geologi",
+        "body": "Toba dikenal sebagai kaldera, sehingga bentuk bentangnya berkaitan dengan sejarah vulkanik."
+      },
+      {
+        "title": "Geopark lebih luas dari foto danau",
+        "body": "Pendekatan geopark menghubungkan bentang bumi dengan masyarakat dan lingkungan yang hidup di dalamnya."
+      }
+    ],
+    "experienceTitle": "Cara menikmati Danau Toba",
+    "experience": "Pilih aktivitas yang sesuai dengan minat dan kondisi rombongan. Urutan berikut merupakan saran menyusun kunjungan, bukan jadwal tur atau kepastian akses.",
+    "highlight": "Danau yang menyimpan cerita kaldera",
+    "highlightBody": "Pilih satu tepian untuk dikenali, bukan sekadar satu putaran untuk diselesaikan.",
+    "accessTitle": "Merencanakan akses ke Danau Toba",
+    "access": "Tentukan kawasan menginap dan titik kunjungan di sekitar danau sebelum mengatur transportasi. Jika menyeberang, konfirmasi layanan serta kondisi perjalanan langsung kepada operator.",
+    "pause": "Sisihkan waktu untuk makan dan beristirahat di area yang diperbolehkan. Tanyakan pilihan tempat singgah kepada pendamping atau pengelola setempat.",
+    "sources": [
+      {
+        "title": "UNESCO — Toba Caldera Global Geopark",
+        "url": "https://www.unesco.org/en/iggp/toba-caldera-unesco-global-geopark"
+      }
+    ]
+  },
+  "rinjani": {
+    "subtitle": "Mengenal gunung melalui bentang kalderanya",
+    "lead": "Rinjani di Lombok memiliki kisah geologi yang dapat dipelajari sebelum memutuskan bentuk perjalanan yang sesuai.",
+    "focus": "Mengenal gunung melalui bentang kalderanya",
+    "caption": "Mengenal gunung melalui bentang kalderanya",
+    "title": "Mengenal Gunung Rinjani",
+    "body": [
+      "Geopark Rinjani-Lombok mencakup gunung Rinjani dan kaldera dengan Danau Segara Anak. Bentang ini memperlihatkan hubungan antara gunung, cekungan, dan danau dalam satu sistem geologi.",
+      "Mengenal Rinjani tidak harus langsung berarti menargetkan puncak. Pertimbangkan minat, pengalaman, dan kemampuan rombongan, lalu mintalah pendamping menjelaskan pilihan kegiatan yang benar-benar diizinkan."
+    ],
+    "reflection": "Tentukan bentuk pengalaman sebelum menentukan target ketinggian.",
+    "funFacts": [
+      {
+        "title": "Danau berada dalam kaldera",
+        "body": "Segara Anak adalah bagian dari bentang kaldera Rinjani, bukan danau pesisir."
+      },
+      {
+        "title": "Rinjani terkait dengan kehidupan Lombok",
+        "body": "UNESCO mengenalkan kawasan ini melalui bentang alam dan masyarakat yang hidup di sekitarnya."
+      }
+    ],
+    "experienceTitle": "Cara menikmati Gunung Rinjani",
+    "experience": "Pilih aktivitas yang sesuai dengan minat dan kondisi rombongan. Urutan berikut merupakan saran menyusun kunjungan, bukan jadwal tur atau kepastian akses.",
+    "highlight": "Mengenal gunung melalui bentang kalderanya",
+    "highlightBody": "Tentukan bentuk pengalaman sebelum menentukan target ketinggian.",
+    "accessTitle": "Merencanakan akses ke Gunung Rinjani",
+    "access": "Konfirmasi pintu akses, ketentuan kegiatan, dan pengumuman pengelola taman nasional. Kegiatan pendakian memerlukan persiapan khusus dan tidak dapat disamakan dengan wisata pandang.",
+    "pause": "Sisihkan waktu untuk makan dan beristirahat di area yang diperbolehkan. Tanyakan pilihan tempat singgah kepada pendamping atau pengelola setempat.",
+    "sources": [
+      {
+        "title": "UNESCO — Rinjani-Lombok Global Geopark",
+        "url": "https://www.unesco.org/en/iggp/rinjani-lombok-unesco-global-geopark"
+      },
+      {
+        "title": "UNESCO — Cagar biosfer Rinjani Lombok",
+        "url": "https://www.unesco.org/en/mab/rinjani-lombok"
+      }
+    ]
+  },
+  "labuan-bajo": {
+    "subtitle": "Kota singgah sebelum menjelajah pulau",
+    "lead": "Labuan Bajo adalah tempat merencanakan perjalanan kawasan Komodo, sekaligus ruang untuk memberi jeda sebelum dan setelah berlayar.",
+    "focus": "Kota singgah sebelum menjelajah pulau",
+    "caption": "Kota singgah sebelum menjelajah pulau",
+    "title": "Mengenal Labuan Bajo",
+    "body": [
+      "Indonesia Travel menempatkan Labuan Bajo dalam perjalanan yang menghubungkan kawasan darat Flores dengan pulau-pulau sekitar Komodo. Perjalanan seperti ini melibatkan perpindahan darat dan laut yang perlu dibedakan.",
+      "Sisakan waktu untuk memastikan rute kapal, titik keberangkatan, dan kebutuhan rombongan. Jangan menempatkan seluruh harapan perjalanan pada satu agenda laut tanpa memberi ruang untuk perubahan kondisi."
+    ],
+    "reflection": "Jadwal yang memberi jeda sering lebih berguna daripada daftar pulau yang terlalu panjang.",
+    "funFacts": [
+      {
+        "title": "Padar adalah tujuan terpisah",
+        "body": "Mengunjungi Padar memerlukan bagian perjalanan tersendiri; berada di Labuan Bajo tidak berarti sudah berada di pulau itu."
+      },
+      {
+        "title": "Rute dapat menggabungkan beberapa pengalaman",
+        "body": "Perjalanan kawasan bisa mencakup panorama pulau dan pengamatan satwa, dengan aturan yang berbeda di tiap lokasi."
+      }
+    ],
+    "experienceTitle": "Cara menikmati Labuan Bajo",
+    "experience": "Pilih aktivitas yang sesuai dengan minat dan kondisi rombongan. Urutan berikut merupakan saran menyusun kunjungan, bukan jadwal tur atau kepastian akses.",
+    "highlight": "Kota singgah sebelum menjelajah pulau",
+    "highlightBody": "Jadwal yang memberi jeda sering lebih berguna daripada daftar pulau yang terlalu panjang.",
+    "accessTitle": "Merencanakan akses ke Labuan Bajo",
+    "access": "Tentukan waktu tiba dan penginapan sebelum menyepakati perjalanan kapal. Mintalah daftar titik kunjungan, perlengkapan, dan ketentuan perubahan rute.",
+    "pause": "Sisihkan waktu untuk makan dan beristirahat di area yang diperbolehkan. Tanyakan pilihan tempat singgah kepada pendamping atau pengelola setempat.",
+    "sources": [
+      {
+        "title": "Indonesia Travel — Labuan Bajo dan Komodo",
+        "url": "https://www.indonesia.travel/gb/en/travel-ideas/adventure/catch-this-complete-itinerary-for-3-day-s-trip-to-labuan-bajo-komodo"
+      }
+    ]
+  },
+  "waerebo": {
+    "subtitle": "Rumah adat dalam kehidupan pegunungan",
+    "lead": "Wae Rebo mengajak pengunjung mengenal masyarakat dan ruang hidup, bukan hanya mengoleksi foto rumah berbentuk kerucut.",
+    "focus": "Rumah adat dalam kehidupan pegunungan",
+    "caption": "Rumah adat dalam kehidupan pegunungan",
+    "title": "Mengenal Kampung Wae Rebo",
+    "body": [
+      "Wae Rebo adalah desa adat di pegunungan Flores yang dikenal melalui rumah-rumah Mbaru Niang. Bentuk rumah menjadi pintu masuk untuk memahami kehidupan bersama dan hubungan masyarakat dengan tempatnya.",
+      "Kunjungan perlu memberi ruang kepada tuan rumah. Tanyakan cara menerima tamu, izin memotret, dan ruang mana yang boleh dimasuki; jangan menganggap aktivitas sehari-hari warga sebagai pertunjukan."
+    ],
+    "reflection": "Datanglah sebagai tamu yang ingin mengenal, bukan hanya pengunjung yang ingin mengambil gambar.",
+    "funFacts": [
+      {
+        "title": "Mbaru Niang punya bentuk khas",
+        "body": "Atap kerucut yang dikenal dari foto merupakan bagian dari arsitektur rumah adat desa."
+      },
+      {
+        "title": "Perjalanan melibatkan akses darat dan jalan kaki",
+        "body": "Indonesia Travel mengenalkan perjalanan melalui kawasan Denge sebelum melanjutkan ke desa."
+      }
+    ],
+    "experienceTitle": "Cara menikmati Kampung Wae Rebo",
+    "experience": "Pilih aktivitas yang sesuai dengan minat dan kondisi rombongan. Urutan berikut merupakan saran menyusun kunjungan, bukan jadwal tur atau kepastian akses.",
+    "highlight": "Rumah adat dalam kehidupan pegunungan",
+    "highlightBody": "Datanglah sebagai tamu yang ingin mengenal, bukan hanya pengunjung yang ingin mengambil gambar.",
+    "accessTitle": "Merencanakan akses ke Kampung Wae Rebo",
+    "access": "Atur akses menuju Denge bersama penyedia lokal, lalu konfirmasi jalur, pendamping, dan tata cara bertamu. Sesuaikan kebutuhan berjalan dengan kondisi rombongan.",
+    "pause": "Sisihkan waktu untuk makan dan beristirahat di area yang diperbolehkan. Tanyakan pilihan tempat singgah kepada pendamping atau pengelola setempat.",
+    "sources": [
+      {
+        "title": "Indonesia Travel — Desa adat Wae Rebo",
+        "url": "https://www.indonesia.travel/id/id/travel-ideas/heritage/menikmati-pesona-desa-adat-wae-rebo-di-pulau-flores"
+      }
+    ]
+  },
+  "padar-island": {
+    "subtitle": "Melihat hubungan teluk dari perbukitan",
+    "lead": "Padar dikenal melalui bentang teluk dan punggungan bukit yang memperlihatkan sisi lain kawasan Komodo.",
+    "focus": "Melihat hubungan teluk dari perbukitan",
+    "caption": "Melihat hubungan teluk dari perbukitan",
+    "title": "Mengenal Pulau Padar",
+    "body": [
+      "Pulau Padar merupakan bagian dari kawasan Taman Nasional Komodo. Indonesia Travel mengenalkan titik pandangnya melalui perjalanan naik bukit untuk melihat bentuk teluk dan pantai dari ketinggian.",
+      "Nikmati perubahan perspektif sepanjang jalur yang diperbolehkan tanpa memaksakan titik tertinggi. Pengalaman berada di pulau tidak harus sama bagi setiap anggota rombongan."
+    ],
+    "reflection": "Sesuaikan titik berhenti dengan kemampuan, bukan dengan foto yang ingin ditiru.",
+    "funFacts": [
+      {
+        "title": "Padar berada dalam kawasan konservasi",
+        "body": "Kunjungan perlu mengikuti pengaturan taman nasional, bukan hanya kesepakatan dengan penyedia kapal."
+      },
+      {
+        "title": "Panorama tersusun dari beberapa teluk",
+        "body": "Bentuk pantai dan punggungan bukit memberi ciri visual yang mudah dikenali pada Padar."
+      }
+    ],
+    "experienceTitle": "Cara menikmati Pulau Padar",
+    "experience": "Pilih aktivitas yang sesuai dengan minat dan kondisi rombongan. Urutan berikut merupakan saran menyusun kunjungan, bukan jadwal tur atau kepastian akses.",
+    "highlight": "Melihat hubungan teluk dari perbukitan",
+    "highlightBody": "Sesuaikan titik berhenti dengan kemampuan, bukan dengan foto yang ingin ditiru.",
+    "accessTitle": "Merencanakan akses ke Pulau Padar",
+    "access": "Konfirmasi perjalanan laut, izin kawasan, dan titik pendaratan bersama penyedia. Tanyakan karakter jalur dan ketersediaan waktu untuk naik serta kembali ke kapal.",
+    "pause": "Sisihkan waktu untuk makan dan beristirahat di area yang diperbolehkan. Tanyakan pilihan tempat singgah kepada pendamping atau pengelola setempat.",
+    "sources": [
+      {
+        "title": "Indonesia Travel — Labuan Bajo dan Komodo",
+        "url": "https://www.indonesia.travel/gb/en/travel-ideas/adventure/catch-this-complete-itinerary-for-3-day-s-trip-to-labuan-bajo-komodo"
+      },
+      {
+        "title": "UNESCO — Komodo National Park",
+        "url": "https://whc.unesco.org/en/list/609/"
+      }
+    ]
+  },
+  "segara-anak": {
+    "subtitle": "Danau di dalam kaldera Rinjani",
+    "lead": "Segara Anak memberi sudut pandang tentang bagaimana air dan aktivitas vulkanik hadir dalam satu bentang pegunungan.",
+    "focus": "Danau di dalam kaldera Rinjani",
+    "caption": "Danau di dalam kaldera Rinjani",
+    "title": "Mengenal Danau Segara Anak",
+    "body": [
+      "Danau Segara Anak berada dalam kaldera Rinjani di Lombok. UNESCO menghubungkan danau ini dengan bentang gunung dan menjelaskan namanya sebagai anak laut.",
+      "Foto danau yang tampak tenang tidak menjelaskan tantangan mencapai lokasinya. Sebelum mempertimbangkan perjalanan, pahami kebutuhan fisik, pendampingan, dan batas kegiatan yang ditetapkan pengelola."
+    ],
+    "reflection": "Pelajari akses dan kebutuhan perjalanan sebelum menjadikan foto sebagai tujuan.",
+    "funFacts": [
+      {
+        "title": "Nama punya hubungan dengan laut",
+        "body": "Penjelasan UNESCO menerjemahkan Segara Anak sebagai Child of the Sea."
+      },
+      {
+        "title": "Letaknya bukan di dataran rendah",
+        "body": "Danau berada dalam bentang pegunungan Rinjani, sehingga perjalanan perlu dipersiapkan secara berbeda dari kunjungan danau tepi jalan."
+      }
+    ],
+    "experienceTitle": "Cara menikmati Danau Segara Anak",
+    "experience": "Pilih aktivitas yang sesuai dengan minat dan kondisi rombongan. Urutan berikut merupakan saran menyusun kunjungan, bukan jadwal tur atau kepastian akses.",
+    "highlight": "Danau di dalam kaldera Rinjani",
+    "highlightBody": "Pelajari akses dan kebutuhan perjalanan sebelum menjadikan foto sebagai tujuan.",
+    "accessTitle": "Merencanakan akses ke Danau Segara Anak",
+    "access": "Periksa status jalur melalui pengelola Rinjani dan diskusikan rencana dengan pendamping. Jangan menganggap kunjungan singkat ke Lombok otomatis cukup untuk mencapai danau.",
+    "pause": "Sisihkan waktu untuk makan dan beristirahat di area yang diperbolehkan. Tanyakan pilihan tempat singgah kepada pendamping atau pengelola setempat.",
+    "sources": [
+      {
+        "title": "UNESCO — Rinjani-Lombok Global Geopark",
+        "url": "https://www.unesco.org/en/iggp/rinjani-lombok-unesco-global-geopark"
+      },
+      {
+        "title": "UNESCO — Cagar biosfer Rinjani Lombok",
+        "url": "https://www.unesco.org/en/mab/rinjani-lombok"
+      }
+    ]
+  },
+  "majestic-raja-ampat": {
+    "subtitle": "Mengenal ruang air di antara pulau karst",
+    "lead": "Laguna Raja Ampat mengajak kita memperhatikan bentuk pulau dan ruang air yang tersusun di antaranya.",
+    "focus": "Mengenal ruang air di antara pulau karst",
+    "caption": "Mengenal ruang air di antara pulau karst",
+    "title": "Mengenal Laguna Raja Ampat",
+    "body": [
+      "Bentang karst kepulauan merupakan salah satu ciri geologi Raja Ampat. Dari titik pandang tertentu, hubungan antara pulau-pulau berbatu dan perairannya membentuk panorama yang berlapis.",
+      "Nama Laguna Raja Ampat pada katalog ini adalah tema panorama, bukan satu titik kunjungan tunggal. Tentukan lokasi yang dimaksud bersama penyedia perjalanan agar rute tidak dibangun dari gambar tanpa koordinat yang jelas."
+    ],
+    "reflection": "Pastikan nama tempat di balik foto sebelum memilih rute perjalanan.",
+    "funFacts": [
+      {
+        "title": "Karst adalah bagian cerita geologi",
+        "body": "Pengelola geopark mengenalkan bentang kepulauan melalui warisan batuan dan proses pembentukannya."
+      },
+      {
+        "title": "Satu foto bukan seluruh Raja Ampat",
+        "body": "Kepulauan ini memiliki banyak titik pandang; lokasi kunjungan harus disebut secara spesifik saat merencanakan rute."
+      }
+    ],
+    "experienceTitle": "Cara menikmati Laguna Raja Ampat",
+    "experience": "Pilih aktivitas yang sesuai dengan minat dan kondisi rombongan. Urutan berikut merupakan saran menyusun kunjungan, bukan jadwal tur atau kepastian akses.",
+    "highlight": "Mengenal ruang air di antara pulau karst",
+    "highlightBody": "Pastikan nama tempat di balik foto sebelum memilih rute perjalanan.",
+    "accessTitle": "Merencanakan akses ke Laguna Raja Ampat",
+    "access": "Minta nama titik pandang, kebutuhan perahu, dan ketentuan kunjungan sebelum berangkat. Jadwalkan perjalanan dengan mempertimbangkan cuaca dan jarak antarlokasi.",
+    "pause": "Sisihkan waktu untuk makan dan beristirahat di area yang diperbolehkan. Tanyakan pilihan tempat singgah kepada pendamping atau pengelola setempat.",
+    "sources": [
+      {
+        "title": "Raja Ampat Geopark — Warisan geologi",
+        "url": "https://rajaampatgeopark.com/our-heritage/geoheritage/"
+      },
+      {
+        "title": "UNESCO — Raja Ampat Global Geopark",
+        "url": "https://www.unesco.org/en/iggp/geoparks/raja-ampat"
+      }
+    ]
+  },
+  "komodo-dragon": {
+    "subtitle": "Mengamati satwa dengan memahami habitatnya",
+    "lead": "Komodo adalah alasan untuk mengenal kawasan konservasi, bukan alasan untuk mengatur perilaku satwa demi foto.",
+    "focus": "Mengamati satwa dengan memahami habitatnya",
+    "caption": "Mengamati satwa dengan memahami habitatnya",
+    "title": "Mengenal Komodo Dragon",
+    "body": [
+      "UNESCO menjelaskan pentingnya Taman Nasional Komodo sebagai habitat komodo. Pengalaman bertemu satwa di alam berbeda dari melihat hewan dalam ruang yang dikendalikan pengunjung.",
+      "Biarkan pendamping kawasan menentukan posisi dan jarak. Jika satwa tidak terlihat seperti yang dibayangkan, kunjungan tetap bisa menjadi kesempatan mengenal habitat serta alasan perlindungannya."
+    ],
+    "reflection": "Foto yang baik tidak memerlukan satwa dipancing, didekati, atau diarahkan.",
+    "funFacts": [
+      {
+        "title": "Komodo berkaitan dengan habitatnya",
+        "body": "Perlindungan satwa mencakup lingkungan tempat ia hidup, bukan hanya individunya."
+      },
+      {
+        "title": "Kawasan punya nilai darat dan laut",
+        "body": "Taman nasional juga melindungi ekosistem pesisir dan perairan di sekitarnya."
+      }
+    ],
+    "experienceTitle": "Cara menikmati Komodo Dragon",
+    "experience": "Pilih aktivitas yang sesuai dengan minat dan kondisi rombongan. Urutan berikut merupakan saran menyusun kunjungan, bukan jadwal tur atau kepastian akses.",
+    "highlight": "Mengamati satwa dengan memahami habitatnya",
+    "highlightBody": "Foto yang baik tidak memerlukan satwa dipancing, didekati, atau diarahkan.",
+    "accessTitle": "Merencanakan akses ke Komodo Dragon",
+    "access": "Konfirmasi lokasi pengamatan, izin, dan pendamping resmi bersama penyedia perjalanan. Jangan beranggapan satwa pasti terlihat pada waktu atau posisi tertentu.",
+    "pause": "Sisihkan waktu untuk makan dan beristirahat di area yang diperbolehkan. Tanyakan pilihan tempat singgah kepada pendamping atau pengelola setempat.",
+    "sources": [
+      {
+        "title": "UNESCO — Komodo National Park",
+        "url": "https://whc.unesco.org/en/list/609/"
+      }
+    ]
+  }
+}

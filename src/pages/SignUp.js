@@ -91,10 +91,12 @@ export default function SignUp() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
       const user = userCredential.user;
+      const profile = { ...form };
+      delete profile.password;
 
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
-        ...form,
+        ...profile,
         role: "client",
         verificationStatus: "unverified",
         createdAt: serverTimestamp(),
@@ -126,7 +128,7 @@ export default function SignUp() {
         <p className="font-label-sm uppercase tracking-[0.28em] text-c57-outline">
           Langkah {step}
         </p>
-        <h3 className="font-headline-sm text-headline-sm text-c57-on-surface mt-1">
+        <h3 className="font-display text-[1.4rem] leading-tight text-c57-on-surface mt-1">
           {title}
         </h3>
         {description && (
@@ -163,9 +165,9 @@ export default function SignUp() {
           <Pill variant="signature" icon="verified_user" className="mb-space-md">
             Registrasi Member Baru
           </Pill>
-          <h1 className="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-c57-on-surface leading-[1.1]">
+          <h1 className="font-display text-[clamp(2.2rem,4.2vw,3.3rem)] font-normal leading-[1.04] tracking-[-0.02em] text-c57-on-surface">
             Mulai Perjalanan Anda
-            <em className="font-normal italic text-c57-primary-container"> bersama kami</em>
+            <em className="font-normal italic text-c57-secondary"> bersama kami</em>
           </h1>
           <p className="text-body-lg text-c57-on-surface-variant mt-space-md max-w-2xl mx-auto font-light">
             Daftar untuk verifikasi sewa lepas kunci, reservasi chauffeur, dan akses tarif
@@ -436,7 +438,7 @@ export default function SignUp() {
               Sudah memiliki akun terdaftar?{" "}
               <Link
                 to="/login"
-                className="font-label-md uppercase tracking-wider text-c57-primary underline decoration-c57-primary/40 underline-offset-4 transition-colors hover:text-c57-primary-container hover:decoration-c57-primary-container"
+                className="font-label-md uppercase tracking-wider text-c57-secondary underline decoration-c57-secondary/40 underline-offset-4 transition-colors hover:text-c57-on-surface hover:decoration-c57-on-surface"
               >
                 Masuk di sini
               </Link>
@@ -474,7 +476,7 @@ export default function SignUp() {
                 >
                   <Icon name={item.icon} size="lg" />
                 </span>
-                <h4 className="font-headline-sm text-body-lg text-c57-on-surface mt-space-md">
+                <h4 className="font-display text-[1.3rem] leading-tight text-c57-on-surface mt-space-md">
                   {item.title}
                 </h4>
                 <p className="text-body-sm text-c57-on-surface-variant mt-space-sm">{item.body}</p>

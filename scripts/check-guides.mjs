@@ -47,7 +47,7 @@ const FOREIGN_WORDS = [
    anything with an interior capital that is not on this list is treated as
    glued words. */
 const PROPER_NOUNS = new Set([
-  "Tengger", "Bromo", "Batok", "Semeru", "Ngadisari", "Probolinggo", "Malang",
+  "ArtScience", "Tengger", "Bromo", "Batok", "Semeru", "Ngadisari", "Probolinggo", "Malang",
   "Tumpak", "Sewu", "Lumajang", "Pronojiwo", "Jawa", "Bali", "Indonesia",
   "ASEAN", "Krakatau", "Ijen", "Banyuwangi", "Jepara", "Borobudur", "Prambanan",
   "Malioboro", "Kelinching", "Kelingking", "Tanah", "Lot", "Uluwatu", "Ubud",
@@ -68,13 +68,21 @@ function stripComments(src) {
 const findings = [];
 
 for (const name of readdirSync(dir)) {
-  if (!name.endsWith(".js")) continue;
+  if (!/^(jawa|bali|indonesia|asean)\.(js|json)$/.test(name)) continue;
   /* index.js is the resolver and timezone map, not prose. */
   if (name === "index.js") continue;
   const file = join(dir, name);
   if (!statSync(file).isFile()) continue;
 
-  const lines = stripComments(readFileSync(file, "utf8")).split("\n");
+  const source = readFileSync(file, "utf8");
+  const prose = [];
+  const collect = (value) => {
+    if (typeof value === "string") prose.push(JSON.stringify(value));
+    else if (Array.isArray(value)) value.forEach(collect);
+    else if (value && typeof value === "object") Object.values(value).forEach(collect);
+  };
+  if (name.endsWith(".json")) collect(JSON.parse(source));
+  const lines = name.endsWith(".json") ? prose : stripComments(source).split("\n").filter((line) => !/^import\s/.test(line));
 
   lines.forEach((line, i) => {
     const where = `${name}:${i + 1}`;
@@ -85,11 +93,12 @@ for (const name of readdirSync(dir)) {
 
     for (const raw of line.matchAll(/"([^"\\]{4,})"/g)) {
       const text = raw[1];
-      const words = text.split(/\s+/);
+      if (/^(https?:\/\/|\.\.?\/)/.test(text)) continue;
+      const words = text.split(/[\s–-]+/);
 
       for (const rawWord of words) {
-        const word = rawWord.replace(/^[("']+|[,;:!?)\]]+$/g, "");
-        if (word.length < 4) continue;
+        const word = rawWord.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "");
+        if (word.length < 4 || /^[A-Z0-9]+$/.test(word) || word === "T-Rex") continue;
 
         if (FOREIGN_WORDS.includes(word.toLowerCase())) {
           findings.push(`[foreign-word] ${where}: "${word}" in "${text.slice(0, 70)}"`);

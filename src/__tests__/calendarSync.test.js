@@ -268,7 +268,7 @@ describe("computeSyncActions", () => {
 });
 
 describe("deriveSyncState", () => {
-  const connected = { connected: true, entries: {}, pending: {}, errors: {} };
+  const connected = { connected: true, entries: {}, pending: {}, errors: {}, now: NOW };
 
   test("disconnected wins over everything", () => {
     expect(deriveSyncState(SYNC_KINDS.ORDER, order(), { connected: false })).toBe("offline");
